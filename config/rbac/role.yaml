@@ -1,0 +1,46 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes/status
+  verbs:
+  - get
+- apiGroups:
+  - kvm.cloud.sap
+  resources:
+  - hypervisors
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kvm.cloud.sap
+  resources:
+  - hypervisors/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kvm.cloud.sap
+  resources:
+  - hypervisors/status
+  verbs:
+  - get
+  - patch
+  - update

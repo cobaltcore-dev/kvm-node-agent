@@ -1,0 +1,9 @@
+apiVersion: kvm.cloud.sap/v1alpha1
+kind: Hypervisor
+metadata:
+  labels:
+    app.kubernetes.io/name: kvm-node-agent
+    app.kubernetes.io/managed-by: kustomize
+  name: hypervisor-sample
+spec:
+  # TODO(user): Add fields here

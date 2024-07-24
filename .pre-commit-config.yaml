@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: Copyright 2024 SAP SE or an SAP affiliate company and cobaltcore-dev contributors
+# SPDX-License-Identifier: Apache-2.0
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^charts/.*
+      - id: end-of-file-fixer
+        exclude: ^charts/.*
+      - id: check-added-large-files
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.59.1
+    hooks:
+      - id: golangci-lint
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-imports
+        exclude: .*/(.+_mock\.go|.+deepcopy\.go)$
+      - id: go-mod-tidy
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v4.0.3
+    hooks:
+      - id: reuse
+  - repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.23
+    hooks:
+      - id: helmlint
+  - repo: local
+    hooks:
+      - id: go-unit
+        name: go unit tests
+        entry: make test
+        language: system
+        pass_filenames: false
+      - id: helmify
+        name: helmify
+        entry: make helm
+        language: system
+        pass_filenames: false
+      - id: go-build
+        name: go build
+        entry: make build
+        language: system
+        pass_filenames: false

@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "kvm-node-agent.fullname" . }}-controller-manager
+  labels:
+    control-plane: controller-manager
+  {{- include "kvm-node-agent.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+    {{- include "kvm-node-agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+      {{- include "kvm-node-agent.selectorLabels" . | nindent 8 }}
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+    spec:
+      containers:
+      - args: {{- toYaml .Values.controllerManager.manager.args | nindent 8 }}
+        command:
+        - /manager
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
+          | default .Chart.AppVersion }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10
+          }}
+        securityContext: {{- toYaml .Values.controllerManager.manager.containerSecurityContext
+          | nindent 10 }}
+        volumeMounts:
+        - mountPath: /run/libvirt/libvirt-sock
+          name: libvirt-sock
+          readOnly: true
+        - mountPath: /var/run/dbus/system_bus_socket
+          name: systemd-sock
+          readOnly: true
+      securityContext:
+        runAsNonRoot: true
+        supplementalGroups:
+        - 108
+      serviceAccountName: {{ include "kvm-node-agent.fullname" . }}-controller-manager
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - hostPath:
+          path: /run/libvirt/libvirt-sock
+          type: Socket
+        name: libvirt-sock
+      - hostPath:
+          path: /var/run/dbus/system_bus_socket
+          type: Socket
+        name: systemd-sock
