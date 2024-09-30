@@ -54,14 +54,14 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-MOCK_FILES = $(wildcard internal/**/*_mock.go)
-.PHONY: mocks
-mocks: $(MOCK_FILES) moq ## Generate mocks for interfaces.
 
+# Generate mock files for all interfaces
+INTERFACES = $(patsubst %.go,%_mock.go,$(wildcard internal/**/interface.go))
+mocks: moq $(INTERFACES) ## Generate mocks for interfaces.
 .PHONY: FORCE
 FORCE:
 %_mock.go: %.go FORCE ## Generate interface mocks with https://github.com/matryer/moq
-	$(MOQ) -out $@ $(dir $@) Interface
+	$(MOQ) -rm -out $@ $(dir $@) Interface
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -86,7 +86,7 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 ##@ Build
 
 .PHONY: build
-build: manifests generate fmt vet mocks ## Build manager binary.
+build: mocks manifests generate fmt vet ## Build manager binary.
 	go build -o bin/manager cmd/main.go
 
 .PHONY: run
@@ -170,7 +170,7 @@ KUSTOMIZE_VERSION ?= v5.4.1
 CONTROLLER_TOOLS_VERSION ?= v0.15.0
 ENVTEST_VERSION ?= release-0.18
 GOLANGCI_LINT_VERSION ?= v1.57.2
-MOQ_VERSION ?= v0.3.4
+MOQ_VERSION ?= v0.5.0
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.

@@ -18,19 +18,36 @@ limitations under the License.
 package sys
 
 import (
+	"bufio"
+	"context"
 	"os"
 
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logger "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var Hostname string
+func GetOSVersion(ctx context.Context) string {
+	log := logger.FromContext(ctx, "os", "GetOSVersion")
 
-func init() {
-	var err error
-	if Hostname = os.Getenv("HOSTNAME"); Hostname == "" {
-		Hostname, err = os.Hostname()
-		if err != nil {
-			log.Log.Error(err, "failed fetching hostname")
+	f, err := os.Open("/etc/os-release")
+	if err != nil {
+		log.Error(err, "failed to open /etc/os-release")
+		return "unknown"
+	}
+	defer func() { _ = f.Close() }()
+
+	buf := bufio.NewScanner(f)
+	for buf.Scan() {
+		// skip comments
+		if len(buf.Text()) > 0 && buf.Text()[0] == '#' {
+			continue
+		}
+
+		// check if line starts with IMAGE_VERSION
+		if len(buf.Text()) > 0 && buf.Text()[0] == 'I' {
+			if len(buf.Text()) > 13 && buf.Text()[:13] == "IMAGE_VERSION" {
+				return buf.Text()[14:]
+			}
 		}
 	}
+	return "unknown"
 }

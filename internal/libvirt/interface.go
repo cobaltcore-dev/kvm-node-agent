@@ -15,22 +15,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package sys
+//go:generate moq -out libvirt_mock.go . Interface
 
-import (
-	"os"
+package libvirt
 
-	"sigs.k8s.io/controller-runtime/pkg/log"
-)
+import "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 
-var Hostname string
+type Interface interface {
+	// Connect connects to the libvirt daemon.
+	Connect() error
 
-func init() {
-	var err error
-	if Hostname = os.Getenv("HOSTNAME"); Hostname == "" {
-		Hostname, err = os.Hostname()
-		if err != nil {
-			log.Log.Error(err, "failed fetching hostname")
-		}
-	}
+	// Close closes the connection to the libvirt daemon.
+	Close() error
+
+	// GetInstances returns a list of instances.
+	GetInstances() ([]v1alpha1.Instance, error)
+
+	// IsConnected returns true if the connection to the libvirt daemon is open.
+	IsConnected() bool
+
+	// GetVersion returns the version of the libvirt daemon.
+	GetVersion() (string, error)
 }

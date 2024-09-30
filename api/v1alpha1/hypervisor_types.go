@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: Copyright 2024 SAP SE or an SAP affiliate company and cobaltcore-dev contributors
 SPDX-License-Identifier: Apache-2.0
 
-Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, LibVirtVersion 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -23,34 +23,18 @@ import (
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-type OperatingSystemImage struct {
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern="^https?://.*$"
-	// +kubebuilder:validation:Format="url"
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=255
-	// Represents the operating system image URL.
-	URL string `json:"url"`
-
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=64
-	// +kubebuilder:validation:MaxLength=64
-	// Represents the operating system image SHA256 sum.
-	Sha256Sum string `json:"sha256sum"`
-
-	// +kubebuilder:validation:Optional
-	Force bool `json:"force"`
-}
+// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+// Important: Run "make" to regenerate code after modifying this file
 
 // HypervisorSpec defines the desired state of Hypervisor
 type HypervisorSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	// +kubebuilder:validation:Optional
-	// OperatingSystemImage represents the desired operating system image.
-	OperatingSystemImage *OperatingSystemImage `json:"image,omitempty"`
+	// OperatingSystemVersion represents the desired operating system version.
+	OperatingSystemVersion string `json:"version,omitempty"`
+
+	// +kubebuilder:default:=false
+	// Reboot request an reboot after successful installation of an upgrade.
+	Reboot bool `json:"reboot"`
 }
 
 type Instance struct {
@@ -64,10 +48,31 @@ type Instance struct {
 	Active bool `json:"active"`
 }
 
+type HyperVisorUpdateStatus struct {
+	// +kubebuilder:default:=false
+	// Represents a running Operating System update.
+	InProgress bool `json:"inProgress"`
+
+	// +kubebuilder:default:=unknown
+	// Represents the Operating System installed update version.
+	Installed string `json:"installed,omitempty"`
+
+	// +kubebuilder:default:=3
+	// Represents the number of retries.
+	Retry int `json:"retry"`
+}
+
 // HypervisorStatus defines the observed state of Hypervisor
 type HypervisorStatus struct {
-	// Represents the Hypervisor version.
+	// Represents the Operating System version.
 	Version string `json:"version"`
+
+	// +kubebuilder:default:=unknown
+	// Represents the LibVirt version.
+	LibVirtVersion string `json:"libVirtVersion"`
+
+	// Represents the Hypervisor update status.
+	Update HyperVisorUpdateStatus `json:"updateStatus"`
 
 	// Represents the Hypervisor node name.
 	Node types.NodeName `json:"node"`
@@ -75,8 +80,9 @@ type HypervisorStatus struct {
 	// Represents the Hypervisor hosted Virtual Machines
 	Instances []Instance `json:"instances,omitempty"`
 
+	// +kubebuilder:default:=0
 	// Represent the num of instances
-	NumInstances int `json:"numInstances,omitempty"`
+	NumInstances int `json:"numInstances"`
 
 	// Represents the Hypervisor node conditions.
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`

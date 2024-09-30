@@ -32,6 +32,7 @@ FROM gcr.io/distroless/static:nonroot
 LABEL source_repository="https://github.com/cobaltcore-dev/kvm-node-agent"
 WORKDIR /
 COPY --from=builder /workspace/manager .
-USER 42436:42436
+# Hardcoded to kvm-node-agent user/group on host
+USER 42438:42438
 
 ENTRYPOINT ["/manager"]

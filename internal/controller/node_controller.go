@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: Copyright 2024 SAP SE or an SAP affiliate company and cobaltcore-dev contributors
 SPDX-License-Identifier: Apache-2.0
 
-Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, LibVirtVersion 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -100,8 +100,8 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			},
 			Spec: kvmv1alpha1.HypervisorSpec{},
 			Status: kvmv1alpha1.HypervisorStatus{
-				Node:    types.NodeName(node.Name),
-				Version: sys.GetVersion(),
+				Node:           types.NodeName(node.Name),
+				LibVirtVersion: sys.GetVersion(),
 			},
 		}); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed creating hypervisor: %w", err)

@@ -49,28 +49,17 @@ spec:
           spec:
             description: HypervisorSpec defines the desired state of Hypervisor
             properties:
-              image:
-                description: OperatingSystemImage represents the desired operating
-                  system image.
-                properties:
-                  force:
-                    type: boolean
-                  sha256sum:
-                    description: Represents the operating system image SHA256 sum.
-                    maxLength: 64
-                    minLength: 64
-                    type: string
-                  url:
-                    description: Represents the operating system image URL.
-                    format: url
-                    maxLength: 255
-                    minLength: 1
-                    pattern: ^https?://.*$
-                    type: string
-                required:
-                - sha256sum
-                - url
-                type: object
+              reboot:
+                default: false
+                description: Reboot request an reboot after successful installation
+                  of an upgrade.
+                type: boolean
+              version:
+                description: OperatingSystemVersion represents the desired operating
+                  system version.
+                type: string
+            required:
+            - reboot
             type: object
           status:
             description: HypervisorStatus defines the observed state of Hypervisor
@@ -164,19 +153,47 @@ spec:
                   - name
                   type: object
                 type: array
+              libVirtVersion:
+                default: unknown
+                description: Represents the LibVirt version.
+                type: string
               node:
                 description: Represents the Hypervisor node name.
                 type: string
               numInstances:
+                default: 0
                 description: Represent the num of instances
                 type: integer
               specHash:
                 type: string
+              updateStatus:
+                description: Represents the Hypervisor update status.
+                properties:
+                  inProgress:
+                    default: false
+                    description: Represents a running Operating System update.
+                    type: boolean
+                  installed:
+                    default: unknown
+                    description: Represents the Operating System installed update
+                      version.
+                    type: string
+                  retry:
+                    default: 3
+                    description: Represents the number of retries.
+                    type: integer
+                required:
+                - inProgress
+                - retry
+                type: object
               version:
-                description: Represents the Hypervisor version.
+                description: Represents the Operating System version.
                 type: string
             required:
+            - libVirtVersion
             - node
+            - numInstances
+            - updateStatus
             - version
             type: object
         type: object

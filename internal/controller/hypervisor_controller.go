@@ -19,6 +19,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -37,10 +38,11 @@ import (
 // HypervisorReconciler reconciles a Hypervisor object
 type HypervisorReconciler struct {
 	client.Client
-	Scheme         *runtime.Scheme
-	libvirt        libvirt.Interface
-	systemd        systemd.Interface
-	libvirtVersion string
+	Scheme                 *runtime.Scheme
+	libvirt                libvirt.Interface
+	systemd                systemd.Interface
+	libvirtVersion         string
+	OperatingSystemVersion string
 }
 
 const (
@@ -75,37 +77,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		Reason:  "Reconciling",
 	})
 
-	if osImage := hypervisor.Spec.OperatingSystemImage; osImage != nil {
-		log.Info("OperatingSystemImage is set",
-			"image", hypervisor.Spec.OperatingSystemImage.URL,
-			"force", hypervisor.Spec.OperatingSystemImage.Force)
-
-		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-			Type:    OSUpdateType,
-			Status:  metav1.ConditionTrue,
-			Message: "image set to " + hypervisor.Spec.OperatingSystemImage.URL,
-			Reason:  "ImageSet",
-		})
-		/* #TODO: run priviledged operating system update
-		success, err := update.UpdateOs(ctx, osImage.URL, osImage.Force)
-		if err != nil {
-			// todo: use EnqueueRequestsFromMapFunc for callback
-			log.Error(err, "unable to update operating system")
-			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-				Type:    OSUpdateType,
-				Status:  metav1.ConditionFalse,
-				Message: err.Error(),
-				Reason:  "UpdateFailed",
-			})
-			return ctrl.Result{}, err
-		}
-
-		if success {
-			log.Info("Operating system updated successfully")
-		}
-		*/
-	}
-
 	// Update libvirt status
 	if !r.libvirt.IsConnected() {
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
@@ -135,7 +106,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if r.libvirt.IsConnected() {
-		hypervisor.Status.Version = r.libvirtVersion
+		hypervisor.Status.LibVirtVersion = r.libvirtVersion
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 			Type:   LibVirtType,
 			Status: metav1.ConditionTrue,
@@ -181,6 +152,82 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 
+	if hypervisor.Status.Version != r.OperatingSystemVersion {
+		hypervisor.Status.Version = r.OperatingSystemVersion
+	}
+
+	// Reconcile operating system update
+	if hypervisor.Spec.OperatingSystemVersion != "" &&
+		// only update if the version is different to current running version
+		hypervisor.Spec.OperatingSystemVersion != hypervisor.Status.Version &&
+		// only update if the version is different to the installed version
+		hypervisor.Spec.OperatingSystemVersion != hypervisor.Status.Update.Installed {
+
+		if hypervisor.Status.Update.Retry == 0 {
+			// we reached the retry limit, unset the version to stop the update
+			// failed message of past retries is still available in the conditions
+
+			// reset retry count
+			hypervisor.Status.Update.Retry = 3
+			if err := r.Status().Update(ctx, &hypervisor); err != nil {
+				log.Error(err, "unable to update hypervisor status spec")
+				return ctrl.Result{}, err
+			}
+			hypervisor.Spec.OperatingSystemVersion = ""
+			if err := r.Update(ctx, &hypervisor); err != nil {
+				log.Error(err, "unable to update hypervisor spec")
+				return ctrl.Result{}, err
+			}
+
+			// Todo: include some timeout?
+			return ctrl.Result{}, nil
+		}
+
+		// Reconcile operating system update
+		running, err := r.systemd.ReconcileSysUpdate(ctx, &hypervisor)
+
+		// failed
+		if err != nil {
+			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+				Type:    OSUpdateType,
+				Status:  metav1.ConditionFalse,
+				Reason:  "Stopped",
+				Message: err.Error(),
+			})
+
+			if !errors.Is(err, systemd.ErrFailed) {
+				log.Error(err, "error while reconcile operating system update")
+			}
+
+			// decrease retry count
+			hypervisor.Status.Update.Retry--
+		}
+
+		// started
+		if !hypervisor.Status.Update.InProgress && running {
+			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+				Type:   OSUpdateType,
+				Status: metav1.ConditionTrue,
+				Reason: "Running",
+				Message: fmt.Sprintf("Operating system update to %s is running",
+					hypervisor.Spec.OperatingSystemVersion),
+			})
+		}
+
+		// finished
+		if !running && err == nil {
+			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+				Type:   OSUpdateType,
+				Status: metav1.ConditionTrue,
+				Reason: "Completed",
+				Message: fmt.Sprintf("Operating system update %s is installed",
+					hypervisor.Spec.OperatingSystemVersion),
+			})
+			hypervisor.Status.Update.Installed = hypervisor.Spec.OperatingSystemVersion
+		}
+		hypervisor.Status.Update.InProgress = running
+	}
+
 	meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 		Type:   "Ready",
 		Status: metav1.ConditionTrue,
@@ -196,10 +243,12 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	ctx := context.Background()
 	r.libvirt = libvirt.NewLibVirt()
+	r.OperatingSystemVersion = sys.GetOSVersion(ctx)
 
 	var err error
-	r.systemd, err = systemd.NewSystemd(context.Background())
+	r.systemd, err = systemd.NewSystemd(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to connect to systemd: %w", err)
 	}

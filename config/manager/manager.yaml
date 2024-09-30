@@ -101,6 +101,9 @@ spec:
         - mountPath: /var/run/dbus/system_bus_socket
           name: systemd-sock
           readOnly: true
+        - mountPath: /etc/os-release
+          name: os-release
+          readOnly: true
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
@@ -110,5 +113,9 @@ spec:
           type: Socket
       - name: systemd-sock
         hostPath:
-          path: /var/run/dbus/system_bus_socket
+          path: /run/dbus/system_bus_socket
           type: Socket
+      - name: os-release
+        hostPath:
+          path: /etc/os-release
+          type: File
