@@ -66,6 +66,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        - name: EMULATE
+          value: "0"
         image: controller:latest
         name: manager
         securityContext:

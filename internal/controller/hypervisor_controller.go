@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -244,13 +245,19 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
-	r.libvirt = libvirt.NewLibVirt()
+	emulate := os.Getenv("EMULATE")
 	r.OperatingSystemVersion = sys.GetOSVersion(ctx)
 
 	var err error
-	r.systemd, err = systemd.NewSystemd(ctx)
-	if err != nil {
-		return fmt.Errorf("unable to connect to systemd: %w", err)
+	if emulate == "1" {
+		r.libvirt = libvirt.NewLibVirtEmulator(ctx)
+		r.systemd = systemd.NewSystemdEmulator(ctx)
+	} else {
+		r.libvirt = libvirt.NewLibVirt()
+		r.systemd, err = systemd.NewSystemd(ctx)
+		if err != nil {
+			return fmt.Errorf("unable to connect to systemd: %w", err)
+		}
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
