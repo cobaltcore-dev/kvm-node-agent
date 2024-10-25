@@ -249,7 +249,7 @@ func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.OperatingSystemVersion = sys.GetOSVersion(ctx)
 
 	var err error
-	if emulate == "1" {
+	if emulate != "" {
 		r.libvirt = libvirt.NewLibVirtEmulator(ctx)
 		r.systemd = systemd.NewSystemdEmulator(ctx)
 	} else {
