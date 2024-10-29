@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,6 +63,12 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		// only reconcile the node I am running on
 		return ctrl.Result{}, nil
 	}
+
+	start := time.Now()
+	defer func() {
+		histogramMetric.WithLabelValues(req.Name).Observe(time.Since(start).Seconds())
+	}()
+
 	log.Info("Reconcile", "name", req.Name, "namespace", req.Namespace)
 
 	var hypervisor kvmv1alpha1.Hypervisor

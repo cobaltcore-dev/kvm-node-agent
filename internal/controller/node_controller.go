@@ -20,6 +20,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +32,7 @@ import (
 
 	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // NodeReconciler reconciles a Node object
@@ -38,6 +40,15 @@ type NodeReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
+var histogramMetric = prometheus.NewHistogramVec(
+	prometheus.HistogramOpts{
+		Name:    "node_reconcile_duration",
+		Help:    "Duration of node reconcile.",
+		Buckets: []float64{0.1, .25, .5, 0.75, 1, 2.5, 5, 10},
+	},
+	[]string{"node"},
+)
 
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=nodes/status,verbs=get
@@ -68,6 +79,11 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		// only reconcile the node I am running on
 		return ctrl.Result{}, nil
 	}
+
+	start := time.Now()
+	defer func() {
+		histogramMetric.WithLabelValues(req.Name).Observe(time.Since(start).Seconds())
+	}()
 
 	namespace := req.Namespace
 	if namespace == "" {
@@ -115,4 +131,8 @@ func (r *NodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1.Node{}).
 		Complete(r)
+}
+
+func init() {
+	_ = prometheus.Register(histogramMetric)
 }
