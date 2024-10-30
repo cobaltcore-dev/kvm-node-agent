@@ -48,6 +48,11 @@ spec:
           spec:
             description: HypervisorSpec defines the desired state of Hypervisor
             properties:
+              evacuateOnReboot:
+                default: true
+                description: EvacuateOnReboot request an evacuation of all instances
+                  before reboot.
+                type: boolean
               reboot:
                 default: false
                 description: Reboot request an reboot after successful installation
@@ -58,6 +63,7 @@ spec:
                   system version.
                 type: string
             required:
+            - evacuateOnReboot
             - reboot
             type: object
           status:

@@ -6,7 +6,7 @@ package systemd
 import (
 	"context"
 	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
-	"github.com/coreos/go-systemd/v22/dbus"
+	systemd "github.com/coreos/go-systemd/v22/dbus"
 	"sync"
 )
 
@@ -23,13 +23,19 @@ var _ Interface = &InterfaceMock{}
 //			CloseFunc: func()  {
 //				panic("mock out the Close method")
 //			},
-//			GetUnitByNameFunc: func(ctx context.Context, unit string) (dbus.UnitStatus, error) {
+//			DisableShutdownInhibitFunc: func() error {
+//				panic("mock out the DisableShutdownInhibit method")
+//			},
+//			EnableShutdownInhibitFunc: func(ctx context.Context, cb func(ctx2 context.Context) error) error {
+//				panic("mock out the EnableShutdownInhibit method")
+//			},
+//			GetUnitByNameFunc: func(ctx context.Context, unit string) (systemd.UnitStatus, error) {
 //				panic("mock out the GetUnitByName method")
 //			},
 //			IsConnectedFunc: func() bool {
 //				panic("mock out the IsConnected method")
 //			},
-//			ListUnitsByNamesFunc: func(ctx context.Context, units []string) ([]dbus.UnitStatus, error) {
+//			ListUnitsByNamesFunc: func(ctx context.Context, units []string) ([]systemd.UnitStatus, error) {
 //				panic("mock out the ListUnitsByNames method")
 //			},
 //			ReconcileSysUpdateFunc: func(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error) {
@@ -48,14 +54,20 @@ type InterfaceMock struct {
 	// CloseFunc mocks the Close method.
 	CloseFunc func()
 
+	// DisableShutdownInhibitFunc mocks the DisableShutdownInhibit method.
+	DisableShutdownInhibitFunc func() error
+
+	// EnableShutdownInhibitFunc mocks the EnableShutdownInhibit method.
+	EnableShutdownInhibitFunc func(ctx context.Context, cb func(ctx2 context.Context) error) error
+
 	// GetUnitByNameFunc mocks the GetUnitByName method.
-	GetUnitByNameFunc func(ctx context.Context, unit string) (dbus.UnitStatus, error)
+	GetUnitByNameFunc func(ctx context.Context, unit string) (systemd.UnitStatus, error)
 
 	// IsConnectedFunc mocks the IsConnected method.
 	IsConnectedFunc func() bool
 
 	// ListUnitsByNamesFunc mocks the ListUnitsByNames method.
-	ListUnitsByNamesFunc func(ctx context.Context, units []string) ([]dbus.UnitStatus, error)
+	ListUnitsByNamesFunc func(ctx context.Context, units []string) ([]systemd.UnitStatus, error)
 
 	// ReconcileSysUpdateFunc mocks the ReconcileSysUpdate method.
 	ReconcileSysUpdateFunc func(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error)
@@ -67,6 +79,16 @@ type InterfaceMock struct {
 	calls struct {
 		// Close holds details about calls to the Close method.
 		Close []struct {
+		}
+		// DisableShutdownInhibit holds details about calls to the DisableShutdownInhibit method.
+		DisableShutdownInhibit []struct {
+		}
+		// EnableShutdownInhibit holds details about calls to the EnableShutdownInhibit method.
+		EnableShutdownInhibit []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Cb is the cb argument value.
+			Cb func(ctx2 context.Context) error
 		}
 		// GetUnitByName holds details about calls to the GetUnitByName method.
 		GetUnitByName []struct {
@@ -100,12 +122,14 @@ type InterfaceMock struct {
 			Unit string
 		}
 	}
-	lockClose              sync.RWMutex
-	lockGetUnitByName      sync.RWMutex
-	lockIsConnected        sync.RWMutex
-	lockListUnitsByNames   sync.RWMutex
-	lockReconcileSysUpdate sync.RWMutex
-	lockStartUnit          sync.RWMutex
+	lockClose                  sync.RWMutex
+	lockDisableShutdownInhibit sync.RWMutex
+	lockEnableShutdownInhibit  sync.RWMutex
+	lockGetUnitByName          sync.RWMutex
+	lockIsConnected            sync.RWMutex
+	lockListUnitsByNames       sync.RWMutex
+	lockReconcileSysUpdate     sync.RWMutex
+	lockStartUnit              sync.RWMutex
 }
 
 // Close calls CloseFunc.
@@ -135,8 +159,71 @@ func (mock *InterfaceMock) CloseCalls() []struct {
 	return calls
 }
 
+// DisableShutdownInhibit calls DisableShutdownInhibitFunc.
+func (mock *InterfaceMock) DisableShutdownInhibit() error {
+	if mock.DisableShutdownInhibitFunc == nil {
+		panic("InterfaceMock.DisableShutdownInhibitFunc: method is nil but Interface.DisableShutdownInhibit was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockDisableShutdownInhibit.Lock()
+	mock.calls.DisableShutdownInhibit = append(mock.calls.DisableShutdownInhibit, callInfo)
+	mock.lockDisableShutdownInhibit.Unlock()
+	return mock.DisableShutdownInhibitFunc()
+}
+
+// DisableShutdownInhibitCalls gets all the calls that were made to DisableShutdownInhibit.
+// Check the length with:
+//
+//	len(mockedInterface.DisableShutdownInhibitCalls())
+func (mock *InterfaceMock) DisableShutdownInhibitCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockDisableShutdownInhibit.RLock()
+	calls = mock.calls.DisableShutdownInhibit
+	mock.lockDisableShutdownInhibit.RUnlock()
+	return calls
+}
+
+// EnableShutdownInhibit calls EnableShutdownInhibitFunc.
+func (mock *InterfaceMock) EnableShutdownInhibit(ctx context.Context, cb func(ctx2 context.Context) error) error {
+	if mock.EnableShutdownInhibitFunc == nil {
+		panic("InterfaceMock.EnableShutdownInhibitFunc: method is nil but Interface.EnableShutdownInhibit was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Cb  func(ctx2 context.Context) error
+	}{
+		Ctx: ctx,
+		Cb:  cb,
+	}
+	mock.lockEnableShutdownInhibit.Lock()
+	mock.calls.EnableShutdownInhibit = append(mock.calls.EnableShutdownInhibit, callInfo)
+	mock.lockEnableShutdownInhibit.Unlock()
+	return mock.EnableShutdownInhibitFunc(ctx, cb)
+}
+
+// EnableShutdownInhibitCalls gets all the calls that were made to EnableShutdownInhibit.
+// Check the length with:
+//
+//	len(mockedInterface.EnableShutdownInhibitCalls())
+func (mock *InterfaceMock) EnableShutdownInhibitCalls() []struct {
+	Ctx context.Context
+	Cb  func(ctx2 context.Context) error
+} {
+	var calls []struct {
+		Ctx context.Context
+		Cb  func(ctx2 context.Context) error
+	}
+	mock.lockEnableShutdownInhibit.RLock()
+	calls = mock.calls.EnableShutdownInhibit
+	mock.lockEnableShutdownInhibit.RUnlock()
+	return calls
+}
+
 // GetUnitByName calls GetUnitByNameFunc.
-func (mock *InterfaceMock) GetUnitByName(ctx context.Context, unit string) (dbus.UnitStatus, error) {
+func (mock *InterfaceMock) GetUnitByName(ctx context.Context, unit string) (systemd.UnitStatus, error) {
 	if mock.GetUnitByNameFunc == nil {
 		panic("InterfaceMock.GetUnitByNameFunc: method is nil but Interface.GetUnitByName was just called")
 	}
@@ -199,7 +286,7 @@ func (mock *InterfaceMock) IsConnectedCalls() []struct {
 }
 
 // ListUnitsByNames calls ListUnitsByNamesFunc.
-func (mock *InterfaceMock) ListUnitsByNames(ctx context.Context, units []string) ([]dbus.UnitStatus, error) {
+func (mock *InterfaceMock) ListUnitsByNames(ctx context.Context, units []string) ([]systemd.UnitStatus, error) {
 	if mock.ListUnitsByNamesFunc == nil {
 		panic("InterfaceMock.ListUnitsByNamesFunc: method is nil but Interface.ListUnitsByNames was just called")
 	}

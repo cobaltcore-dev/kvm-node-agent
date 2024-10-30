@@ -45,4 +45,10 @@ type Interface interface {
 
 	// ReconcileSysUpdate reconciles orchestrates a systemd-sysupdate via the systemd-sysupdate@.service unit.
 	ReconcileSysUpdate(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error)
+
+	// EnableShutdownInhibit enables the shutdown inhibition
+	EnableShutdownInhibit(ctx context.Context, cb func(ctx2 context.Context) error) error
+
+	// DisableShutdownInhibit disables the shutdown inhibition
+	DisableShutdownInhibit() error
 }

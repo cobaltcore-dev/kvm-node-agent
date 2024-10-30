@@ -35,6 +35,10 @@ type HypervisorSpec struct {
 	// +kubebuilder:default:=false
 	// Reboot request an reboot after successful installation of an upgrade.
 	Reboot bool `json:"reboot"`
+
+	// +kubebuilder:default:=true
+	// EvacuateOnReboot request an evacuation of all instances before reboot.
+	EvacuateOnReboot bool `json:"evacuateOnReboot"`
 }
 
 type Instance struct {

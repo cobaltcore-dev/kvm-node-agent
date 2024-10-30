@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # Image URL to use all building/pushing image targets
-IMG ?= keppel.eu-de-1.cloud.sap/ccloud/kvm-node-agent:latest
+TAG ?= latest
+IMG ?= keppel.eu-de-1.cloud.sap/ccloud/kvm-node-agent:$(TAG)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.30.0
 
