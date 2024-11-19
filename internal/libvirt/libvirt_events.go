@@ -210,7 +210,7 @@ func (l *LibVirt) startMigrationWatch(ctx context.Context, domain libvirt.Domain
 	migr := kvmv1alpha1.Migration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      GetOpenstackUUID(domain),
-			Namespace: "monsoon3",
+			Namespace: sys.Namespace,
 		},
 	}
 	if err := l.client.Create(ctx, &migr); client.IgnoreAlreadyExists(err) != nil {
@@ -231,7 +231,7 @@ func (l *LibVirt) startMigrationWatch(ctx context.Context, domain libvirt.Domain
 	// Updating migration start time
 	object := client.ObjectKey{
 		Name:      GetOpenstackUUID(domain),
-		Namespace: "monsoon3",
+		Namespace: sys.Namespace,
 	}
 	var original kvmv1alpha1.Migration
 	if err := l.client.Get(ctx, object, &original); err != nil {
@@ -262,7 +262,7 @@ func (l *LibVirt) stopMigrationWatch(ctx context.Context, domain libvirt.Domain)
 func (l *LibVirt) patchMigration(ctx context.Context, domain libvirt.Domain, completed bool) error {
 	object := client.ObjectKey{
 		Name:      GetOpenstackUUID(domain),
-		Namespace: "monsoon3",
+		Namespace: sys.Namespace,
 	}
 
 	var original kvmv1alpha1.Migration

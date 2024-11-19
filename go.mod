@@ -8,6 +8,7 @@ go 1.23.0
 toolchain go1.23.5
 
 require (
+	github.com/cert-manager/cert-manager v1.16.2
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/digitalocean/go-libvirt v0.0.0-20240916165608-bff44a349d9d
 	github.com/godbus/dbus/v5 v5.1.0
@@ -100,8 +101,9 @@ require (
 	k8s.io/component-base v0.31.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240903163716-9e1beecbcb38 // indirect
-	k8s.io/utils v0.0.0-20240902221715-702e33fdd3c3 // indirect
+	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.30.3 // indirect
+	sigs.k8s.io/gateway-api v1.1.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect

@@ -27,6 +27,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        - name: PKI_PATH
+          value: {{ quote .Values.controllerManager.manager.env.pkiPath }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
@@ -52,12 +54,17 @@ spec:
         - mountPath: /run/libvirt/libvirt-sock
           name: libvirt-sock
           readOnly: true
+        - mountPath: /run/libvirt/libvirt-admin-sock
+          name: libvirt-admin-sock
+          readOnly: true
         - mountPath: /var/run/dbus/system_bus_socket
           name: systemd-sock
           readOnly: true
         - mountPath: /etc/os-release
           name: os-release
           readOnly: true
+        - mountPath: /pki
+          name: pki
       securityContext:
         runAsNonRoot: true
         supplementalGroups:
@@ -70,6 +77,10 @@ spec:
           type: Socket
         name: libvirt-sock
       - hostPath:
+          path: /run/libvirt/libvirt-admin-sock
+          type: Socket
+        name: libvirt-admin-sock
+      - hostPath:
           path: /run/dbus/system_bus_socket
           type: Socket
         name: systemd-sock
@@ -77,3 +88,7 @@ spec:
           path: /etc/os-release
           type: File
         name: os-release
+      - hostPath:
+          path: /var/lib/kvm-node-agent
+          type: Directory
+        name: pki

@@ -44,6 +44,9 @@ var _ Interface = &InterfaceMock{}
 //			ReconcileSysUpdateFunc: func(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error) {
 //				panic("mock out the ReconcileSysUpdate method")
 //			},
+//			ReloadUnitFunc: func(ctx context.Context, unit string) (int, error) {
+//				panic("mock out the ReloadUnit method")
+//			},
 //			StartUnitFunc: func(ctx context.Context, unit string) (int, error) {
 //				panic("mock out the StartUnit method")
 //			},
@@ -77,6 +80,9 @@ type InterfaceMock struct {
 
 	// ReconcileSysUpdateFunc mocks the ReconcileSysUpdate method.
 	ReconcileSysUpdateFunc func(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error)
+
+	// ReloadUnitFunc mocks the ReloadUnit method.
+	ReloadUnitFunc func(ctx context.Context, unit string) (int, error)
 
 	// StartUnitFunc mocks the StartUnit method.
 	StartUnitFunc func(ctx context.Context, unit string) (int, error)
@@ -125,6 +131,13 @@ type InterfaceMock struct {
 			// Hv is the hv argument value.
 			Hv *v1alpha1.Hypervisor
 		}
+		// ReloadUnit holds details about calls to the ReloadUnit method.
+		ReloadUnit []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Unit is the unit argument value.
+			Unit string
+		}
 		// StartUnit holds details about calls to the StartUnit method.
 		StartUnit []struct {
 			// Ctx is the ctx argument value.
@@ -141,6 +154,7 @@ type InterfaceMock struct {
 	lockIsConnected            sync.RWMutex
 	lockListUnitsByNames       sync.RWMutex
 	lockReconcileSysUpdate     sync.RWMutex
+	lockReloadUnit             sync.RWMutex
 	lockStartUnit              sync.RWMutex
 }
 
@@ -398,6 +412,42 @@ func (mock *InterfaceMock) ReconcileSysUpdateCalls() []struct {
 	mock.lockReconcileSysUpdate.RLock()
 	calls = mock.calls.ReconcileSysUpdate
 	mock.lockReconcileSysUpdate.RUnlock()
+	return calls
+}
+
+// ReloadUnit calls ReloadUnitFunc.
+func (mock *InterfaceMock) ReloadUnit(ctx context.Context, unit string) (int, error) {
+	if mock.ReloadUnitFunc == nil {
+		panic("InterfaceMock.ReloadUnitFunc: method is nil but Interface.ReloadUnit was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Unit string
+	}{
+		Ctx:  ctx,
+		Unit: unit,
+	}
+	mock.lockReloadUnit.Lock()
+	mock.calls.ReloadUnit = append(mock.calls.ReloadUnit, callInfo)
+	mock.lockReloadUnit.Unlock()
+	return mock.ReloadUnitFunc(ctx, unit)
+}
+
+// ReloadUnitCalls gets all the calls that were made to ReloadUnit.
+// Check the length with:
+//
+//	len(mockedInterface.ReloadUnitCalls())
+func (mock *InterfaceMock) ReloadUnitCalls() []struct {
+	Ctx  context.Context
+	Unit string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Unit string
+	}
+	mock.lockReloadUnit.RLock()
+	calls = mock.calls.ReloadUnit
+	mock.lockReloadUnit.RUnlock()
 	return calls
 }
 

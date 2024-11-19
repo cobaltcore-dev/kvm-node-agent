@@ -55,6 +55,12 @@ spec:
           spec:
             description: HypervisorSpec defines the desired state of Hypervisor
             properties:
+              createCertManagerCertificate:
+                default: false
+                description: |-
+                  Require to issue a certificate from cert-manager for the hypervisor, to be used for
+                  secure communication with the libvirt API.
+                type: boolean
               evacuateOnReboot:
                 default: true
                 description: EvacuateOnReboot request an evacuation of all instances
@@ -70,6 +76,7 @@ spec:
                   system version.
                 type: string
             required:
+            - createCertManagerCertificate
             - evacuateOnReboot
             - reboot
             type: object

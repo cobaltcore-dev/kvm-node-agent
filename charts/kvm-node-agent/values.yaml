@@ -7,6 +7,8 @@ controllerManager:
       capabilities:
         drop:
         - ALL
+    env:
+      pkiPath: /pki
     image:
       repository: keppel.eu-de-1.cloud.sap/ccloud/kvm-node-agent
       tag: latest

@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -33,7 +32,7 @@ import (
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
 	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/emulator"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/evacuation"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
@@ -43,9 +42,10 @@ import (
 // HypervisorReconciler reconciles a Hypervisor object
 type HypervisorReconciler struct {
 	client.Client
-	Scheme           *runtime.Scheme
-	libvirt          libvirt.Interface
-	systemd          systemd.Interface
+	Scheme  *runtime.Scheme
+	Systemd systemd.Interface
+	Libvirt libvirt.Interface
+
 	osDescriptor     *systemd.Descriptor
 	evacuateOnReboot bool
 }
@@ -61,6 +61,7 @@ const (
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=evictions,verbs=get;create
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations,verbs=get;list;watch;create
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create
 
 func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logger.FromContext(ctx, "controller", "hypervisor")
@@ -81,11 +82,11 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if hypervisor.Spec.EvacuateOnReboot != r.evacuateOnReboot {
 		if hypervisor.Spec.EvacuateOnReboot {
 			e := &evacuation.EvictionController{Client: r.Client}
-			if err := r.systemd.EnableShutdownInhibit(ctx, e.EvictCurrentHost); err != nil {
+			if err := r.Systemd.EnableShutdownInhibit(ctx, e.EvictCurrentHost); err != nil {
 				return ctrl.Result{}, err
 			}
 		} else {
-			if err := r.systemd.DisableShutdownInhibit(); err != nil {
+			if err := r.Systemd.DisableShutdownInhibit(); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
@@ -100,12 +101,12 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	})
 
 	// ====================================================================================================
-	// libvirt
+	// Libvirt
 	// ====================================================================================================
 
-	// Try (re)connect to libvirt, update status
-	if err := r.libvirt.Connect(); err != nil {
-		log.Error(err, "unable to connect to libvirt system bus")
+	// Try (re)connect to Libvirt, update status
+	if err := r.Libvirt.Connect(); err != nil {
+		log.Error(err, "unable to connect to Libvirt system bus")
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 			Type:    LibVirtType,
 			Status:  metav1.ConditionFalse,
@@ -113,7 +114,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			Reason:  "ConnectFailed",
 		})
 	} else {
-		hypervisor.Status.LibVirtVersion = r.libvirt.GetVersion()
+		hypervisor.Status.LibVirtVersion = r.Libvirt.GetVersion()
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 			Type:   LibVirtType,
 			Status: metav1.ConditionTrue,
@@ -121,17 +122,17 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		})
 
 		// Update hypervisor instances
-		hypervisor.Status.NumInstances = r.libvirt.GetNumInstances()
-		hypervisor.Status.Instances, _ = r.libvirt.GetInstances()
+		hypervisor.Status.NumInstances = r.Libvirt.GetNumInstances()
+		hypervisor.Status.Instances, _ = r.Libvirt.GetInstances()
 	}
 
 	// ====================================================================================================
-	// systemd
+	// Systemd
 	// ====================================================================================================
 
-	if r.systemd.IsConnected() {
+	if r.Systemd.IsConnected() {
 		var unitNames = []string{"libvirtd.service", "openvswitch-switch.service"}
-		units, err := r.systemd.ListUnitsByNames(ctx, unitNames)
+		units, err := r.Systemd.ListUnitsByNames(ctx, unitNames)
 		if err != nil {
 			log.Error(err, "unable to list units")
 			return ctrl.Result{}, err
@@ -206,7 +207,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 
 		// Reconcile operating system update
-		running, err := r.systemd.ReconcileSysUpdate(ctx, &hypervisor)
+		running, err := r.Systemd.ReconcileSysUpdate(ctx, &hypervisor)
 
 		// failed
 		if err != nil {
@@ -250,6 +251,12 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		hypervisor.Status.Update.InProgress = running
 	}
 
+	if hypervisor.Spec.CreateCertManagerCertificate {
+		if err := certificates.EnsureCertificate(ctx, r.Client, sys.Hostname); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
 	meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 		Type:   "Ready",
 		Status: metav1.ConditionTrue,
@@ -267,28 +274,15 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
 	log := logger.Log.WithName("HypervisorReconciler")
-	emulate := os.Getenv("EMULATE")
+
+	// Initialize Libvirt connection
+	if err := r.Libvirt.Connect(); err != nil {
+		log.Error(err, "unable to connect to Libvirt system bus, reconnecting on reconcillation")
+	}
 
 	var err error
-	if emulate != "" {
-		r.libvirt = emulator.NewLibVirtEmulator(ctx)
-		r.systemd = emulator.NewSystemdEmulator(ctx)
-	} else {
-		r.libvirt = libvirt.NewLibVirt(mgr.GetClient())
-		r.systemd, err = systemd.NewSystemd(ctx)
-		if err != nil {
-			return fmt.Errorf("unable to connect to systemd: %w", err)
-		}
-	}
-
-	// Initialize libvirt connection
-	if err := r.libvirt.Connect(); err != nil {
-		log.Error(err, "unable to connect to libvirt system bus, reconnecting on reconcillation")
-	}
-
-	r.osDescriptor, err = r.systemd.Describe(ctx)
-	if err != nil {
-		return fmt.Errorf("unable to get systemd hostname describe(): %w", err)
+	if r.osDescriptor, err = r.Systemd.Describe(ctx); err != nil {
+		return fmt.Errorf("unable to get Systemd hostname describe(): %w", err)
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).

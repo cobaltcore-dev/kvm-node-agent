@@ -60,6 +60,8 @@ type SystemdConn struct {
 	fd int
 }
 
+var systemdConn *SystemdConn
+
 func dialBus() (*dbus.Conn, error) {
 	conn, err := dbus.SystemBusPrivate()
 	if err != nil {
@@ -82,6 +84,10 @@ func dialBus() (*dbus.Conn, error) {
 }
 
 func NewSystemd(ctx context.Context) (*SystemdConn, error) {
+	if systemdConn != nil {
+		return systemdConn, nil
+	}
+
 	log := logger.FromContext(ctx)
 
 	log.Info("Connecting to systemd")
@@ -96,14 +102,15 @@ func NewSystemd(ctx context.Context) (*SystemdConn, error) {
 		return nil, fmt.Errorf("failed to connect to dbus: %w", err)
 	}
 
-	return &SystemdConn{
+	systemdConn = &SystemdConn{
 		conn:                     conn,
 		login1conn:               dbusConn,
 		login1obj:                dbusConn.Object("org.freedesktop.login1", "/org/freedesktop/login1"),
 		prepareForShutdownSignal: make(chan *dbus.Signal, 1),
 		shutdownCh:               make(chan bool),
 		fd:                       -1,
-	}, nil
+	}
+	return systemdConn, nil
 }
 
 // EnableShutdownInhibit blocks shutdown by using systemd inhibition lock,
@@ -234,6 +241,10 @@ func (s *SystemdConn) GetUnitByName(ctx context.Context, unit string) (systemd.U
 func (s *SystemdConn) StartUnit(ctx context.Context, unit string) (int, error) {
 
 	return s.conn.StartUnitContext(ctx, unit, "replace", nil)
+}
+
+func (s *SystemdConn) ReloadUnit(ctx context.Context, unit string) (int, error) {
+	return s.conn.ReloadUnitContext(ctx, unit, "replace", nil)
 }
 
 var ErrFailed = errors.New("update has failed")
