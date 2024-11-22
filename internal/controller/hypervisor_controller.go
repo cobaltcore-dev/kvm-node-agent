@@ -31,6 +31,8 @@ import (
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
 	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/emulator"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/evacuation"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
@@ -44,6 +46,7 @@ type HypervisorReconciler struct {
 	systemd                systemd.Interface
 	libvirtVersion         string
 	OperatingSystemVersion string
+	evacuateOnReboot       bool
 }
 
 const (
@@ -54,6 +57,7 @@ const (
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/finalizers,verbs=update
+// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=evictions,verbs=get;create
 
 func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logger.FromContext(ctx, "controller", "hypervisor")
@@ -69,6 +73,20 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err := r.Get(ctx, req.NamespacedName, &hypervisor); err != nil {
 		// ignore not found errors, could be deleted
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if hypervisor.Spec.EvacuateOnReboot != r.evacuateOnReboot {
+		if hypervisor.Spec.EvacuateOnReboot {
+			e := &evacuation.EvictionController{Client: r.Client}
+			if err := r.systemd.EnableShutdownInhibit(ctx, e.EvictCurrentHost); err != nil {
+				return ctrl.Result{}, err
+			}
+		} else {
+			if err := r.systemd.DisableShutdownInhibit(); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		r.evacuateOnReboot = hypervisor.Spec.EvacuateOnReboot
 	}
 
 	meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
@@ -250,8 +268,8 @@ func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	var err error
 	if emulate != "" {
-		r.libvirt = libvirt.NewLibVirtEmulator(ctx)
-		r.systemd = systemd.NewSystemdEmulator(ctx)
+		r.libvirt = emulator.NewLibVirtEmulator(ctx)
+		r.systemd = emulator.NewSystemdEmulator(ctx)
 	} else {
 		r.libvirt = libvirt.NewLibVirt()
 		r.systemd, err = systemd.NewSystemd(ctx)

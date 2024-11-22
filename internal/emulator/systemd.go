@@ -14,19 +14,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package systemd
+
+package emulator
 
 import (
 	"context"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/coreos/go-systemd/v22/dbus"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
 )
 
-func NewSystemdEmulator(ctx context.Context) *InterfaceMock {
+func NewSystemdEmulator(ctx context.Context) *systemd.InterfaceMock {
 	log := logger.FromContext(ctx, "controller", "systemd-emulator")
-	mockedInterface := &InterfaceMock{
+	mockedInterface := &systemd.InterfaceMock{
 		CloseFunc: func() {
 			log.Info("CloseFunc called")
 		},
@@ -49,6 +52,14 @@ func NewSystemdEmulator(ctx context.Context) *InterfaceMock {
 		StartUnitFunc: func(ctx context.Context, unit string) (int, error) {
 			log.Info("GetUnitByNameFunc called")
 			return 0, nil
+		},
+		EnableShutdownInhibitFunc: func(ctx context.Context, cb func(ctx context.Context) error) error {
+			log.Info("GetUnitByNameFunc called")
+			return nil
+		},
+		DisableShutdownInhibitFunc: func() error {
+			log.Info("GetUnitByNameFunc called")
+			return nil
 		},
 	}
 	return mockedInterface
