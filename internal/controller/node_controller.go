@@ -20,6 +20,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -32,7 +33,6 @@ import (
 
 	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // NodeReconciler reconciles a Node object
@@ -40,15 +40,6 @@ type NodeReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
-
-var histogramMetric = prometheus.NewHistogramVec(
-	prometheus.HistogramOpts{
-		Name:    "node_reconcile_duration",
-		Help:    "Duration of node reconcile.",
-		Buckets: []float64{0.1, .25, .5, 0.75, 1, 2.5, 5, 10},
-	},
-	[]string{"node"},
-)
 
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=nodes/status,verbs=get
@@ -72,18 +63,21 @@ func (r *NodeReconciler) getNode(ctx context.Context) (*v1.Node, error) {
 
 }
 
-func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	log := logger.FromContext(ctx, "controller", "node")
 
 	if req.Name != sys.Hostname {
 		// only reconcile the node I am running on
 		return ctrl.Result{}, nil
 	}
-
+	defer func(nodeName string) {
+		if err != nil {
+			counterMetric.WithLabelValues(nodeName, strings.Split(err.Error(), ":")[0]).Inc()
+		} else {
+			counterMetric.WithLabelValues(nodeName, "").Inc()
+		}
+	}(req.Name)
 	start := time.Now()
-	defer func() {
-		histogramMetric.WithLabelValues(req.Name).Observe(time.Since(start).Seconds())
-	}()
 
 	namespace := req.Namespace
 	if namespace == "" {
@@ -123,6 +117,7 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			return ctrl.Result{}, fmt.Errorf("failed creating hypervisor: %w", err)
 		}
 	}
+	histogramMetric.WithLabelValues(req.Name).Observe(time.Since(start).Seconds())
 	return ctrl.Result{}, nil
 }
 
@@ -131,8 +126,4 @@ func (r *NodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1.Node{}).
 		Complete(r)
-}
-
-func init() {
-	_ = prometheus.Register(histogramMetric)
 }

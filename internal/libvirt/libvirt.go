@@ -21,12 +21,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/digitalocean/go-libvirt"
 	"github.com/digitalocean/go-libvirt/socket/dialers"
 	"github.com/google/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 )
 
 type LibVirt struct {
@@ -39,7 +38,11 @@ func NewLibVirt() *LibVirt {
 		socketPath = "/run/libvirt/libvirt-sock"
 	}
 	log.Log.Info("Using libvirt unix domain socket", "socket", socketPath)
-	return &LibVirt{libvirt.NewWithDialer(dialers.NewLocal(dialers.WithSocket(socketPath)))}
+	l := &LibVirt{libvirt.NewWithDialer(dialers.NewLocal(dialers.WithSocket(socketPath)))}
+	defer func() {
+		l.statsCollector()
+	}()
+	return l
 }
 
 func (l *LibVirt) Connect() error {
@@ -62,7 +65,7 @@ func (l *LibVirt) Close() error {
 
 func (l *LibVirt) GetInstances() ([]v1alpha1.Instance, error) {
 	var instances []v1alpha1.Instance
-
+	//expose everything what is possible on connectlistdomnainsactive for prometheus
 	flags := []libvirt.ConnectListAllDomainsFlags{libvirt.ConnectListDomainsActive, libvirt.ConnectListDomainsInactive}
 	for _, flag := range flags {
 		domains, _, err := l.virt.ConnectListAllDomains(1, flag)

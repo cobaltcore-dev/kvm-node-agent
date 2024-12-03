@@ -18,16 +18,46 @@ limitations under the License.
 package controller
 
 import (
+	"context"
+	"strings"
+	"testing"
+
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var _ = Describe("Node Controller", func() {
 	Context("When reconciling a resource", func() {
+		const resourceName = "test-resource"
+		ctx := context.Background()
 
+		typeNamespacedName := types.NamespacedName{
+			Name:      resourceName,
+			Namespace: "default", // TODO(user):Modify as needed
+		}
 		It("should successfully reconcile the resource", func() {
-
+			controllerReconciler := &NodeReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+			}
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
 			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
 			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
 	})
 })
+
+func testingFunction() string {
+	return strings.Split("test", ":")[0]
+}
+
+func TestXxx(t *testing.T) {
+	err := testingFunction()
+	assert.Equal(t, err, "test")
+}

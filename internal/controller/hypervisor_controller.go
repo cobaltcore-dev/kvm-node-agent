@@ -21,6 +21,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -55,7 +57,7 @@ const (
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/finalizers,verbs=update
 
-func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	log := logger.FromContext(ctx, "controller", "hypervisor")
 
 	// only reconcile the node I am running on
@@ -66,7 +68,11 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	start := time.Now()
 	defer func() {
-		histogramMetric.WithLabelValues(req.Name).Observe(time.Since(start).Seconds())
+		if err != nil {
+			counterMetric.WithLabelValues(req.Name, strings.Split(err.Error(), ":")[0]).Inc()
+		} else {
+			counterMetric.WithLabelValues(req.Name, "").Inc()
+		}
 	}()
 
 	log.Info("Reconcile", "name", req.Name, "namespace", req.Namespace)
@@ -105,6 +111,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 				Message: err.Error(),
 				Reason:  "ConnectFailed",
 			})
+			return ctrl.Result{}, fmt.Errorf("unable to connect libvirt: %w", err)
 		} else {
 			if r.libvirtVersion, err = r.libvirt.GetVersion(); err != nil {
 				log.Error(err, "unable to fetch libvirt version")
@@ -125,7 +132,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		hypervisor.Status.Instances, err = r.libvirt.GetInstances()
 		if err != nil {
 			log.Error(err, "unable to list instances")
-			return ctrl.Result{}, err
+			return ctrl.Result{}, fmt.Errorf("unable to list instances: %w", err)
 		}
 		hypervisor.Status.NumInstances = len(hypervisor.Status.Instances)
 	}
@@ -135,7 +142,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		units, err := r.systemd.ListUnitsByNames(ctx, unitNames)
 		if err != nil {
 			log.Error(err, "unable to list units")
-			return ctrl.Result{}, err
+			return ctrl.Result{}, fmt.Errorf("unable to list units: %w", err)
 		}
 
 		var unitReasonsMap = map[string]string{
@@ -178,14 +185,13 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			hypervisor.Status.Update.Retry = 3
 			if err := r.Status().Update(ctx, &hypervisor); err != nil {
 				log.Error(err, "unable to update hypervisor status spec")
-				return ctrl.Result{}, err
+				return ctrl.Result{}, fmt.Errorf("unable to update hypervisor status spec: %w", err)
 			}
 			hypervisor.Spec.OperatingSystemVersion = ""
 			if err := r.Update(ctx, &hypervisor); err != nil {
 				log.Error(err, "unable to update hypervisor spec")
-				return ctrl.Result{}, err
+				return ctrl.Result{}, fmt.Errorf("unable to update hypervisor spec: %w", err)
 			}
-
 			// Todo: include some timeout?
 			return ctrl.Result{}, nil
 		}
@@ -243,21 +249,28 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err := r.Status().Update(ctx, &hypervisor); err != nil {
 		log.Error(err, "unable to update hypervisor status")
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("unable to update hypervisor status: %w", err)
 	}
+	histogramMetric.WithLabelValues(req.Name).Observe(time.Since(start).Seconds())
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
-	r.libvirt = libvirt.NewLibVirt()
+	emulate := os.Getenv("EMULATE")
 	r.OperatingSystemVersion = sys.GetOSVersion(ctx)
 
 	var err error
-	r.systemd, err = systemd.NewSystemd(ctx)
-	if err != nil {
-		return fmt.Errorf("unable to connect to systemd: %w", err)
+	if emulate != "" {
+		r.libvirt = libvirt.NewLibVirtEmulator(ctx)
+		r.systemd = systemd.NewSystemdEmulator(ctx)
+	} else {
+		r.libvirt = libvirt.NewLibVirt()
+		r.systemd, err = systemd.NewSystemd(ctx)
+		if err != nil {
+			return fmt.Errorf("unable to connect to systemd: %w", err)
+		}
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
