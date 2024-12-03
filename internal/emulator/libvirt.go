@@ -14,18 +14,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package libvirt
+
+package emulator
 
 import (
 	"context"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
 )
 
-func NewLibVirtEmulator(ctx context.Context) *InterfaceMock {
+func NewLibVirtEmulator(ctx context.Context) *libvirt.InterfaceMock {
 	log := logger.FromContext(ctx, "controller", "libvirt-emulator")
-	mockedInterface := &InterfaceMock{
+	mockedInterface := &libvirt.InterfaceMock{
 		CloseFunc: func() error {
 			log.Info("CloseFunc called")
 			return nil

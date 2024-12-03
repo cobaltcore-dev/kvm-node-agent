@@ -21,6 +21,13 @@ rules:
 - apiGroups:
   - kvm.cloud.sap
   resources:
+  - evictions
+  verbs:
+  - create
+  - get
+- apiGroups:
+  - kvm.cloud.sap
+  resources:
   - hypervisors
   verbs:
   - create
