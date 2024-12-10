@@ -22,8 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,15 +67,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		// only reconcile the node I am running on
 		return ctrl.Result{}, nil
 	}
-
-	start := time.Now()
-	defer func() {
-		if err != nil {
-			counterMetric.WithLabelValues(req.Name, strings.Split(err.Error(), ":")[0]).Inc()
-		} else {
-			counterMetric.WithLabelValues(req.Name, "").Inc()
-		}
-	}()
 
 	log.Info("Reconcile", "name", req.Name, "namespace", req.Namespace)
 
@@ -269,7 +258,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		log.Error(err, "unable to update hypervisor status")
 		return ctrl.Result{}, fmt.Errorf("unable to update hypervisor status: %w", err)
 	}
-	histogramMetric.WithLabelValues(req.Name).Observe(time.Since(start).Seconds())
 	return ctrl.Result{}, nil
 }
 
