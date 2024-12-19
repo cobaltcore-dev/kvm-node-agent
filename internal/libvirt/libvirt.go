@@ -39,9 +39,8 @@ func NewLibVirt() *LibVirt {
 	}
 	log.Log.Info("Using libvirt unix domain socket", "socket", socketPath)
 	l := &LibVirt{libvirt.NewWithDialer(dialers.NewLocal(dialers.WithSocket(socketPath)))}
-	defer func() {
-		l.statsCollector()
-	}()
+	go l.statsCollector()
+
 	return l
 }
 

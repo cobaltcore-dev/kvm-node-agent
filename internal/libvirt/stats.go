@@ -130,8 +130,11 @@ func (l *LibVirt) collectBlockStats(domain libvirt.Domain) {
 	if err != nil {
 		return
 	}
-
+	if stats == nil {
+		return
+	}
 	statsBlockMap := make(map[string]*blockStats)
+
 	for _, par := range stats[0].Params {
 		data := strings.Split(par.Field, ".")
 		if len(data) < 3 {

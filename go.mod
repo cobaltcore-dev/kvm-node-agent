@@ -19,7 +19,6 @@ require (
 	k8s.io/api v0.31.1
 	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v0.31.1
-	libvirt.org/go/libvirt v1.10009.0
 	sigs.k8s.io/controller-runtime v0.19.0
 )
 
