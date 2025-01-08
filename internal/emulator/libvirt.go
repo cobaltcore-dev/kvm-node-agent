@@ -22,6 +22,8 @@ import (
 
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
+	golibvirt "github.com/digitalocean/go-libvirt"
+
 	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
 )
@@ -36,6 +38,14 @@ func NewLibVirtEmulator(ctx context.Context) *libvirt.InterfaceMock {
 		ConnectFunc: func() error {
 			log.Info("Connect Func called")
 			return nil
+		},
+		GetDomainJobInfoFunc: func(domain golibvirt.Domain, migration *v1alpha1.Migration) error {
+			log.Info("GetDomainJobInfoFunc Func called")
+			return nil
+		},
+		GetDomainsActiveFunc: func() ([]golibvirt.Domain, error) {
+			log.Info("GetDomainsActiveFunc Func called")
+			return []golibvirt.Domain{}, nil
 		},
 		GetInstancesFunc: func() ([]v1alpha1.Instance, error) {
 			log.Info("GetInstancesFunc Func called")

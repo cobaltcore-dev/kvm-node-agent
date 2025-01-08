@@ -51,3 +51,15 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - kvm.cloud.sap
+  resources:
+  - migrations
+  verbs:
+  - create
+- apiGroups:
+  - kvm.cloud.sap
+  resources:
+  - migrations/status
+  verbs:
+  - update

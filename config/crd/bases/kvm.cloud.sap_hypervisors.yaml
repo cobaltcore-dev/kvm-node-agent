@@ -150,12 +150,16 @@ spec:
                     id:
                       description: Represents the instance ID (uuidv4).
                       type: string
+                    migrating:
+                      description: Migrating
+                      type: boolean
                     name:
                       description: Represents the instance name.
                       type: string
                   required:
                   - active
                   - id
+                  - migrating
                   - name
                   type: object
                 type: array

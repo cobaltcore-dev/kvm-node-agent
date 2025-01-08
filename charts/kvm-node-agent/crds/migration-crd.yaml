@@ -1,0 +1,141 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: migrations.kvm.cloud.sap
+spec:
+  group: kvm.cloud.sap
+  names:
+    kind: Migration
+    listKind: MigrationList
+    plural: migrations
+    singular: migration
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.type
+      name: Type
+      type: string
+    - jsonPath: .status.operation
+      name: Operation
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Started
+      type: date
+    - jsonPath: .status.timeElapsed
+      name: Elapsed
+      type: string
+    - jsonPath: .status.timeRemaining
+      name: Remaining
+      type: string
+    - jsonPath: .status.dataTotal
+      name: Data Total
+      type: string
+    - jsonPath: .status.dataProcessed
+      name: Data Processed
+      type: string
+    - jsonPath: .status.dataRemaining
+      name: Data Remaining
+      type: string
+    - jsonPath: .status.memBps
+      name: Memory Bps
+      type: string
+    - jsonPath: .status.memDirtyRate
+      name: Memory Dirty Rate
+      type: string
+    - jsonPath: .status.memIteration
+      name: Memory Iteration
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Migration is the Schema for the migrations API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: MigrationSpec defines the desired state of Migration.
+            type: object
+          status:
+            description: MigrationStatus defines the observed state of Migration.
+            properties:
+              autoConvergeThrottle:
+                type: string
+              dataProcessed:
+                type: string
+              dataRemaining:
+                type: string
+              dataTotal:
+                type: string
+              diskBps:
+                type: string
+              diskProcessed:
+                type: string
+              diskRemaining:
+                type: string
+              diskTotal:
+                type: string
+              downtime:
+                type: string
+              errMsg:
+                type: string
+              memBps:
+                type: string
+              memConstant:
+                format: int64
+                type: integer
+              memDirtyRate:
+                type: string
+              memIteration:
+                format: int64
+                type: integer
+              memNormal:
+                format: int64
+                type: integer
+              memNormalBytes:
+                type: string
+              memPageSize:
+                type: string
+              memPostcopyRequests:
+                format: int64
+                type: integer
+              memProcessed:
+                type: string
+              memRemaining:
+                type: string
+              memTotal:
+                type: string
+              operation:
+                type: string
+              setupTime:
+                type: string
+              timeElapsed:
+                type: string
+              timeRemaining:
+                type: string
+              type:
+                type: string
+            required:
+            - type
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
