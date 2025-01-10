@@ -14,6 +14,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.host
+      name: Host
+      type: string
     - jsonPath: .status.type
       name: Type
       type: string
@@ -95,6 +98,8 @@ spec:
                 type: string
               errMsg:
                 type: string
+              host:
+                type: string
               memBps:
                 type: string
               memConstant:
@@ -132,6 +137,7 @@ spec:
               type:
                 type: string
             required:
+            - host
             - type
             type: object
         type: object

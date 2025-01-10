@@ -30,6 +30,7 @@ type MigrationSpec struct {
 
 // MigrationStatus defines the observed state of Migration.
 type MigrationStatus struct {
+	Host                 string `json:"host"`
 	Type                 string `json:"type"`
 	ErrMsg               string `json:"errMsg,omitempty"`
 	AutoConvergeThrottle string `json:"autoConvergeThrottle,omitempty"`
@@ -60,6 +61,7 @@ type MigrationStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.status.host`
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.status.type`
 // +kubebuilder:printcolumn:name="Operation",type=string,JSONPath=`.status.operation`
 // +kubebuilder:printcolumn:name="Started",type=date,JSONPath=`.metadata.creationTimestamp`

@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 )
 
 const (
@@ -122,6 +123,8 @@ func (l *LibVirt) GetDomainJobInfo(domain libvirt.Domain, migration *v1alpha1.Mi
 	if err != nil {
 		return err
 	}
+
+	migration.Status.Host = sys.Hostname
 
 	switch rType {
 	case VIR_DOMAIN_JOB_NONE:

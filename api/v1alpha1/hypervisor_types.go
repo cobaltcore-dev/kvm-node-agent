@@ -50,9 +50,6 @@ type Instance struct {
 
 	// Represents the instance state.
 	Active bool `json:"active"`
-
-	// Migrating
-	Migrating bool `json:"migrating"`
 }
 
 type HyperVisorUpdateStatus struct {
