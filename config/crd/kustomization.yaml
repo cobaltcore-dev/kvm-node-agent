@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/kvm.cloud.sap_hypervisors.yaml
+- bases/kvm.cloud.sap_migrations.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

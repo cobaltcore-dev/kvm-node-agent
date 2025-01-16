@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/coreos/go-systemd/v22/dbus"
+	golibvirt "github.com/digitalocean/go-libvirt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -85,6 +86,12 @@ var _ = Describe("Hypervisor Controller", func() {
 					},
 					ConnectFunc: func() error {
 						return nil
+					},
+					GetDomainJobInfoFunc: func(domain golibvirt.Domain, migration *kvmv1alpha1.Migration) error {
+						return nil
+					},
+					GetDomainsActiveFunc: func() ([]golibvirt.Domain, error) {
+						return []golibvirt.Domain{}, nil
 					},
 					GetInstancesFunc: func() ([]kvmv1alpha1.Instance, error) {
 						return []kvmv1alpha1.Instance{

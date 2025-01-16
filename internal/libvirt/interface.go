@@ -19,7 +19,11 @@ limitations under the License.
 
 package libvirt
 
-import "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+import (
+	"github.com/digitalocean/go-libvirt"
+
+	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+)
 
 type Interface interface {
 	// Connect connects to the libvirt daemon.
@@ -30,6 +34,12 @@ type Interface interface {
 
 	// GetInstances returns a list of instances.
 	GetInstances() ([]v1alpha1.Instance, error)
+
+	// GetDomainsActive returns all active domains.
+	GetDomainsActive() ([]libvirt.Domain, error)
+
+	// GetDomainJobInfo returns the job information for a domain.
+	GetDomainJobInfo(domain libvirt.Domain, migration *v1alpha1.Migration) error
 
 	// IsConnected returns true if the connection to the libvirt daemon is open.
 	IsConnected() bool

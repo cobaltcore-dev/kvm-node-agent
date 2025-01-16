@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +35,7 @@ import (
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/emulator"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/evacuation"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/migration"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
 )
@@ -47,6 +49,7 @@ type HypervisorReconciler struct {
 	libvirtVersion         string
 	OperatingSystemVersion string
 	evacuateOnReboot       bool
+	migrationJobs          map[string]context.Context
 }
 
 const (
@@ -58,6 +61,8 @@ const (
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/finalizers,verbs=update
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=evictions,verbs=get;create
+// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations,verbs=create
+// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations/status,verbs=update
 
 func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logger.FromContext(ctx, "controller", "hypervisor")
@@ -140,6 +145,59 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return ctrl.Result{}, err
 		}
 		hypervisor.Status.NumInstances = len(hypervisor.Status.Instances)
+
+		domains, err := r.libvirt.GetDomainsActive()
+		if err != nil {
+			log.Error(err, "unable to list active domains")
+			return ctrl.Result{}, err
+		}
+		m := kvmv1alpha1.Migration{}
+		for _, domain := range domains {
+			if err = r.libvirt.GetDomainJobInfo(domain, &m); err != nil {
+				if libvirt.DomainNotFound(err) {
+					continue
+				}
+				return ctrl.Result{}, err
+			}
+
+			// ensure migration object exists
+			migr := kvmv1alpha1.Migration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      libvirt.GetOpenstackUUID(domain),
+					Namespace: "monsoon3",
+				},
+			}
+			if err = r.Create(ctx, &migr); client.IgnoreAlreadyExists(err) != nil {
+				return ctrl.Result{}, err
+			}
+
+			// in case of migration, start migration watch
+			if m.Status.Type == "bounded" || m.Status.Type == "unbounded" {
+				// check if migration watch is already running
+				if _, ok := r.migrationJobs[domain.Name]; ok {
+					if r.migrationJobs[domain.Name].Err() != nil {
+						log.Error(r.migrationJobs[domain.Name].Err(), "migration job failed, restarting")
+					} else {
+						// migration is still running and being monitored
+						continue
+					}
+				}
+
+				// start migration watch
+				timeoutCtx, cancel := context.WithTimeout(ctx, 60*time.Minute)
+				r.migrationJobs[domain.Name] = timeoutCtx
+				go migration.WatchMigrationLoop(timeoutCtx, cancel, r.Client, r.libvirt, domain)
+			} else {
+				// migration completed, remove from migrationJobs, eventually update migration status
+				delete(r.migrationJobs, domain.Name)
+
+				if err = migration.PatchMigration(ctx, r.Client, r.libvirt, domain); err != nil {
+					if !errors.Is(err, migration.Finished) {
+						log.Error(err, "failed to update migration status")
+					}
+				}
+			}
+		}
 	}
 
 	if r.systemd.IsConnected() {
@@ -257,7 +315,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		log.Error(err, "unable to update hypervisor status")
 		return ctrl.Result{}, err
 	}
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -265,6 +323,7 @@ func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
 	emulate := os.Getenv("EMULATE")
 	r.OperatingSystemVersion = sys.GetOSVersion(ctx)
+	r.migrationJobs = make(map[string]context.Context)
 
 	var err error
 	if emulate != "" {

@@ -52,6 +52,18 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - kvm.cloud.sap
+  resources:
+  - migrations
+  verbs:
+  - create
+- apiGroups:
+  - kvm.cloud.sap
+  resources:
+  - migrations/status
+  verbs:
+  - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

@@ -22,5 +22,7 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the Project itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
+- migration_editor_role.yaml
+- migration_viewer_role.yaml
 - hypervisor_editor_role.yaml
 - hypervisor_viewer_role.yaml

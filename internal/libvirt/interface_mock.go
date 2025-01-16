@@ -5,6 +5,7 @@ package libvirt
 
 import (
 	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/digitalocean/go-libvirt"
 	"sync"
 )
 
@@ -23,6 +24,12 @@ var _ Interface = &InterfaceMock{}
 //			},
 //			ConnectFunc: func() error {
 //				panic("mock out the Connect method")
+//			},
+//			GetDomainJobInfoFunc: func(domain libvirt.Domain, migration *v1alpha1.Migration) error {
+//				panic("mock out the GetDomainJobInfo method")
+//			},
+//			GetDomainsActiveFunc: func() ([]libvirt.Domain, error) {
+//				panic("mock out the GetDomainsActive method")
 //			},
 //			GetInstancesFunc: func() ([]v1alpha1.Instance, error) {
 //				panic("mock out the GetInstances method")
@@ -46,6 +53,12 @@ type InterfaceMock struct {
 	// ConnectFunc mocks the Connect method.
 	ConnectFunc func() error
 
+	// GetDomainJobInfoFunc mocks the GetDomainJobInfo method.
+	GetDomainJobInfoFunc func(domain libvirt.Domain, migration *v1alpha1.Migration) error
+
+	// GetDomainsActiveFunc mocks the GetDomainsActive method.
+	GetDomainsActiveFunc func() ([]libvirt.Domain, error)
+
 	// GetInstancesFunc mocks the GetInstances method.
 	GetInstancesFunc func() ([]v1alpha1.Instance, error)
 
@@ -63,6 +76,16 @@ type InterfaceMock struct {
 		// Connect holds details about calls to the Connect method.
 		Connect []struct {
 		}
+		// GetDomainJobInfo holds details about calls to the GetDomainJobInfo method.
+		GetDomainJobInfo []struct {
+			// Domain is the domain argument value.
+			Domain libvirt.Domain
+			// Migration is the migration argument value.
+			Migration *v1alpha1.Migration
+		}
+		// GetDomainsActive holds details about calls to the GetDomainsActive method.
+		GetDomainsActive []struct {
+		}
 		// GetInstances holds details about calls to the GetInstances method.
 		GetInstances []struct {
 		}
@@ -73,11 +96,13 @@ type InterfaceMock struct {
 		IsConnected []struct {
 		}
 	}
-	lockClose        sync.RWMutex
-	lockConnect      sync.RWMutex
-	lockGetInstances sync.RWMutex
-	lockGetVersion   sync.RWMutex
-	lockIsConnected  sync.RWMutex
+	lockClose            sync.RWMutex
+	lockConnect          sync.RWMutex
+	lockGetDomainJobInfo sync.RWMutex
+	lockGetDomainsActive sync.RWMutex
+	lockGetInstances     sync.RWMutex
+	lockGetVersion       sync.RWMutex
+	lockIsConnected      sync.RWMutex
 }
 
 // Close calls CloseFunc.
@@ -131,6 +156,69 @@ func (mock *InterfaceMock) ConnectCalls() []struct {
 	mock.lockConnect.RLock()
 	calls = mock.calls.Connect
 	mock.lockConnect.RUnlock()
+	return calls
+}
+
+// GetDomainJobInfo calls GetDomainJobInfoFunc.
+func (mock *InterfaceMock) GetDomainJobInfo(domain libvirt.Domain, migration *v1alpha1.Migration) error {
+	if mock.GetDomainJobInfoFunc == nil {
+		panic("InterfaceMock.GetDomainJobInfoFunc: method is nil but Interface.GetDomainJobInfo was just called")
+	}
+	callInfo := struct {
+		Domain    libvirt.Domain
+		Migration *v1alpha1.Migration
+	}{
+		Domain:    domain,
+		Migration: migration,
+	}
+	mock.lockGetDomainJobInfo.Lock()
+	mock.calls.GetDomainJobInfo = append(mock.calls.GetDomainJobInfo, callInfo)
+	mock.lockGetDomainJobInfo.Unlock()
+	return mock.GetDomainJobInfoFunc(domain, migration)
+}
+
+// GetDomainJobInfoCalls gets all the calls that were made to GetDomainJobInfo.
+// Check the length with:
+//
+//	len(mockedInterface.GetDomainJobInfoCalls())
+func (mock *InterfaceMock) GetDomainJobInfoCalls() []struct {
+	Domain    libvirt.Domain
+	Migration *v1alpha1.Migration
+} {
+	var calls []struct {
+		Domain    libvirt.Domain
+		Migration *v1alpha1.Migration
+	}
+	mock.lockGetDomainJobInfo.RLock()
+	calls = mock.calls.GetDomainJobInfo
+	mock.lockGetDomainJobInfo.RUnlock()
+	return calls
+}
+
+// GetDomainsActive calls GetDomainsActiveFunc.
+func (mock *InterfaceMock) GetDomainsActive() ([]libvirt.Domain, error) {
+	if mock.GetDomainsActiveFunc == nil {
+		panic("InterfaceMock.GetDomainsActiveFunc: method is nil but Interface.GetDomainsActive was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetDomainsActive.Lock()
+	mock.calls.GetDomainsActive = append(mock.calls.GetDomainsActive, callInfo)
+	mock.lockGetDomainsActive.Unlock()
+	return mock.GetDomainsActiveFunc()
+}
+
+// GetDomainsActiveCalls gets all the calls that were made to GetDomainsActive.
+// Check the length with:
+//
+//	len(mockedInterface.GetDomainsActiveCalls())
+func (mock *InterfaceMock) GetDomainsActiveCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetDomainsActive.RLock()
+	calls = mock.calls.GetDomainsActive
+	mock.lockGetDomainsActive.RUnlock()
 	return calls
 }
 

@@ -21,4 +21,12 @@ resources:
   domain: cloud.sap
   kind: Node
   version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: cloud.sap
+  group: kvm
+  kind: Migration
+  path: github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1
+  version: v1alpha1
 version: "3"
