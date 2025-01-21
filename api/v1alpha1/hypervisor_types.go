@@ -108,7 +108,7 @@ type HypervisorStatus struct {
 	LibVirtVersion string `json:"libVirtVersion"`
 
 	// Represents the Operating System status.
-	OperatingSystem OperatingSystemStatus `json:"operatingSystem"`
+	OperatingSystem OperatingSystemStatus `json:"operatingSystem,omitempty"`
 
 	// Represents the Hypervisor update status.
 	Update HyperVisorUpdateStatus `json:"updateStatus"`

@@ -240,7 +240,6 @@ spec:
             - libVirtVersion
             - node
             - numInstances
-            - operatingSystem
             - updateStatus
             type: object
         type: object
