@@ -27,6 +27,36 @@ import (
 	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 )
 
+type Descriptor struct {
+	Hostname                   string        `json:"Hostname,omitempty"`
+	StaticHostname             string        `json:"StaticHostname,omitempty"`
+	PrettyHostname             interface{}   `json:"PrettyHostname,omitempty"`
+	DefaultHostname            string        `json:"DefaultHostname,omitempty"`
+	HostnameSource             string        `json:"HostnameSource,omitempty"`
+	IconName                   string        `json:"IconName,omitempty"`
+	Chassis                    string        `json:"Chassis,omitempty"`
+	Deployment                 interface{}   `json:"Deployment,omitempty"`
+	Location                   interface{}   `json:"Location,omitempty"`
+	KernelName                 string        `json:"KernelName,omitempty"`
+	KernelRelease              string        `json:"KernelRelease,omitempty"`
+	KernelVersion              string        `json:"KernelVersion,omitempty"`
+	OperatingSystemPrettyName  string        `json:"PrettyName,omitempty"`
+	OperatingSystemCPEName     interface{}   `json:"OperatingSystemCPEName,omitempty"`
+	OperatingSystemHomeURL     string        `json:"OperatingSystemHomeURL,omitempty"`
+	OperatingSystemReleaseData []string      `json:"OperatingSystemReleaseData,omitempty"`
+	MachineInformationData     []interface{} `json:"MachineInformationData,omitempty"`
+	HardwareVendor             string        `json:"HardwareVendor,omitempty"`
+	HardwareModel              string        `json:"HardwareModel,omitempty"`
+	HardwareSerial             string        `json:"HardwareSerial,omitempty"`
+	FirmwareVersion            string        `json:"FirmwareVersion,omitempty"`
+	FirmwareVendor             string        `json:"FirmwareVendor,omitempty"`
+	FirmwareDate               int64         `json:"FirmwareDate,omitempty"`
+	MachineID                  string        `json:"MachineID,omitempty"`
+	BootID                     string        `json:"BootID,omitempty"`
+	ProductUUID                string        `json:"ProductUUID,omitempty"`
+	VSockCID                   interface{}   `json:"VSockCID,omitempty"`
+}
+
 type Interface interface {
 	// Close closes the connection to the systemd D-Bus API.
 	Close()
@@ -51,4 +81,7 @@ type Interface interface {
 
 	// DisableShutdownInhibit disables the shutdown inhibition
 	DisableShutdownInhibit() error
+
+	// Describe returns hostname and related machine metadata
+	Describe(ctx context.Context) (*Descriptor, error)
 }

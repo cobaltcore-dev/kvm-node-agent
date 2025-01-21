@@ -14,12 +14,18 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.version
+    - jsonPath: .status.operatingSystem.prettyVersion
       name: Version
       type: string
     - jsonPath: .status.numInstances
       name: Instances
       type: integer
+    - jsonPath: .status.operatingSystem.hardwareModel
+      name: Hardware
+      type: string
+    - jsonPath: .status.operatingSystem.kernelRelease
+      name: Kernel
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
@@ -169,6 +175,44 @@ spec:
                 default: 0
                 description: Represent the num of instances
                 type: integer
+              operatingSystem:
+                description: Represents the Operating System status.
+                properties:
+                  firmwareDate:
+                    description: FirmwareDate
+                    format: date-time
+                    type: string
+                  firmwareVendor:
+                    description: FirmwareVendor
+                    type: string
+                  firmwareVersion:
+                    description: FirmwareVersion
+                    type: string
+                  hardwareModel:
+                    description: HardwareModel
+                    type: string
+                  hardwareSerial:
+                    description: HardwareSerial
+                    type: string
+                  hardwareVendor:
+                    description: HardwareVendor
+                    type: string
+                  kernelName:
+                    description: KernelName
+                    type: string
+                  kernelRelease:
+                    description: KernelRelease
+                    type: string
+                  kernelVersion:
+                    description: KernelVersion
+                    type: string
+                  prettyVersion:
+                    description: PrettyVersion
+                    type: string
+                  version:
+                    description: Represents the Operating System version.
+                    type: string
+                type: object
               specHash:
                 type: string
               updateStatus:
@@ -191,15 +235,12 @@ spec:
                 - inProgress
                 - retry
                 type: object
-              version:
-                description: Represents the Operating System version.
-                type: string
             required:
             - libVirtVersion
             - node
             - numInstances
+            - operatingSystem
             - updateStatus
-            - version
             type: object
         type: object
     served: true

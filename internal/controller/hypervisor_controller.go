@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -43,13 +44,13 @@ import (
 // HypervisorReconciler reconciles a Hypervisor object
 type HypervisorReconciler struct {
 	client.Client
-	Scheme                 *runtime.Scheme
-	libvirt                libvirt.Interface
-	systemd                systemd.Interface
-	libvirtVersion         string
-	OperatingSystemVersion string
-	evacuateOnReboot       bool
-	migrationJobs          map[string]context.Context
+	Scheme           *runtime.Scheme
+	libvirt          libvirt.Interface
+	systemd          systemd.Interface
+	libvirtVersion   string
+	osDescriptor     *systemd.Descriptor
+	evacuateOnReboot bool
+	migrationJobs    map[string]context.Context
 }
 
 const (
@@ -227,16 +228,32 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 				Message: fmt.Sprintf("%s: %s, %s", unit.Name, unit.ActiveState, unit.LoadState),
 			})
 		}
-	}
 
-	if hypervisor.Status.Version != r.OperatingSystemVersion {
-		hypervisor.Status.Version = r.OperatingSystemVersion
+		if r.osDescriptor != nil && hypervisor.Status.OperatingSystem.Version == "" {
+			for _, line := range r.osDescriptor.OperatingSystemReleaseData {
+				switch strings.Split(line, "=")[0] {
+				case "PRETTY_NAME":
+					hypervisor.Status.OperatingSystem.PrettyVersion = strings.Split(line, "=")[1]
+				case "GARDENLINUX_VERSION":
+					hypervisor.Status.OperatingSystem.Version = strings.Split(line, "=")[1]
+				}
+			}
+			hypervisor.Status.OperatingSystem.KernelVersion = r.osDescriptor.KernelVersion
+			hypervisor.Status.OperatingSystem.KernelRelease = r.osDescriptor.KernelRelease
+			hypervisor.Status.OperatingSystem.KernelName = r.osDescriptor.KernelName
+			hypervisor.Status.OperatingSystem.HardwareVendor = r.osDescriptor.HardwareVendor
+			hypervisor.Status.OperatingSystem.HardwareModel = r.osDescriptor.HardwareModel
+			hypervisor.Status.OperatingSystem.HardwareSerial = r.osDescriptor.HardwareSerial
+			hypervisor.Status.OperatingSystem.FirmwareVersion = r.osDescriptor.FirmwareVersion
+			hypervisor.Status.OperatingSystem.FirmwareVendor = r.osDescriptor.FirmwareVendor
+			hypervisor.Status.OperatingSystem.FirmwareDate = metav1.NewTime(time.UnixMicro(r.osDescriptor.FirmwareDate))
+		}
 	}
 
 	// Reconcile operating system update
 	if hypervisor.Spec.OperatingSystemVersion != "" &&
 		// only update if the version is different to current running version
-		hypervisor.Spec.OperatingSystemVersion != hypervisor.Status.Version &&
+		hypervisor.Spec.OperatingSystemVersion != hypervisor.Status.OperatingSystem.Version &&
 		// only update if the version is different to the installed version
 		hypervisor.Spec.OperatingSystemVersion != hypervisor.Status.Update.Installed {
 
@@ -322,7 +339,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
 	emulate := os.Getenv("EMULATE")
-	r.OperatingSystemVersion = sys.GetOSVersion(ctx)
 	r.migrationJobs = make(map[string]context.Context)
 
 	var err error
@@ -335,6 +351,11 @@ func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		if err != nil {
 			return fmt.Errorf("unable to connect to systemd: %w", err)
 		}
+	}
+
+	r.osDescriptor, err = r.systemd.Describe(ctx)
+	if err != nil {
+		return fmt.Errorf("unable to get systemd hostname describe(): %w", err)
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).

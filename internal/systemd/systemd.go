@@ -19,6 +19,7 @@ package systemd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -287,4 +288,26 @@ func (s *SystemdConn) ReconcileSysUpdate(ctx context.Context, hv *v1alpha1.Hyper
 	}
 
 	return status.ActiveState == ACTIVE, nil
+}
+
+func (s *SystemdConn) Describe(ctx context.Context) (*Descriptor, error) {
+	// Get descriptor
+	var res []byte
+	if err := s.login1conn.
+		Object("org.freedesktop.hostname1", "/org/freedesktop/hostname1").
+		CallWithContext(
+			ctx,
+			"org.freedesktop.hostname1.Describe",
+			0,
+		).Store(&res); err != nil {
+		return nil, fmt.Errorf("failed to fetch hostname descriptor: %w", err)
+	}
+
+	// Parse descriptor
+	var desc Descriptor
+	if err := json.Unmarshal(res, &desc); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal hostname descriptor: %w", err)
+	}
+
+	return &desc, nil
 }

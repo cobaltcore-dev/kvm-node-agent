@@ -23,6 +23,9 @@ var _ Interface = &InterfaceMock{}
 //			CloseFunc: func()  {
 //				panic("mock out the Close method")
 //			},
+//			DescribeFunc: func(ctx context.Context) (*Descriptor, error) {
+//				panic("mock out the Describe method")
+//			},
 //			DisableShutdownInhibitFunc: func() error {
 //				panic("mock out the DisableShutdownInhibit method")
 //			},
@@ -54,6 +57,9 @@ type InterfaceMock struct {
 	// CloseFunc mocks the Close method.
 	CloseFunc func()
 
+	// DescribeFunc mocks the Describe method.
+	DescribeFunc func(ctx context.Context) (*Descriptor, error)
+
 	// DisableShutdownInhibitFunc mocks the DisableShutdownInhibit method.
 	DisableShutdownInhibitFunc func() error
 
@@ -79,6 +85,11 @@ type InterfaceMock struct {
 	calls struct {
 		// Close holds details about calls to the Close method.
 		Close []struct {
+		}
+		// Describe holds details about calls to the Describe method.
+		Describe []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 		}
 		// DisableShutdownInhibit holds details about calls to the DisableShutdownInhibit method.
 		DisableShutdownInhibit []struct {
@@ -123,6 +134,7 @@ type InterfaceMock struct {
 		}
 	}
 	lockClose                  sync.RWMutex
+	lockDescribe               sync.RWMutex
 	lockDisableShutdownInhibit sync.RWMutex
 	lockEnableShutdownInhibit  sync.RWMutex
 	lockGetUnitByName          sync.RWMutex
@@ -156,6 +168,38 @@ func (mock *InterfaceMock) CloseCalls() []struct {
 	mock.lockClose.RLock()
 	calls = mock.calls.Close
 	mock.lockClose.RUnlock()
+	return calls
+}
+
+// Describe calls DescribeFunc.
+func (mock *InterfaceMock) Describe(ctx context.Context) (*Descriptor, error) {
+	if mock.DescribeFunc == nil {
+		panic("InterfaceMock.DescribeFunc: method is nil but Interface.Describe was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockDescribe.Lock()
+	mock.calls.Describe = append(mock.calls.Describe, callInfo)
+	mock.lockDescribe.Unlock()
+	return mock.DescribeFunc(ctx)
+}
+
+// DescribeCalls gets all the calls that were made to Describe.
+// Check the length with:
+//
+//	len(mockedInterface.DescribeCalls())
+func (mock *InterfaceMock) DescribeCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockDescribe.RLock()
+	calls = mock.calls.Describe
+	mock.lockDescribe.RUnlock()
 	return calls
 }
 

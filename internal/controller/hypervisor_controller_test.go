@@ -120,6 +120,9 @@ var _ = Describe("Hypervisor Controller", func() {
 							},
 						}, nil
 					},
+					DescribeFunc: func(ctx context.Context) (*systemd.Descriptor, error) {
+						return nil, nil
+					},
 				},
 			}
 

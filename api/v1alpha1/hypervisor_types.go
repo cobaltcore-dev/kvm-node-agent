@@ -66,14 +66,49 @@ type HyperVisorUpdateStatus struct {
 	Retry int `json:"retry"`
 }
 
+type OperatingSystemStatus struct {
+	// Represents the Operating System version.
+	Version string `json:"version,omitempty"`
+
+	// PrettyVersion
+	PrettyVersion string `json:"prettyVersion,omitempty"`
+
+	// KernelName
+	KernelName string `json:"kernelName,omitempty"`
+
+	// KernelRelease
+	KernelRelease string `json:"kernelRelease,omitempty"`
+
+	// KernelVersion
+	KernelVersion string `json:"kernelVersion,omitempty"`
+
+	// HardwareVendor
+	HardwareVendor string `json:"hardwareVendor,omitempty"`
+
+	// HardwareModel
+	HardwareModel string `json:"hardwareModel,omitempty"`
+
+	// HardwareSerial
+	HardwareSerial string `json:"hardwareSerial,omitempty"`
+
+	// FirmwareVersion
+	FirmwareVersion string `json:"firmwareVersion,omitempty"`
+
+	// FirmwareVendor
+	FirmwareVendor string `json:"firmwareVendor,omitempty"`
+
+	// FirmwareDate
+	FirmwareDate metav1.Time `json:"firmwareDate,omitempty"`
+}
+
 // HypervisorStatus defines the observed state of Hypervisor
 type HypervisorStatus struct {
-	// Represents the Operating System version.
-	Version string `json:"version"`
-
 	// +kubebuilder:default:=unknown
 	// Represents the LibVirt version.
 	LibVirtVersion string `json:"libVirtVersion"`
+
+	// Represents the Operating System status.
+	OperatingSystem OperatingSystemStatus `json:"operatingSystem"`
 
 	// Represents the Hypervisor update status.
 	Update HyperVisorUpdateStatus `json:"updateStatus"`
@@ -96,8 +131,10 @@ type HypervisorStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:JSONPath=".status.version",name="Version",type="string"
+// +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.prettyVersion",name="Version",type="string"
 // +kubebuilder:printcolumn:JSONPath=".status.numInstances",name="Instances",type="integer"
+// +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.hardwareModel",name="Hardware",type="string"
+// +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.kernelRelease",name="Kernel",type="string"
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // Hypervisor is the Schema for the hypervisors API
