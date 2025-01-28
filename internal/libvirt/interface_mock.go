@@ -4,7 +4,7 @@
 package libvirt
 
 import (
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/digitalocean/go-libvirt"
 	"sync"
 )
@@ -25,16 +25,13 @@ var _ Interface = &InterfaceMock{}
 //			ConnectFunc: func() error {
 //				panic("mock out the Connect method")
 //			},
-//			GetDomainJobInfoFunc: func(domain libvirt.Domain, migration *v1alpha1.Migration) error {
-//				panic("mock out the GetDomainJobInfo method")
-//			},
 //			GetDomainsActiveFunc: func() ([]libvirt.Domain, error) {
 //				panic("mock out the GetDomainsActive method")
 //			},
-//			GetInstancesFunc: func() ([]v1alpha1.Instance, error) {
+//			GetInstancesFunc: func() ([]kvmv1alpha1.Instance, error) {
 //				panic("mock out the GetInstances method")
 //			},
-//			GetVersionFunc: func() (string, error) {
+//			GetVersionFunc: func() string {
 //				panic("mock out the GetVersion method")
 //			},
 //			IsConnectedFunc: func() bool {
@@ -53,17 +50,14 @@ type InterfaceMock struct {
 	// ConnectFunc mocks the Connect method.
 	ConnectFunc func() error
 
-	// GetDomainJobInfoFunc mocks the GetDomainJobInfo method.
-	GetDomainJobInfoFunc func(domain libvirt.Domain, migration *v1alpha1.Migration) error
-
 	// GetDomainsActiveFunc mocks the GetDomainsActive method.
 	GetDomainsActiveFunc func() ([]libvirt.Domain, error)
 
 	// GetInstancesFunc mocks the GetInstances method.
-	GetInstancesFunc func() ([]v1alpha1.Instance, error)
+	GetInstancesFunc func() ([]kvmv1alpha1.Instance, error)
 
 	// GetVersionFunc mocks the GetVersion method.
-	GetVersionFunc func() (string, error)
+	GetVersionFunc func() string
 
 	// IsConnectedFunc mocks the IsConnected method.
 	IsConnectedFunc func() bool
@@ -75,13 +69,6 @@ type InterfaceMock struct {
 		}
 		// Connect holds details about calls to the Connect method.
 		Connect []struct {
-		}
-		// GetDomainJobInfo holds details about calls to the GetDomainJobInfo method.
-		GetDomainJobInfo []struct {
-			// Domain is the domain argument value.
-			Domain libvirt.Domain
-			// Migration is the migration argument value.
-			Migration *v1alpha1.Migration
 		}
 		// GetDomainsActive holds details about calls to the GetDomainsActive method.
 		GetDomainsActive []struct {
@@ -98,7 +85,6 @@ type InterfaceMock struct {
 	}
 	lockClose            sync.RWMutex
 	lockConnect          sync.RWMutex
-	lockGetDomainJobInfo sync.RWMutex
 	lockGetDomainsActive sync.RWMutex
 	lockGetInstances     sync.RWMutex
 	lockGetVersion       sync.RWMutex
@@ -159,42 +145,6 @@ func (mock *InterfaceMock) ConnectCalls() []struct {
 	return calls
 }
 
-// GetDomainJobInfo calls GetDomainJobInfoFunc.
-func (mock *InterfaceMock) GetDomainJobInfo(domain libvirt.Domain, migration *v1alpha1.Migration) error {
-	if mock.GetDomainJobInfoFunc == nil {
-		panic("InterfaceMock.GetDomainJobInfoFunc: method is nil but Interface.GetDomainJobInfo was just called")
-	}
-	callInfo := struct {
-		Domain    libvirt.Domain
-		Migration *v1alpha1.Migration
-	}{
-		Domain:    domain,
-		Migration: migration,
-	}
-	mock.lockGetDomainJobInfo.Lock()
-	mock.calls.GetDomainJobInfo = append(mock.calls.GetDomainJobInfo, callInfo)
-	mock.lockGetDomainJobInfo.Unlock()
-	return mock.GetDomainJobInfoFunc(domain, migration)
-}
-
-// GetDomainJobInfoCalls gets all the calls that were made to GetDomainJobInfo.
-// Check the length with:
-//
-//	len(mockedInterface.GetDomainJobInfoCalls())
-func (mock *InterfaceMock) GetDomainJobInfoCalls() []struct {
-	Domain    libvirt.Domain
-	Migration *v1alpha1.Migration
-} {
-	var calls []struct {
-		Domain    libvirt.Domain
-		Migration *v1alpha1.Migration
-	}
-	mock.lockGetDomainJobInfo.RLock()
-	calls = mock.calls.GetDomainJobInfo
-	mock.lockGetDomainJobInfo.RUnlock()
-	return calls
-}
-
 // GetDomainsActive calls GetDomainsActiveFunc.
 func (mock *InterfaceMock) GetDomainsActive() ([]libvirt.Domain, error) {
 	if mock.GetDomainsActiveFunc == nil {
@@ -223,7 +173,7 @@ func (mock *InterfaceMock) GetDomainsActiveCalls() []struct {
 }
 
 // GetInstances calls GetInstancesFunc.
-func (mock *InterfaceMock) GetInstances() ([]v1alpha1.Instance, error) {
+func (mock *InterfaceMock) GetInstances() ([]kvmv1alpha1.Instance, error) {
 	if mock.GetInstancesFunc == nil {
 		panic("InterfaceMock.GetInstancesFunc: method is nil but Interface.GetInstances was just called")
 	}
@@ -250,7 +200,7 @@ func (mock *InterfaceMock) GetInstancesCalls() []struct {
 }
 
 // GetVersion calls GetVersionFunc.
-func (mock *InterfaceMock) GetVersion() (string, error) {
+func (mock *InterfaceMock) GetVersion() string {
 	if mock.GetVersionFunc == nil {
 		panic("InterfaceMock.GetVersionFunc: method is nil but Interface.GetVersion was just called")
 	}

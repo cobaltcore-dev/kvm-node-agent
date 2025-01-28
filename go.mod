@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 module github.com/cobaltcode-dev/kvm-node-agent
 
-go 1.22.0
+go 1.23.0
 
-toolchain go1.22.5
+toolchain go1.23.5
 
 require (
 	github.com/coreos/go-systemd/v22 v22.5.0

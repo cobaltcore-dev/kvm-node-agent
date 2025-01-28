@@ -39,10 +39,6 @@ func NewLibVirtEmulator(ctx context.Context) *libvirt.InterfaceMock {
 			log.Info("Connect Func called")
 			return nil
 		},
-		GetDomainJobInfoFunc: func(domain golibvirt.Domain, migration *v1alpha1.Migration) error {
-			log.Info("GetDomainJobInfoFunc Func called")
-			return nil
-		},
 		GetDomainsActiveFunc: func() ([]golibvirt.Domain, error) {
 			log.Info("GetDomainsActiveFunc Func called")
 			return []golibvirt.Domain{}, nil
@@ -51,9 +47,9 @@ func NewLibVirtEmulator(ctx context.Context) *libvirt.InterfaceMock {
 			log.Info("GetInstancesFunc Func called")
 			return nil, nil
 		},
-		GetVersionFunc: func() (string, error) {
+		GetVersionFunc: func() string {
 			log.Info("GetVersionFunc Func called")
-			return "10.9.0", nil
+			return "10.9.0"
 		},
 		IsConnectedFunc: func() bool {
 			log.Info("IsConnectedFunc Func called")

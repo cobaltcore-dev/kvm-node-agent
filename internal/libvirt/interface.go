@@ -38,12 +38,9 @@ type Interface interface {
 	// GetDomainsActive returns all active domains.
 	GetDomainsActive() ([]libvirt.Domain, error)
 
-	// GetDomainJobInfo returns the job information for a domain.
-	GetDomainJobInfo(domain libvirt.Domain, migration *v1alpha1.Migration) error
-
 	// IsConnected returns true if the connection to the libvirt daemon is open.
 	IsConnected() bool
 
 	// GetVersion returns the version of the libvirt daemon.
-	GetVersion() (string, error)
+	GetVersion() string
 }

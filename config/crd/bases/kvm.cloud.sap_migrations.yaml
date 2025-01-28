@@ -24,14 +24,11 @@ spec:
     - jsonPath: .status.operation
       name: Operation
       type: string
-    - jsonPath: .metadata.creationTimestamp
+    - jsonPath: .status.started
       name: Started
       type: date
     - jsonPath: .status.timeElapsed
       name: Elapsed
-      type: string
-    - jsonPath: .status.timeRemaining
-      name: Remaining
       type: string
     - jsonPath: .status.dataTotal
       name: Data Total
@@ -43,7 +40,7 @@ spec:
       name: Data Remaining
       type: string
     - jsonPath: .status.memBps
-      name: Memory Bps
+      name: Memory TX
       type: string
     - jsonPath: .status.memDirtyRate
       name: Memory Dirty Rate
@@ -131,6 +128,9 @@ spec:
                 type: string
               setupTime:
                 type: string
+              started:
+                format: date-time
+                type: string
               timeElapsed:
                 type: string
               timeRemaining:
@@ -139,7 +139,6 @@ spec:
                 type: string
             required:
             - host
-            - type
             type: object
         type: object
     served: true

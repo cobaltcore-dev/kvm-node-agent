@@ -58,11 +58,16 @@ rules:
   - migrations
   verbs:
   - create
+  - get
+  - list
+  - watch
 - apiGroups:
   - kvm.cloud.sap
   resources:
   - migrations/status
   verbs:
+  - get
+  - patch
   - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1

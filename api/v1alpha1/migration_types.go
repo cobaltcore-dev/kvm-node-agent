@@ -30,33 +30,34 @@ type MigrationSpec struct {
 
 // MigrationStatus defines the observed state of Migration.
 type MigrationStatus struct {
-	Host                 string `json:"host"`
-	Type                 string `json:"type"`
-	ErrMsg               string `json:"errMsg,omitempty"`
-	AutoConvergeThrottle string `json:"autoConvergeThrottle,omitempty"`
-	DiskBps              string `json:"diskBps,omitempty"`
-	DiskRemaining        string `json:"diskRemaining,omitempty"`
-	DiskProcessed        string `json:"diskProcessed,omitempty"`
-	DiskTotal            string `json:"diskTotal,omitempty"`
-	MemPostcopyRequests  uint64 `json:"memPostcopyRequests,omitempty"`
-	MemIteration         uint64 `json:"memIteration,omitempty"`
-	MemPageSize          string `json:"memPageSize,omitempty"`
-	MemDirtyRate         string `json:"memDirtyRate,omitempty"`
-	MemBps               string `json:"memBps,omitempty"`
-	MemNormalBytes       string `json:"memNormalBytes,omitempty"`
-	MemNormal            uint64 `json:"memNormal,omitempty"`
-	MemConstant          uint64 `json:"memConstant,omitempty"`
-	MemRemaining         string `json:"memRemaining,omitempty"`
-	MemProcessed         string `json:"memProcessed,omitempty"`
-	MemTotal             string `json:"memTotal,omitempty"`
-	DataRemaining        string `json:"dataRemaining,omitempty"`
-	DataProcessed        string `json:"dataProcessed,omitempty"`
-	DataTotal            string `json:"dataTotal,omitempty"`
-	SetupTime            string `json:"setupTime,omitempty"`
-	TimeElapsed          string `json:"timeElapsed,omitempty"`
-	TimeRemaining        string `json:"timeRemaining,omitempty"`
-	Downtime             string `json:"downtime,omitempty"`
-	Operation            string `json:"operation,omitempty"`
+	Host                 string      `json:"host"`
+	Type                 string      `json:"type,omitempty"`
+	Started              metav1.Time `json:"started,omitempty"`
+	ErrMsg               string      `json:"errMsg,omitempty"`
+	AutoConvergeThrottle string      `json:"autoConvergeThrottle,omitempty"`
+	DiskBps              string      `json:"diskBps,omitempty"`
+	DiskRemaining        string      `json:"diskRemaining,omitempty"`
+	DiskProcessed        string      `json:"diskProcessed,omitempty"`
+	DiskTotal            string      `json:"diskTotal,omitempty"`
+	MemPostcopyRequests  uint64      `json:"memPostcopyRequests,omitempty"`
+	MemIteration         uint64      `json:"memIteration,omitempty"`
+	MemPageSize          string      `json:"memPageSize,omitempty"`
+	MemDirtyRate         string      `json:"memDirtyRate,omitempty"`
+	MemBps               string      `json:"memBps,omitempty"`
+	MemNormalBytes       string      `json:"memNormalBytes,omitempty"`
+	MemNormal            uint64      `json:"memNormal,omitempty"`
+	MemConstant          uint64      `json:"memConstant,omitempty"`
+	MemRemaining         string      `json:"memRemaining,omitempty"`
+	MemProcessed         string      `json:"memProcessed,omitempty"`
+	MemTotal             string      `json:"memTotal,omitempty"`
+	DataRemaining        string      `json:"dataRemaining,omitempty"`
+	DataProcessed        string      `json:"dataProcessed,omitempty"`
+	DataTotal            string      `json:"dataTotal,omitempty"`
+	SetupTime            string      `json:"setupTime,omitempty"`
+	TimeElapsed          string      `json:"timeElapsed,omitempty"`
+	TimeRemaining        string      `json:"timeRemaining,omitempty"`
+	Downtime             string      `json:"downtime,omitempty"`
+	Operation            string      `json:"operation,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -64,13 +65,12 @@ type MigrationStatus struct {
 // +kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.status.host`
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.status.type`
 // +kubebuilder:printcolumn:name="Operation",type=string,JSONPath=`.status.operation`
-// +kubebuilder:printcolumn:name="Started",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Started",type=date,JSONPath=`.status.started`
 // +kubebuilder:printcolumn:name="Elapsed",type=string,JSONPath=`.status.timeElapsed`
-// +kubebuilder:printcolumn:name="Remaining",type=string,JSONPath=`.status.timeRemaining`
 // +kubebuilder:printcolumn:name="Data Total",type=string,JSONPath=`.status.dataTotal`
 // +kubebuilder:printcolumn:name="Data Processed",type=string,JSONPath=`.status.dataProcessed`
 // +kubebuilder:printcolumn:name="Data Remaining",type=string,JSONPath=`.status.dataRemaining`
-// +kubebuilder:printcolumn:name="Memory Bps",type=string,JSONPath=`.status.memBps`
+// +kubebuilder:printcolumn:name="Memory TX",type=string,JSONPath=`.status.memBps`
 // +kubebuilder:printcolumn:name="Memory Dirty Rate",type=string,JSONPath=`.status.memDirtyRate`
 // +kubebuilder:printcolumn:name="Memory Iteration",type=string,JSONPath=`.status.memIteration`
 
