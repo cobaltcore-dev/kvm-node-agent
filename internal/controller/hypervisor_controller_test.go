@@ -87,9 +87,6 @@ var _ = Describe("Hypervisor Controller", func() {
 					ConnectFunc: func() error {
 						return nil
 					},
-					GetDomainJobInfoFunc: func(domain golibvirt.Domain, migration *kvmv1alpha1.Migration) error {
-						return nil
-					},
 					GetDomainsActiveFunc: func() ([]golibvirt.Domain, error) {
 						return []golibvirt.Domain{}, nil
 					},
@@ -104,6 +101,9 @@ var _ = Describe("Hypervisor Controller", func() {
 					},
 					IsConnectedFunc: func() bool {
 						return true
+					},
+					GetVersionFunc: func() string {
+						return "10.9.0"
 					},
 				},
 				systemd: &systemd.InterfaceMock{

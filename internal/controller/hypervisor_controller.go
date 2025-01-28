@@ -36,7 +36,6 @@ import (
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/emulator"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/evacuation"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/migration"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
 )
@@ -47,10 +46,8 @@ type HypervisorReconciler struct {
 	Scheme           *runtime.Scheme
 	libvirt          libvirt.Interface
 	systemd          systemd.Interface
-	libvirtVersion   string
 	osDescriptor     *systemd.Descriptor
 	evacuateOnReboot bool
-	migrationJobs    map[string]context.Context
 }
 
 const (
@@ -62,8 +59,8 @@ const (
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/finalizers,verbs=update
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=evictions,verbs=get;create
-// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations,verbs=create
-// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations/status,verbs=update
+// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations,verbs=get;list;watch;create
+// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations/status,verbs=get;update;patch
 
 func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logger.FromContext(ctx, "controller", "hypervisor")
@@ -102,36 +99,21 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		Reason:  "Reconciling",
 	})
 
-	// Update libvirt status
-	if !r.libvirt.IsConnected() {
+	// ====================================================================================================
+	// libvirt
+	// ====================================================================================================
+
+	// Try (re)connect to libvirt
+	if err := r.libvirt.Connect(); err != nil {
+		log.Error(err, "unable to connect to libvirt system bus")
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 			Type:    LibVirtType,
 			Status:  metav1.ConditionFalse,
-			Message: "libvirt not connected",
-			Reason:  "NotConnected",
+			Message: err.Error(),
+			Reason:  "ConnectFailed",
 		})
-	}
-
-	// Try (re)connect to libvirt
-	if !r.libvirt.IsConnected() {
-		// Connect to libvirt
-		if err := r.libvirt.Connect(); err != nil {
-			log.Error(err, "unable to connect to libvirt system bus")
-			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-				Type:    LibVirtType,
-				Status:  metav1.ConditionFalse,
-				Message: err.Error(),
-				Reason:  "ConnectFailed",
-			})
-		} else {
-			if r.libvirtVersion, err = r.libvirt.GetVersion(); err != nil {
-				log.Error(err, "unable to fetch libvirt version")
-			}
-		}
-	}
-
-	if r.libvirt.IsConnected() {
-		hypervisor.Status.LibVirtVersion = r.libvirtVersion
+	} else {
+		hypervisor.Status.LibVirtVersion = r.libvirt.GetVersion()
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 			Type:   LibVirtType,
 			Status: metav1.ConditionTrue,
@@ -139,67 +121,17 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		})
 
 		// Update hypervisor instances
-		var err error
 		hypervisor.Status.Instances, err = r.libvirt.GetInstances()
 		if err != nil {
 			log.Error(err, "unable to list instances")
 			return ctrl.Result{}, err
 		}
 		hypervisor.Status.NumInstances = len(hypervisor.Status.Instances)
-
-		domains, err := r.libvirt.GetDomainsActive()
-		if err != nil {
-			log.Error(err, "unable to list active domains")
-			return ctrl.Result{}, err
-		}
-		m := kvmv1alpha1.Migration{}
-		for _, domain := range domains {
-			if err = r.libvirt.GetDomainJobInfo(domain, &m); err != nil {
-				if libvirt.DomainNotFound(err) {
-					continue
-				}
-				return ctrl.Result{}, err
-			}
-
-			// ensure migration object exists
-			migr := kvmv1alpha1.Migration{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      libvirt.GetOpenstackUUID(domain),
-					Namespace: "monsoon3",
-				},
-			}
-			if err = r.Create(ctx, &migr); client.IgnoreAlreadyExists(err) != nil {
-				return ctrl.Result{}, err
-			}
-
-			// in case of migration, start migration watch
-			if m.Status.Type == "bounded" || m.Status.Type == "unbounded" {
-				// check if migration watch is already running
-				if _, ok := r.migrationJobs[domain.Name]; ok {
-					if r.migrationJobs[domain.Name].Err() != nil {
-						log.Error(r.migrationJobs[domain.Name].Err(), "migration job failed, restarting")
-					} else {
-						// migration is still running and being monitored
-						continue
-					}
-				}
-
-				// start migration watch
-				timeoutCtx, cancel := context.WithTimeout(ctx, 60*time.Minute)
-				r.migrationJobs[domain.Name] = timeoutCtx
-				go migration.WatchMigrationLoop(timeoutCtx, cancel, r.Client, r.libvirt, domain)
-			} else {
-				// migration completed, remove from migrationJobs, eventually update migration status
-				delete(r.migrationJobs, domain.Name)
-
-				if err = migration.PatchMigration(ctx, r.Client, r.libvirt, domain); err != nil {
-					if !errors.Is(err, migration.Finished) {
-						log.Error(err, "failed to update migration status")
-					}
-				}
-			}
-		}
 	}
+
+	// ====================================================================================================
+	// systemd
+	// ====================================================================================================
 
 	if r.systemd.IsConnected() {
 		var unitNames = []string{"libvirtd.service", "openvswitch-switch.service"}
@@ -338,19 +270,24 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
+	log := logger.Log.WithName("HypervisorReconciler")
 	emulate := os.Getenv("EMULATE")
-	r.migrationJobs = make(map[string]context.Context)
 
 	var err error
 	if emulate != "" {
 		r.libvirt = emulator.NewLibVirtEmulator(ctx)
 		r.systemd = emulator.NewSystemdEmulator(ctx)
 	} else {
-		r.libvirt = libvirt.NewLibVirt()
+		r.libvirt = libvirt.NewLibVirt(mgr.GetClient())
 		r.systemd, err = systemd.NewSystemd(ctx)
 		if err != nil {
 			return fmt.Errorf("unable to connect to systemd: %w", err)
 		}
+	}
+
+	// Initialize libvirt connection
+	if err := r.libvirt.Connect(); err != nil {
+		log.Error(err, "unable to connect to libvirt system bus, reconnecting on reconcillation")
 	}
 
 	r.osDescriptor, err = r.systemd.Describe(ctx)

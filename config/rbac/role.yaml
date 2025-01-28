@@ -57,9 +57,14 @@ rules:
   - migrations
   verbs:
   - create
+  - get
+  - list
+  - watch
 - apiGroups:
   - kvm.cloud.sap
   resources:
   - migrations/status
   verbs:
+  - get
+  - patch
   - update
