@@ -108,6 +108,8 @@ func (l *LibVirt) runMigrationListener(ctx context.Context) {
 				switch e.Msg.Detail {
 				case int32(libvirt.DomainEventDefinedAdded):
 					log.Info("domain added")
+					// add domain to the list of inactive domains
+					l.domains[libvirt.ConnectListDomainsInactive] = append(l.domains[libvirt.ConnectListDomainsInactive], domain)
 				case int32(libvirt.DomainEventDefinedUpdated):
 					log.Info("domain updated")
 				case int32(libvirt.DomainEventDefinedRenamed):
@@ -115,7 +117,20 @@ func (l *LibVirt) runMigrationListener(ctx context.Context) {
 				case int32(libvirt.DomainEventDefinedFromSnapshot):
 					log.Info("domain defined from snapshot")
 				}
+			case int32(libvirt.DomainEventUndefined):
+				log.Info("domain undefined")
+				// remove domain from the list of inactive domains
+				for i, d := range l.domains[libvirt.ConnectListDomainsInactive] {
+					if d.Name == domain.Name {
+						l.domains[libvirt.ConnectListDomainsInactive] = append(
+							l.domains[libvirt.ConnectListDomainsInactive][:i],
+							l.domains[libvirt.ConnectListDomainsInactive][i+1:]...)
+						break
+					}
+				}
 			case int32(libvirt.DomainEventStarted):
+				// add domain to the list of active domains
+				l.domains[libvirt.ConnectListDomainsActive] = append(l.domains[libvirt.ConnectListDomainsActive], domain)
 				switch e.Msg.Detail {
 				case int32(libvirt.DomainEventStartedBooted):
 					log.Info("domain booted")
@@ -138,6 +153,16 @@ func (l *LibVirt) runMigrationListener(ctx context.Context) {
 				}
 			case int32(libvirt.DomainEventStopped):
 				log.Info("domain stopped")
+
+				// remove domain from the list of active domains
+				for i, d := range l.domains[libvirt.ConnectListDomainsActive] {
+					if d.Name == domain.Name {
+						l.domains[libvirt.ConnectListDomainsActive] = append(
+							l.domains[libvirt.ConnectListDomainsActive][:i],
+							l.domains[libvirt.ConnectListDomainsActive][i+1:]...)
+						break
+					}
+				}
 				l.stopMigrationWatch(ctx, domain)
 			case int32(libvirt.DomainEventShutdown):
 				log.Info("domain shutdown")
@@ -146,7 +171,6 @@ func (l *LibVirt) runMigrationListener(ctx context.Context) {
 				log.Info("domain PM suspended")
 			case int32(libvirt.DomainEventCrashed):
 				log.Info("domain crashed")
-
 			}
 
 		case <-ctx.Done():

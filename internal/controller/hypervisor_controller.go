@@ -103,7 +103,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// libvirt
 	// ====================================================================================================
 
-	// Try (re)connect to libvirt
+	// Try (re)connect to libvirt, update status
 	if err := r.libvirt.Connect(); err != nil {
 		log.Error(err, "unable to connect to libvirt system bus")
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
@@ -121,12 +121,8 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		})
 
 		// Update hypervisor instances
-		hypervisor.Status.Instances, err = r.libvirt.GetInstances()
-		if err != nil {
-			log.Error(err, "unable to list instances")
-			return ctrl.Result{}, err
-		}
-		hypervisor.Status.NumInstances = len(hypervisor.Status.Instances)
+		hypervisor.Status.NumInstances = r.libvirt.GetNumInstances()
+		hypervisor.Status.Instances, _ = r.libvirt.GetInstances()
 	}
 
 	// ====================================================================================================

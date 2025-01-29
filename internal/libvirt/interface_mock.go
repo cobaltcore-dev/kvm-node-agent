@@ -31,6 +31,9 @@ var _ Interface = &InterfaceMock{}
 //			GetInstancesFunc: func() ([]kvmv1alpha1.Instance, error) {
 //				panic("mock out the GetInstances method")
 //			},
+//			GetNumInstancesFunc: func() int {
+//				panic("mock out the GetNumInstances method")
+//			},
 //			GetVersionFunc: func() string {
 //				panic("mock out the GetVersion method")
 //			},
@@ -56,6 +59,9 @@ type InterfaceMock struct {
 	// GetInstancesFunc mocks the GetInstances method.
 	GetInstancesFunc func() ([]kvmv1alpha1.Instance, error)
 
+	// GetNumInstancesFunc mocks the GetNumInstances method.
+	GetNumInstancesFunc func() int
+
 	// GetVersionFunc mocks the GetVersion method.
 	GetVersionFunc func() string
 
@@ -76,6 +82,9 @@ type InterfaceMock struct {
 		// GetInstances holds details about calls to the GetInstances method.
 		GetInstances []struct {
 		}
+		// GetNumInstances holds details about calls to the GetNumInstances method.
+		GetNumInstances []struct {
+		}
 		// GetVersion holds details about calls to the GetVersion method.
 		GetVersion []struct {
 		}
@@ -87,6 +96,7 @@ type InterfaceMock struct {
 	lockConnect          sync.RWMutex
 	lockGetDomainsActive sync.RWMutex
 	lockGetInstances     sync.RWMutex
+	lockGetNumInstances  sync.RWMutex
 	lockGetVersion       sync.RWMutex
 	lockIsConnected      sync.RWMutex
 }
@@ -196,6 +206,33 @@ func (mock *InterfaceMock) GetInstancesCalls() []struct {
 	mock.lockGetInstances.RLock()
 	calls = mock.calls.GetInstances
 	mock.lockGetInstances.RUnlock()
+	return calls
+}
+
+// GetNumInstances calls GetNumInstancesFunc.
+func (mock *InterfaceMock) GetNumInstances() int {
+	if mock.GetNumInstancesFunc == nil {
+		panic("InterfaceMock.GetNumInstancesFunc: method is nil but Interface.GetNumInstances was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetNumInstances.Lock()
+	mock.calls.GetNumInstances = append(mock.calls.GetNumInstances, callInfo)
+	mock.lockGetNumInstances.Unlock()
+	return mock.GetNumInstancesFunc()
+}
+
+// GetNumInstancesCalls gets all the calls that were made to GetNumInstances.
+// Check the length with:
+//
+//	len(mockedInterface.GetNumInstancesCalls())
+func (mock *InterfaceMock) GetNumInstancesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetNumInstances.RLock()
+	calls = mock.calls.GetNumInstances
+	mock.lockGetNumInstances.RUnlock()
 	return calls
 }
 

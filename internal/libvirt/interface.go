@@ -43,4 +43,7 @@ type Interface interface {
 
 	// GetVersion returns the version of the libvirt daemon.
 	GetVersion() string
+
+	// GetNumInstances returns the number of instances.
+	GetNumInstances() int
 }

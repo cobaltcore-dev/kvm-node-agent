@@ -105,6 +105,9 @@ var _ = Describe("Hypervisor Controller", func() {
 					GetVersionFunc: func() string {
 						return "10.9.0"
 					},
+					GetNumInstancesFunc: func() int {
+						return 1
+					},
 				},
 				systemd: &systemd.InterfaceMock{
 					CloseFunc: func() {},

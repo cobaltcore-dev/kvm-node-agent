@@ -25,7 +25,6 @@ import (
 
 	"github.com/digitalocean/go-libvirt"
 	"github.com/digitalocean/go-libvirt/socket/dialers"
-	"github.com/google/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -38,6 +37,7 @@ type LibVirt struct {
 	migrationJobs map[string]context.CancelFunc
 	migrationLock sync.Mutex
 	version       string
+	domains       map[libvirt.ConnectListAllDomainsFlags][]libvirt.Domain
 }
 
 func NewLibVirt(k client.Client) *LibVirt {
@@ -52,6 +52,7 @@ func NewLibVirt(k client.Client) *LibVirt {
 		make(map[string]context.CancelFunc),
 		sync.Mutex{},
 		"N/A",
+		make(map[libvirt.ConnectListAllDomainsFlags][]libvirt.Domain, 2),
 	}
 }
 
@@ -74,6 +75,10 @@ func (l *LibVirt) Connect() error {
 		// Run the migration listener in a goroutine
 		ctx := log.IntoContext(context.Background(), log.Log.WithName("libvirt-migration-listener"))
 		go l.runMigrationListener(ctx)
+
+		// Periodic status thread
+		ctx = log.IntoContext(context.Background(), log.Log.WithName("libvirt-status-thread"))
+		go l.runStatusThread(ctx)
 	}
 
 	return err
@@ -92,12 +97,7 @@ func (l *LibVirt) GetInstances() ([]v1alpha1.Instance, error) {
 
 	flags := []libvirt.ConnectListAllDomainsFlags{libvirt.ConnectListDomainsActive, libvirt.ConnectListDomainsInactive}
 	for _, flag := range flags {
-		domains, _, err := l.virt.ConnectListAllDomains(1, flag)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, domain := range domains {
+		for _, domain := range l.domains[flag] {
 			instances = append(instances, v1alpha1.Instance{
 				ID:     GetOpenstackUUID(domain),
 				Name:   domain.Name,
@@ -109,36 +109,13 @@ func (l *LibVirt) GetInstances() ([]v1alpha1.Instance, error) {
 }
 
 func (l *LibVirt) GetDomainsActive() ([]libvirt.Domain, error) {
-	domains, _, err := l.virt.ConnectListAllDomains(1, libvirt.ConnectListDomainsActive)
-	if err != nil {
-		return nil, err
-	}
-	return domains, nil
+	return l.domains[libvirt.ConnectListDomainsActive], nil
 }
 
 func (l *LibVirt) IsConnected() bool {
 	return l.virt.IsConnected()
 }
 
-func GetOpenstackUUID(domain libvirt.Domain) string {
-	u, err := uuid.FromBytes(domain.UUID[:])
-	if err != nil {
-		return ""
-	}
-
-	return u.String()
-}
-
-func ByteCountIEC(b uint64) string {
-	const unit = 1024
-	if b < unit {
-		return fmt.Sprintf("%d B", b)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %ciB",
-		float64(b)/float64(div), "KMGTPE"[exp])
+func (l *LibVirt) GetNumInstances() int {
+	return len(l.domains[libvirt.ConnectListDomainsActive])
 }
