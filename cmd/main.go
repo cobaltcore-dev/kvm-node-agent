@@ -25,7 +25,6 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -139,16 +138,6 @@ func main() {
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
-	}
-
-	// Install CRDs so we don't need to do it manually
-	if _, err = envtest.InstallCRDs(mgr.GetConfig(), envtest.CRDInstallOptions{
-		Paths: []string{
-			"../../config/crd/bases",
-			"config/crd/bases",
-		},
-	}); err != nil {
-		setupLog.Error(err, "unable to install CRDs")
 	}
 
 	if err = (&controller.HypervisorReconciler{
