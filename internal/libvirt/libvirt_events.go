@@ -247,14 +247,21 @@ func (l *LibVirt) patchMigration(ctx context.Context, domain libvirt.Domain, com
 	}
 
 	migration := original.DeepCopy()
-	err := l.populateDomainJobInfo(domain, migration, completed)
-	// ignore domain not running error due to race condition with cancel job
-	if err != nil && !strings.HasSuffix(err.Error(), "domain is not running") {
-		return fmt.Errorf("failed to get migration info: %w", err)
+	if err := l.populateDomainJobInfo(domain, migration, completed); err != nil {
+		// ignore domain not running error due to race condition with cancel job
+		if strings.HasSuffix(err.Error(), "domain is not running") {
+			return nil
+		}
+
+		// quirk if the domain job details have been reaped, set migration type to completed
+		if completed && strings.HasSuffix(err.Error(), "Domain not found") {
+			logger.FromContext(ctx).Info("migration job details reaped, setting migration status to completed")
+			migration.Status.Type = "completed"
+		}
 	}
 
 	// patch migration status
-	if err = l.client.Status().Patch(ctx, migration, client.MergeFrom(&original)); err != nil {
+	if err := l.client.Status().Patch(ctx, migration, client.MergeFrom(&original)); err != nil {
 		return fmt.Errorf("failed to patch migration status: %w", err)
 	}
 
@@ -279,6 +286,12 @@ func (l *LibVirt) watchMigrationLoop(ctx context.Context, cancel context.CancelF
 
 			// Patch migration status
 			if err := l.patchMigration(ctx, domain, false); err != nil {
+				if strings.HasSuffix(err.Error(), "Domain not found") {
+					// quirk if the domain job details have been reaped, stop migration watch
+					// could happen if the migration fails
+					log.Info("migration job details reaped, stopping migration watch")
+					return
+				}
 				if !errors.Is(err, context.Canceled) {
 					log.Error(err, "failed updating migration status")
 				}
@@ -298,11 +311,6 @@ func (l *LibVirt) populateDomainJobInfo(domain libvirt.Domain, migration *kvmv1a
 	migration.Status.Host = sys.Hostname
 	rType, params, err := l.virt.DomainGetJobStats(domain, flags)
 	if err != nil {
-		// quirk if the domain job has been reaped
-		if completed && strings.HasSuffix(err.Error(), "Domain not found") {
-			migration.Status.Type = "completed"
-			return nil
-		}
 		return err
 	}
 
