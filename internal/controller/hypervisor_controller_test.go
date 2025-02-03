@@ -80,7 +80,7 @@ var _ = Describe("Hypervisor Controller", func() {
 			controllerReconciler := &HypervisorReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
-				libvirt: &libvirt.InterfaceMock{
+				Libvirt: &libvirt.InterfaceMock{
 					CloseFunc: func() error {
 						return nil
 					},
@@ -109,7 +109,7 @@ var _ = Describe("Hypervisor Controller", func() {
 						return 1
 					},
 				},
-				systemd: &systemd.InterfaceMock{
+				Systemd: &systemd.InterfaceMock{
 					CloseFunc: func() {},
 					IsConnectedFunc: func() bool {
 						return true

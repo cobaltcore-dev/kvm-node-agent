@@ -54,7 +54,7 @@ func (e *EvictionController) EvictCurrentHost(ctx context.Context) error {
 	})
 	u.SetName(sys.Hostname)
 	// todo: namespace? cluster-wide?
-	u.SetNamespace("monsoon3")
+	u.SetNamespace(sys.Namespace)
 
 	// ... create the eviction custom resource
 	if err := e.Create(ctx, u); client.IgnoreAlreadyExists(err) != nil {

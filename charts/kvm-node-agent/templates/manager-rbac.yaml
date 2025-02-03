@@ -20,6 +20,23 @@ rules:
   verbs:
   - get
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cert-manager.io
+  resources:
+  - certificates
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
   - kvm.cloud.sap
   resources:
   - evictions

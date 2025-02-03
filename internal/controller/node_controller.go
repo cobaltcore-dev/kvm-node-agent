@@ -71,7 +71,7 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	namespace := req.Namespace
 	if namespace == "" {
-		namespace = "monsoon3"
+		namespace = sys.Namespace
 	}
 
 	node, err := r.getNode(ctx)

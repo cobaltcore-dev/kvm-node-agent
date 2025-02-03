@@ -29,4 +29,8 @@ resources:
   kind: Migration
   path: github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1
   version: v1alpha1
+- controller: true
+  domain: cloud.sap
+  kind: Secret
+  version: v1
 version: "3"

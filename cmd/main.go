@@ -18,9 +18,15 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"os"
+
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/emulator"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
+	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -140,9 +146,28 @@ func main() {
 		os.Exit(1)
 	}
 
+	var sysd systemd.Interface
+	var libv libvirt.Interface
+	if os.Getenv("EMULATE") != "" {
+		ctx := logger.IntoContext(context.Background(), setupLog)
+		libv = emulator.NewLibVirtEmulator(ctx)
+		sysd = emulator.NewSystemdEmulator(ctx)
+	} else {
+		var err error
+		ctx := logger.IntoContext(context.Background(), setupLog)
+		libv = libvirt.NewLibVirt(mgr.GetClient())
+		sysd, err = systemd.NewSystemd(ctx)
+		if err != nil {
+			setupLog.Error(err, "unable to create systemd instance")
+			os.Exit(1)
+		}
+	}
+
 	if err = (&controller.HypervisorReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:  mgr.GetClient(),
+		Scheme:  mgr.GetScheme(),
+		Systemd: sysd,
+		Libvirt: libv,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Hypervisor")
 		os.Exit(1)
@@ -152,6 +177,14 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Node")
+		os.Exit(1)
+	}
+	if err = (&controller.SecretReconciler{
+		Client:  mgr.GetClient(),
+		Scheme:  mgr.GetScheme(),
+		Systemd: sysd,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Secret")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

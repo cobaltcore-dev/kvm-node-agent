@@ -73,6 +73,9 @@ type Interface interface {
 	// StartUnit starts the unit with the given name.
 	StartUnit(ctx context.Context, unit string) (int, error)
 
+	// ReloadUnit reloads the unit with the given name.
+	ReloadUnit(ctx context.Context, unit string) (int, error)
+
 	// ReconcileSysUpdate reconciles orchestrates a systemd-sysupdate via the systemd-sysupdate@.service unit.
 	ReconcileSysUpdate(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error)
 
