@@ -34,6 +34,8 @@ rules:
   - create
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - kvm.cloud.sap

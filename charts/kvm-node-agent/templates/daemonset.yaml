@@ -29,6 +29,12 @@ spec:
               fieldPath: spec.nodeName
         - name: PKI_PATH
           value: {{ quote .Values.controllerManager.manager.env.pkiPath }}
+        - name: HOST_IP_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: ISSUER_NAME
+          value: {{ quote .Values.controllerManager.manager.env.issuerName }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag

@@ -68,6 +68,12 @@ spec:
               fieldPath: spec.nodeName
         - name: PKI_PATH
           value: /pki
+        - name: HOST_IP_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: ISSUER_NAME
+          value: kvm-node-agent-ca-issuer
         image: controller:latest
         name: manager
         securityContext:

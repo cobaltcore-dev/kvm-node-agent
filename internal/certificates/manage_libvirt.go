@@ -30,6 +30,7 @@ import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
@@ -53,7 +54,11 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 
 	var ipAddresses []string
 	if ips, err := net.LookupIP(sys.Hostname); err != nil {
-		return fmt.Errorf("failed to resolve hostname %s: %w", sys.Hostname, err)
+		if ip, ok := os.LookupEnv("HOST_IP_ADDRESS"); !ok {
+			return fmt.Errorf("failed to resolve hostname %s: %w", sys.Hostname, err)
+		} else {
+			ipAddresses = append(ipAddresses, ip)
+		}
 	} else {
 		for _, ip := range ips {
 			if ipv4 := ip.To4(); ipv4 != nil {
@@ -71,9 +76,13 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: certName,
+			Name:      certName,
+			Namespace: sys.Namespace,
 		},
-		Spec: cmapi.CertificateSpec{
+	}
+
+	update, err := controllerutil.CreateOrUpdate(ctx, c, &certificate, func() error {
+		certificate.Spec = cmapi.CertificateSpec{
 			SecretName: secretName,
 			PrivateKey: &cmapi.CertificatePrivateKey{
 				Algorithm: cmapi.RSAKeyAlgorithm,
@@ -96,13 +105,13 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 				Kind:  cmapi.IssuerKind,
 				Group: "cert-manager.io",
 			},
-		},
-	}
-
-	// Apply certificate, ignore error if it already exists
-	if err := c.Update(ctx, &certificate); client.IgnoreAlreadyExists(err) != nil {
-		log.Error(err, "Failed to apply certificate")
+		}
+		return nil
+	})
+	if err != nil {
 		return err
+	} else {
+		log.Info("Certificate created or updated", "update", update)
 	}
 
 	return nil

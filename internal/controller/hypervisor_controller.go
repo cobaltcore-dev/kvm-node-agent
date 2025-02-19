@@ -61,7 +61,7 @@ const (
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=evictions,verbs=get;create
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations,verbs=get;list;watch;create
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch
 
 func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logger.FromContext(ctx, "controller", "hypervisor")
