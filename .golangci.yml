@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 run:
-  deadline: 5m
   allow-parallel-runners: true
 
 issues:
@@ -24,7 +23,7 @@ linters:
   enable:
     - dupl
     - errcheck
-    - exportloopref
+    - copyloopvar
     - goconst
     - gofmt
     - goimports
