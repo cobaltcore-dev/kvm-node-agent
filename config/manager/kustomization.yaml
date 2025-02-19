@@ -6,3 +6,7 @@ images:
 - name: controller
   newName: keppel.eu-de-1.cloud.sap/ccloud/kvm-node-agent
   newTag: latest
+patches:
+  - path: manager_node_selector_patch.yaml
+    target:
+      kind: DaemonSet

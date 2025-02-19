@@ -71,6 +71,7 @@ spec:
           readOnly: true
         - mountPath: /pki
           name: pki
+      nodeSelector: {{- toYaml .Values.controllerManager.nodeSelector | nindent 8 }}
       securityContext:
         runAsNonRoot: true
         supplementalGroups:
