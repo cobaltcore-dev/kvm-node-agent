@@ -8,6 +8,7 @@ rules:
   - ""
   resources:
   - nodes
+  - secrets
   verbs:
   - get
   - list
@@ -18,14 +19,6 @@ rules:
   - nodes/status
   verbs:
   - get
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups:
   - cert-manager.io
   resources:
@@ -66,6 +59,7 @@ rules:
   - kvm.cloud.sap
   resources:
   - hypervisors/status
+  - migrations/status
   verbs:
   - get
   - patch
@@ -79,11 +73,3 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - kvm.cloud.sap
-  resources:
-  - migrations/status
-  verbs:
-  - get
-  - patch
-  - update
