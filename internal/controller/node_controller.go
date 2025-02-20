@@ -98,7 +98,9 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				Namespace: namespace,
 				Labels:    map[string]string{v1.LabelHostname: sys.Hostname},
 			},
-			Spec: kvmv1alpha1.HypervisorSpec{},
+			Spec: kvmv1alpha1.HypervisorSpec{
+				CreateCertManagerCertificate: true,
+			},
 			Status: kvmv1alpha1.HypervisorStatus{
 				Node:           types.NodeName(node.Name),
 				LibVirtVersion: sys.GetVersion(),
