@@ -108,10 +108,13 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 		}
 		return nil
 	})
+
 	if err != nil {
 		return err
-	} else {
-		log.Info("Certificate created or updated", "update", update)
+	}
+
+	if update != controllerutil.OperationResultNone {
+		log.Info(fmt.Sprintf("Certificate %s %s", certName, update))
 	}
 
 	return nil
