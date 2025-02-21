@@ -93,7 +93,12 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 			Duration:    &metav1.Duration{Duration: 8 * time.Hour},
 			RenewBefore: &metav1.Duration{Duration: 2 * time.Hour},
 			IsCA:        false,
-			Usages:      []cmapi.KeyUsage{cmapi.UsageServerAuth, cmapi.UsageCertSign},
+			Usages: []cmapi.KeyUsage{
+				cmapi.UsageServerAuth,
+				cmapi.UsageCertSign,
+				cmapi.UsageDigitalSignature,
+				cmapi.UsageKeyEncipherment,
+			},
 			Subject: &cmapi.X509Subject{
 				Organizations: []string{"nova"},
 			},
