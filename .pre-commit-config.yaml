@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
         exclude: ^charts/.*
@@ -10,7 +10,7 @@ repos:
         exclude: ^charts/.*
       - id: check-added-large-files
   - repo: https://github.com/golangci/golangci-lint
-    rev: v1.61.0
+    rev: v1.64.5
     hooks:
       - id: golangci-lint
   - repo: https://github.com/dnephin/pre-commit-golang
@@ -21,11 +21,11 @@ repos:
         exclude: .*/(.+_mock\.go|.+deepcopy\.go)$
       - id: go-mod-tidy
   - repo: https://github.com/fsfe/reuse-tool
-    rev: v4.0.3
+    rev: v5.0.2
     hooks:
       - id: reuse
   - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.23
+    rev: v0.1.25
     hooks:
       - id: helmlint
   - repo: local

@@ -29,7 +29,8 @@ SPDX-License-Identifier = "Apache-2.0"
 path = [
     ".github/**",
     "PROJECT",
-    "go.sum"
+    "go.sum",
+    "dist/**"
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2024 SAP SE or an SAP affiliate company and cobaltcore-dev contributors"

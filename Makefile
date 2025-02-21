@@ -4,6 +4,8 @@
 # Image URL to use all building/pushing image targets
 TAG ?= latest
 IMG ?= keppel.eu-de-1.cloud.sap/ccloud/kvm-node-agent:$(TAG)
+OCI ?= oci://keppel.eu-de-1.cloud.sap/ccloud-helm
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.30.0
 
@@ -165,6 +167,7 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen-$(CONTROLLER_TOOLS_VERSION)
 ENVTEST ?= $(LOCALBIN)/setup-envtest-$(ENVTEST_VERSION)
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint-$(GOLANGCI_LINT_VERSION)
 MOQ = $(LOCALBIN)/moq-$(MOQ_VERSION)
+HELMIFY ?= $(LOCALBIN)/helmify-$(HELMIFY_VERSION)
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.6.0
@@ -172,6 +175,7 @@ CONTROLLER_TOOLS_VERSION ?= v0.17.2
 ENVTEST_VERSION ?= release-0.18
 GOLANGCI_LINT_VERSION ?= v1.64.5
 MOQ_VERSION ?= v0.5.3
+HELMIFY_VERSION ?= v0.4.17
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
@@ -198,15 +202,22 @@ moq: $(MOQ) ## Download moq locally if necessary.
 $(MOQ): $(LOCALBIN)
 	$(call go-install-tool,$(MOQ),github.com/matryer/moq,$(MOQ_VERSION))
 
-HELMIFY ?= $(LOCALBIN)/helmify
 
 .PHONY: helmify
 helmify: $(HELMIFY) ## Download helmify locally if necessary.
 $(HELMIFY): $(LOCALBIN)
-	test -s $(LOCALBIN)/helmify || GOBIN=$(LOCALBIN) go install github.com/arttor/helmify/cmd/helmify@latest
+	$(call go-install-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify,$(HELMIFY_VERSION))
 
 helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY) -crd-dir charts/kvm-node-agent
+
+.PHONY: build-helm
+build-helm: helm
+	mkdir -p dist
+	helm package charts/kvm-node-agent -d dist/
+
+upload-helm: build-helm
+	helm push dist/kvm-node-agent* ${OCI}
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary (ideally with version)

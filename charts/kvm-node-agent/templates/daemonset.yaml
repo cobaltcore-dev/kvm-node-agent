@@ -72,10 +72,8 @@ spec:
         - mountPath: /pki
           name: pki
       nodeSelector: {{- toYaml .Values.controllerManager.nodeSelector | nindent 8 }}
-      securityContext:
-        runAsNonRoot: true
-        supplementalGroups:
-        - 108
+      securityContext: {{- toYaml .Values.controllerManager.podSecurityContext | nindent
+        8 }}
       serviceAccountName: {{ include "kvm-node-agent.fullname" . }}-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:

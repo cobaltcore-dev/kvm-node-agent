@@ -22,6 +22,10 @@ controllerManager:
         memory: 64Mi
   nodeSelector:
     nova.openstack.cloud.sap/virt-driver: libvirt
+  podSecurityContext:
+    runAsNonRoot: true
+    supplementalGroups:
+    - 108
   serviceAccount:
     annotations: {}
 kubernetesClusterDomain: cluster.local

@@ -36,8 +36,13 @@ import (
 // NodeReconciler reconciles a Node object
 type NodeReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme                       *runtime.Scheme
+	Reboot                       bool
+	EvacuateOnReboot             bool
+	CreateCertManagerCertificate bool
 }
+
+const LabelMetalNodeName = "kubernetes.metal.cloud.sap/name"
 
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=nodes/status,verbs=get
@@ -99,16 +104,39 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				Labels:    map[string]string{v1.LabelHostname: sys.Hostname},
 			},
 			Spec: kvmv1alpha1.HypervisorSpec{
-				CreateCertManagerCertificate: true,
-			},
-			Status: kvmv1alpha1.HypervisorStatus{
-				Node:           types.NodeName(node.Name),
-				LibVirtVersion: sys.GetVersion(),
+				Reboot:                       r.Reboot,
+				EvacuateOnReboot:             r.EvacuateOnReboot,
+				CreateCertManagerCertificate: r.CreateCertManagerCertificate,
 			},
 		}); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed creating hypervisor: %w", err)
 		}
+
+		// fetch hypervisor
+		hv := &kvmv1alpha1.Hypervisor{}
+		if err = r.Get(ctx, types.NamespacedName{Name: node.Name, Namespace: namespace}, hv); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed fetching hypervisor: %w", err)
+		}
+
+		hv.Status.Node = types.NodeName(node.Name)
+		if name, ok := node.Labels[LabelMetalNodeName]; ok {
+			hv.Status.Node = types.NodeName(name)
+		}
+
+		// Update Status
+		err = r.Status().Update(ctx, hv)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed updating hypervisor status: %w", err)
+		}
+	} else {
+		if node.ObjectMeta.DeletionTimestamp != nil {
+			// node is being deleted, cleanup hypervisor
+			if err = r.Delete(ctx, &hypervisors.Items[0]); client.IgnoreNotFound(err) != nil {
+				return ctrl.Result{}, fmt.Errorf("failed cleanup up hypervisor: %w", err)
+			}
+		}
 	}
+
 	return ctrl.Result{}, nil
 }
 

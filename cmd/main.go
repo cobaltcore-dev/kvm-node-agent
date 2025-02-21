@@ -175,9 +175,26 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Hypervisor")
 		os.Exit(1)
 	}
+
+	reboot := true
+	evacuateOnReboot := true
+	createCertManagerCertificate := true
+	if os.Getenv("DISABLE_REBOOT") != "" {
+		reboot = false
+	}
+	if os.Getenv("DISABLE_EVACUATE_ON_REBOOT") != "" {
+		evacuateOnReboot = false
+	}
+	if os.Getenv("DISABLE_CREATE_CERT_MANAGER_CERTIFICATE") != "" {
+		createCertManagerCertificate = false
+	}
+
 	if err = (&controller.NodeReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:                       mgr.GetClient(),
+		Scheme:                       mgr.GetScheme(),
+		Reboot:                       reboot,
+		EvacuateOnReboot:             evacuateOnReboot,
+		CreateCertManagerCertificate: createCertManagerCertificate,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Node")
 		os.Exit(1)

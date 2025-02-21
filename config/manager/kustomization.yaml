@@ -7,6 +7,18 @@ images:
   newName: keppel.eu-de-1.cloud.sap/ccloud/kvm-node-agent
   newTag: latest
 patches:
-  - path: manager_node_selector_patch.yaml
-    target:
-      kind: DaemonSet
+- path: manager_node_selector_patch.yaml
+  target:
+    kind: DaemonSet
+#- patch: |-
+#    - op: add
+#      path: "/spec/template/spec/containers/0/env/-"
+#      value:
+#        name: HOSTNAME
+#        valueFrom:
+#          fieldRef:
+#            fieldPath: metadata.labels['kubernetes.metal.cloud.sap/name']
+#  target:
+#    kind: DaemonSet
+#    name: controller-manager
+#    namespace: system

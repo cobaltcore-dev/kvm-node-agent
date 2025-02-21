@@ -136,6 +136,7 @@ type HypervisorStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=".status.node",name="Node",type="string"
 // +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.prettyVersion",name="Version",type="string"
 // +kubebuilder:printcolumn:JSONPath=".status.numInstances",name="Instances",type="integer"
 // +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.hardwareModel",name="Hardware",type="string"

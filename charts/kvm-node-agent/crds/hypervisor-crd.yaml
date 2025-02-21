@@ -14,6 +14,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.node
+      name: Node
+      type: string
     - jsonPath: .status.operatingSystem.prettyVersion
       name: Version
       type: string
