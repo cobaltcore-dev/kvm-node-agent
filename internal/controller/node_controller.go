@@ -46,6 +46,7 @@ const LabelMetalNodeName = "kubernetes.metal.cloud.sap/name"
 
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=nodes/status,verbs=get
+// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors,verbs=get;list;watch;create;update;patch;delete
 
 func (r *NodeReconciler) getNode(ctx context.Context) (*v1.Node, error) {
 	// Fetch the Node we're current running on
@@ -111,30 +112,27 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed creating hypervisor: %w", err)
 		}
+		return ctrl.Result{}, nil
+	}
 
-		// fetch hypervisor
-		hv := &kvmv1alpha1.Hypervisor{}
-		if err = r.Get(ctx, types.NamespacedName{Name: node.Name, Namespace: namespace}, hv); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed fetching hypervisor: %w", err)
+	if node.ObjectMeta.DeletionTimestamp != nil {
+		// node is being deleted, cleanup hypervisor
+		if err = r.Delete(ctx, &hypervisors.Items[0]); client.IgnoreNotFound(err) != nil {
+			return ctrl.Result{}, fmt.Errorf("failed cleanup up hypervisor: %w", err)
 		}
+		return ctrl.Result{}, nil
+	}
 
-		hv.Status.Node = types.NodeName(node.Name)
-		if name, ok := node.Labels[LabelMetalNodeName]; ok {
-			hv.Status.Node = types.NodeName(name)
-		}
+	hv := hypervisors.Items[0].DeepCopy()
+	hv.Status.Node = types.NodeName(node.Name)
+	if name, ok := node.Labels[LabelMetalNodeName]; ok {
+		hv.Status.Node = types.NodeName(name)
+	}
 
-		// Update Status
-		err = r.Status().Update(ctx, hv)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed updating hypervisor status: %w", err)
-		}
-	} else {
-		if node.ObjectMeta.DeletionTimestamp != nil {
-			// node is being deleted, cleanup hypervisor
-			if err = r.Delete(ctx, &hypervisors.Items[0]); client.IgnoreNotFound(err) != nil {
-				return ctrl.Result{}, fmt.Errorf("failed cleanup up hypervisor: %w", err)
-			}
-		}
+	// Update Status
+	err = r.Status().Patch(ctx, hv, client.MergeFrom(&hypervisors.Items[0]))
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed patching hypervisor status: %w", err)
 	}
 
 	return ctrl.Result{}, nil
