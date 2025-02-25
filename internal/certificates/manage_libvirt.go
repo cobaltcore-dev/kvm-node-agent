@@ -95,6 +95,7 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 			IsCA:        false,
 			Usages: []cmapi.KeyUsage{
 				cmapi.UsageServerAuth,
+				cmapi.UsageClientAuth,
 				cmapi.UsageCertSign,
 				cmapi.UsageDigitalSignature,
 				cmapi.UsageKeyEncipherment,
@@ -125,15 +126,15 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 	return nil
 }
 
-var secretToFileMap = map[string]string{
-	"ca.crt":  "CA/cacert.pem",
-	"tls.crt": "libvirt/servercert.pem",
-	"tls.key": "libvirt/private/serverkey.pem",
+var secretToFileMap = map[string][]string{
+	"ca.crt":  {"CA/cacert.pem", "qemu/ca-cert.pem"},
+	"tls.crt": {"libvirt/servercert.pem", "qemu/server-cert.pem"},
+	"tls.key": {"libvirt/private/serverkey.pem", "qemu/server-key.pem"},
 }
 
-var symLinkMap = map[string]string{
-	"servercert.pem": "libvirt/clientcert.pem",
-	"serverkey.pem":  "libvirt/private/clientkey.pem",
+var symLinkMap = map[string][]string{
+	"servercert.pem": {"libvirt/client-cert.pem", "qemu/client-cert.pem"},
+	"serverkey.pem":  {"libvirt/private/client-key.pem", "qemu/client-key.pem"},
 }
 
 func UpdateTLSCertificate(ctx context.Context, data map[string][]byte) error {
@@ -141,65 +142,69 @@ func UpdateTLSCertificate(ctx context.Context, data map[string][]byte) error {
 	log.Info("updating TLS certificates for libvirt", "path", pki)
 
 	// write files
-	for source, target := range secretToFileMap {
-		// prepend the pki path for the target
-		target = filepath.Join(pki, target)
+	for source, targets := range secretToFileMap {
+		for _, target := range targets {
+			// prepend the pki path for the target
+			target = filepath.Join(pki, target)
 
-		if _, ok := data[source]; !ok {
-			return fmt.Errorf("missing data for secret key %s", source)
-		}
+			if _, ok := data[source]; !ok {
+				return fmt.Errorf("missing data for secret key %s", source)
+			}
 
-		// ensure the target directory exists
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(target), err)
-		}
+			// ensure the target directory exists
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(target), err)
+			}
 
-		// write the file
-		if err := os.WriteFile(target, data[source], 0640); err != nil {
-			return fmt.Errorf("failed to write targetFile %s: %w", target, err)
+			// write the file
+			if err := os.WriteFile(target, data[source], 0640); err != nil {
+				return fmt.Errorf("failed to write targetFile %s: %w", target, err)
+			}
 		}
 	}
 
 	// handle symlinks
-	for source, target := range symLinkMap {
-		// prepend the pki path for both, source and target
-		target = filepath.Join(pki, target)
+	for source, targets := range symLinkMap {
+		for _, target := range targets {
+			// prepend the pki path for both, source and target
+			target = filepath.Join(pki, target)
 
-		// ensure the target directory exists
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(target), err)
-		}
-
-		// check if the target exists and is correct, else create symlink
-		fileInfo, err := os.Lstat(target)
-		if err != nil {
-			if !errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("failed to stat target %s: %w", target, err)
+			// ensure the target directory exists
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(target), err)
 			}
-		} else {
-			// check if the target is a symlink, and correct it if necessary
-			if fileInfo.Mode()&os.ModeSymlink != 0 {
-				// if the target is a symlink, check if it points to the correct source
-				link, err := os.Readlink(target)
-				if err != nil {
-					return fmt.Errorf("failed to read symlink %s: %w", target, err)
-				}
 
-				// if the link is correctly pointing to the source, continue
-				if filepath.Clean(link) == filepath.Clean(source) {
-					continue
+			// check if the target exists and is correct, else create symlink
+			fileInfo, err := os.Lstat(target)
+			if err != nil {
+				if !errors.Is(err, os.ErrNotExist) {
+					return fmt.Errorf("failed to stat target %s: %w", target, err)
 				}
+			} else {
+				// check if the target is a symlink, and correct it if necessary
+				if fileInfo.Mode()&os.ModeSymlink != 0 {
+					// if the target is a symlink, check if it points to the correct source
+					link, err := os.Readlink(target)
+					if err != nil {
+						return fmt.Errorf("failed to read symlink %s: %w", target, err)
+					}
 
-				// link is not pointing to the source, remove it
-				if err := os.Remove(target); err != nil {
-					return fmt.Errorf("failed to remove symlink %s: %w", target, err)
+					// if the link is correctly pointing to the source, continue
+					if filepath.Clean(link) == filepath.Clean(source) {
+						continue
+					}
+
+					// link is not pointing to the source, remove it
+					if err := os.Remove(target); err != nil {
+						return fmt.Errorf("failed to remove symlink %s: %w", target, err)
+					}
 				}
 			}
-		}
 
-		// create symlink
-		if err := os.Symlink(source, target); err != nil {
-			return fmt.Errorf("failed to create symlink %s -> %s: %w", target, source, err)
+			// create symlink
+			if err := os.Symlink(source, target); err != nil {
+				return fmt.Errorf("failed to create symlink %s -> %s: %w", target, source, err)
+			}
 		}
 	}
 	return nil
