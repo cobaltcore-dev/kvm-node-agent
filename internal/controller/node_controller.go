@@ -92,7 +92,7 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				return ctrl.Result{}, fmt.Errorf("failed setting controller reference: %w", err)
 			}
 
-			log.Info("Creating new hypervisor", "name", node.Name)
+			log.Info("Setup hypervisor", "name", node.Name)
 			if err = r.Create(ctx, hypervisor); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -118,5 +118,6 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *NodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Node{}).
+		Owns(&kvmv1alpha1.Hypervisor{}).
 		Complete(r)
 }
