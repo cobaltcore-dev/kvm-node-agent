@@ -21,12 +21,14 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
 
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/emulator"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -34,10 +36,14 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -143,6 +149,19 @@ func main() {
 		// if you are doing or is intended to do any operation such as perform cleanups
 		// after the manager stops then its usage might be unsafe.
 		// LeaderElectionReleaseOnCancel: true,
+
+		// Cache options allow to subscribe to events from Kubernetes objects and to read
+		// those objects more efficiently by avoiding to call out to the API.
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
+				&corev1.Node{}: {
+					Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", sys.Hostname)),
+				},
+				&kvmv1alpha1.Hypervisor{}: {
+					Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", sys.Hostname)),
+				},
+			},
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
@@ -68,8 +69,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// only reconcile the node I am running on
 	if req.Name != sys.Hostname {
-		// only reconcile the node I am running on
-		return ctrl.Result{}, nil
+		panic(fmt.Sprintf("reconciling hypervisor %s, but I am running on %s", req.Name, sys.Hostname))
 	}
 	log.Info("Reconcile", "name", req.Name, "namespace", req.Namespace)
 
@@ -77,6 +77,13 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err := r.Get(ctx, req.NamespacedName, &hypervisor); err != nil {
 		// ignore not found errors, could be deleted
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// ====================================================================================================
+	// Hypervisor Metal node name
+	// ====================================================================================================
+	if name, ok := hypervisor.Labels[LabelMetalNodeName]; ok {
+		hypervisor.Status.Node = types.NodeName(name)
 	}
 
 	if hypervisor.Spec.EvacuateOnReboot != r.evacuateOnReboot {

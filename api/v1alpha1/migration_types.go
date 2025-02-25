@@ -30,7 +30,8 @@ type MigrationSpec struct {
 
 // MigrationStatus defines the observed state of Migration.
 type MigrationStatus struct {
-	Host                 string      `json:"host"`
+	Origin               string      `json:"origin"`
+	Destination          string      `json:"destination"`
 	Type                 string      `json:"type,omitempty"`
 	Started              metav1.Time `json:"started,omitempty"`
 	ErrMsg               string      `json:"errMsg,omitempty"`
@@ -62,7 +63,8 @@ type MigrationStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Host",type=string,JSONPath=`.status.host`
+// +kubebuilder:printcolumn:name="Origin",type=string,JSONPath=`.status.origin`
+// +kubebuilder:printcolumn:name="Destination",type=string,JSONPath=`.status.destination`
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.status.type`
 // +kubebuilder:printcolumn:name="Operation",type=string,JSONPath=`.status.operation`
 // +kubebuilder:printcolumn:name="Started",type=date,JSONPath=`.status.started`

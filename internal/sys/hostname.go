@@ -24,6 +24,7 @@ import (
 )
 
 var Hostname string
+var NodeLabelName string
 
 func init() {
 	var err error
@@ -32,5 +33,9 @@ func init() {
 		if err != nil {
 			log.Log.Error(err, "failed fetching hostname")
 		}
+	}
+
+	if NodeLabelName = os.Getenv("NODE_LABEL"); NodeLabelName == "" {
+		NodeLabelName = Hostname
 	}
 }

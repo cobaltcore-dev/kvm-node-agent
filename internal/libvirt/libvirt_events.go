@@ -239,7 +239,7 @@ func (l *LibVirt) startMigrationWatch(ctx context.Context, domain libvirt.Domain
 	}
 	patched := original.DeepCopy()
 	patched.Status.Started = metav1.Now()
-	patched.Status.Host = sys.Hostname
+	patched.Status.Origin = sys.NodeLabelName
 	if err := l.client.Status().Patch(ctx, patched, client.MergeFrom(&original)); err != nil {
 		return fmt.Errorf("failed to patch migration status time: %w", err)
 	}
@@ -332,7 +332,7 @@ func (l *LibVirt) populateDomainJobInfo(domain libvirt.Domain, migration *kvmv1a
 		flags = libvirt.DomainJobStatsCompleted
 	}
 
-	migration.Status.Host = sys.Hostname
+	migration.Status.Destination = sys.NodeLabelName
 	rType, params, err := l.virt.DomainGetJobStats(domain, flags)
 	if err != nil {
 		return err

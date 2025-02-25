@@ -14,8 +14,11 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.host
-      name: Host
+    - jsonPath: .status.origin
+      name: Origin
+      type: string
+    - jsonPath: .status.destination
+      name: Destination
       type: string
     - jsonPath: .status.type
       name: Type
@@ -83,6 +86,8 @@ spec:
                 type: string
               dataTotal:
                 type: string
+              destination:
+                type: string
               diskBps:
                 type: string
               diskProcessed:
@@ -94,8 +99,6 @@ spec:
               downtime:
                 type: string
               errMsg:
-                type: string
-              host:
                 type: string
               memBps:
                 type: string
@@ -125,6 +128,8 @@ spec:
                 type: string
               operation:
                 type: string
+              origin:
+                type: string
               setupTime:
                 type: string
               started:
@@ -137,7 +142,8 @@ spec:
               type:
                 type: string
             required:
-            - host
+            - destination
+            - origin
             type: object
         type: object
     served: true
