@@ -133,8 +133,10 @@ var secretToFileMap = map[string][]string{
 }
 
 var symLinkMap = map[string][]string{
-	"servercert.pem": {"libvirt/client-cert.pem", "qemu/client-cert.pem"},
-	"serverkey.pem":  {"libvirt/private/client-key.pem", "qemu/client-key.pem"},
+	"servercert.pem":  {"libvirt/clientcert.pem"},
+	"serverkey.pem":   {"libvirt/private/clientkey.pem"},
+	"server-cert.pem": {"qemu/client-cert.pem"},
+	"server-key.pem":  {"qemu/client-key.pem"},
 }
 
 func UpdateTLSCertificate(ctx context.Context, data map[string][]byte) error {
