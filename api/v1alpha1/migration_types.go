@@ -30,8 +30,8 @@ type MigrationSpec struct {
 
 // MigrationStatus defines the observed state of Migration.
 type MigrationStatus struct {
-	Origin               string      `json:"origin"`
-	Destination          string      `json:"destination"`
+	Origin               string      `json:"origin,omitempty"`
+	Destination          string      `json:"destination,omitempty"`
 	Type                 string      `json:"type,omitempty"`
 	Started              metav1.Time `json:"started,omitempty"`
 	ErrMsg               string      `json:"errMsg,omitempty"`

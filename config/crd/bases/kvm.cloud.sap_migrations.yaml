@@ -142,9 +142,6 @@ spec:
                 type: string
               type:
                 type: string
-            required:
-            - destination
-            - origin
             type: object
         type: object
     served: true
