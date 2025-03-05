@@ -1,4 +1,10 @@
 controllerManager:
+  createPkiDirs:
+    containerSecurityContext:
+      runAsUser: 0
+    image:
+      repository: busybox
+      tag: "1.28"
   manager:
     args:
     - --health-probe-bind-address=:8081
@@ -23,7 +29,6 @@ controllerManager:
   nodeSelector:
     nova.openstack.cloud.sap/virt-driver: libvirt
   podSecurityContext:
-    runAsNonRoot: true
     supplementalGroups:
     - 108
   serviceAccount:

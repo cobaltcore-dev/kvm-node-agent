@@ -53,9 +53,18 @@ spec:
       #             values:
       #               - linux
       securityContext:
-        runAsNonRoot: true
+      #  runAsNonRoot: true
         supplementalGroups:
           - 108 # libvirt group
+      initContainers:
+      - name: create-pki-dirs
+        securityContext:
+          runAsUser: 0
+        image: busybox:1.28
+        command: ['sh', '-c', 'cd /host/etc/pki && for i in CA libvirt qemu; do if [ -L ${i} ]; then rm ${i}; fi; done && mkdir -p CA libvirt qemu && chown 42438:42438 CA libvirt qemu && chmod 0755 CA libvirt qemu']
+        volumeMounts:
+        - mountPath: /host
+          name: host
       containers:
       - command:
         - /manager
@@ -115,8 +124,12 @@ spec:
         - mountPath: /etc/os-release
           name: os-release
           readOnly: true
-        - mountPath: /pki
-          name: pki
+        - mountPath: /pki/CA
+          name: pki-ca
+        - mountPath: /pki/libvirt
+          name: pki-libvirt
+        - mountPath: /pki/qemu
+          name: pki-qemu
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
@@ -136,7 +149,18 @@ spec:
         hostPath:
           path: /etc/os-release
           type: File
-      - name: pki
+      - name: pki-ca
         hostPath:
-          path: /var/lib/kvm-node-agent
-          type: Directory
+          path: /etc/pki/CA
+          type: DirectoryOrCreate
+      - name: pki-libvirt
+        hostPath:
+          path: /etc/pki/libvirt
+          type: DirectoryOrCreate
+      - name: pki-qemu
+        hostPath:
+          path: /etc/pki/qemu
+          type: DirectoryOrCreate
+      - name: host
+        hostPath:
+          path: /

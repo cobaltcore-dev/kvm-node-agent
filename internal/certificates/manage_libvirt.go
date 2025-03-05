@@ -159,7 +159,7 @@ func UpdateTLSCertificate(ctx context.Context, data map[string][]byte) error {
 			}
 
 			// write the file
-			if err := os.WriteFile(target, data[source], 0640); err != nil {
+			if err := os.WriteFile(target, data[source], 0644); err != nil {
 				return fmt.Errorf("failed to write targetFile %s: %w", target, err)
 			}
 		}

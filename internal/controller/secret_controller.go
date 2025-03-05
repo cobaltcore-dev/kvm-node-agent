@@ -78,7 +78,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Save the last resource version to file system
 	pki := os.Getenv("PKI_PATH")
-	path := filepath.Join(pki, ".last_resource_version")
+	path := filepath.Join(pki, "CA", ".last_resource_version")
 	if err = os.WriteFile(path, []byte(secret.ResourceVersion), 0600); err != nil {
 		// not a failure condition, just log the error
 		log.Error(err, "failed to write last resource version", "path", path)
@@ -93,7 +93,7 @@ func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Load the last resource version from file system, so we can skip
 	// processing if the resource version hasn't changed
 	pki := os.Getenv("PKI_PATH")
-	path := filepath.Join(pki, ".last_resource_version")
+	path := filepath.Join(pki, "CA", ".last_resource_version")
 	if buf, err := os.ReadFile(path); err != nil {
 		logger.Log.Info("No last resource version found for PKI secrets", "path", path)
 	} else {

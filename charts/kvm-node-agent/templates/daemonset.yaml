@@ -69,8 +69,31 @@ spec:
         - mountPath: /etc/os-release
           name: os-release
           readOnly: true
-        - mountPath: /pki
-          name: pki
+        - mountPath: /pki/CA
+          name: pki-ca
+        - mountPath: /pki/libvirt
+          name: pki-libvirt
+        - mountPath: /pki/qemu
+          name: pki-qemu
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - cd /host/etc/pki && for i in CA libvirt qemu; do if [ -L ${i} ]; then rm ${i};
+          fi; done && mkdir -p CA libvirt qemu && chown 42438:42438 CA libvirt qemu && chmod
+          0755 CA libvirt qemu
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.controllerManager.createPkiDirs.image.repository }}:{{ .Values.controllerManager.createPkiDirs.image.tag
+          | default .Chart.AppVersion }}
+        name: create-pki-dirs
+        resources: {}
+        securityContext: {{- toYaml .Values.controllerManager.createPkiDirs.containerSecurityContext
+          | nindent 10 }}
+        volumeMounts:
+        - mountPath: /host
+          name: host
       nodeSelector: {{- toYaml .Values.controllerManager.nodeSelector | nindent 8 }}
       securityContext: {{- toYaml .Values.controllerManager.podSecurityContext | nindent
         8 }}
@@ -94,6 +117,17 @@ spec:
           type: File
         name: os-release
       - hostPath:
-          path: /var/lib/kvm-node-agent
-          type: Directory
-        name: pki
+          path: /etc/pki/CA
+          type: DirectoryOrCreate
+        name: pki-ca
+      - hostPath:
+          path: /etc/pki/libvirt
+          type: DirectoryOrCreate
+        name: pki-libvirt
+      - hostPath:
+          path: /etc/pki/qemu
+          type: DirectoryOrCreate
+        name: pki-qemu
+      - hostPath:
+          path: /
+        name: host

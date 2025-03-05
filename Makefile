@@ -216,7 +216,7 @@ build-helm: helm
 	mkdir -p dist
 	helm package charts/kvm-node-agent -d dist/
 
-upload-helm: build-helm
+helm-push: build-helm
 	helm push dist/kvm-node-agent* ${OCI}
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
