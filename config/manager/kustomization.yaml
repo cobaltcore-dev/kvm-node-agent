@@ -10,15 +10,15 @@ patches:
 - path: manager_node_selector_patch.yaml
   target:
     kind: DaemonSet
-#- patch: |-
-#    - op: add
-#      path: "/spec/template/spec/containers/0/env/-"
-#      value:
-#        name: HOSTNAME
-#        valueFrom:
-#          fieldRef:
-#            fieldPath: metadata.labels['kubernetes.metal.cloud.sap/name']
-#  target:
-#    kind: DaemonSet
-#    name: controller-manager
-#    namespace: system
+- patch: |-
+    - op: add
+      path: "/spec/template/spec/containers/0/env/-"
+      value:
+        name: NODE_LABEL
+        valueFrom:
+          fieldRef:
+            fieldPath: "{{ .Values.controllerManager.manager.env.nodeLabelFieldPath }}"
+  target:
+    kind: DaemonSet
+    name: controller-manager
+    namespace: system

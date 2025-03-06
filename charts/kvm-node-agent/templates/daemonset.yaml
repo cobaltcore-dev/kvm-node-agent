@@ -35,6 +35,10 @@ spec:
               fieldPath: status.hostIP
         - name: ISSUER_NAME
           value: {{ quote .Values.controllerManager.manager.env.issuerName }}
+        - name: NODE_LABEL
+          valueFrom:
+            fieldRef:
+              fieldPath: {{ .Values.controllerManager.manager.env.nodeLabelFieldPath }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag

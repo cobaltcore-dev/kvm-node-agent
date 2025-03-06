@@ -340,7 +340,6 @@ func (l *LibVirt) populateDomainJobInfo(domain libvirt.Domain, migration *kvmv1a
 
 	switch rType {
 	case VIR_DOMAIN_JOB_NONE:
-		migration.Status.Type = "none"
 		return errors.New("Domain not found")
 	case VIR_DOMAIN_JOB_BOUNDED:
 		migration.Status.Type = "bounded"

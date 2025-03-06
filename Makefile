@@ -175,7 +175,7 @@ CONTROLLER_TOOLS_VERSION ?= v0.17.2
 ENVTEST_VERSION ?= release-0.18
 GOLANGCI_LINT_VERSION ?= v1.64.5
 MOQ_VERSION ?= v0.5.3
-HELMIFY_VERSION ?= v0.4.17
+HELMIFY_VERSION ?= v0.4.18
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
