@@ -79,6 +79,7 @@ spec:
           name: pki-libvirt
         - mountPath: /pki/qemu
           name: pki-qemu
+      hostNetwork: true
       initContainers:
       - command:
         - sh

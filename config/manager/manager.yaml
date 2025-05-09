@@ -52,6 +52,7 @@ spec:
       #             operator: In
       #             values:
       #               - linux
+      hostNetwork: true
       securityContext:
       #  runAsNonRoot: true
         supplementalGroups:
