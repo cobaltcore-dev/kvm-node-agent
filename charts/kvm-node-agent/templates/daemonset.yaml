@@ -103,6 +103,10 @@ spec:
         8 }}
       serviceAccountName: {{ include "kvm-node-agent.fullname" . }}-controller-manager
       terminationGracePeriodSeconds: 10
+      tolerations:
+      - effect: NoSchedule
+        key: node.gardener.cloud/critical-components-not-ready
+        operator: Exists
       volumes:
       - hostPath:
           path: /run/libvirt/libvirt-sock
