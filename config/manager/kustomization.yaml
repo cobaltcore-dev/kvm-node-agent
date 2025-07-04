@@ -18,6 +18,12 @@ patches:
         valueFrom:
           fieldRef:
             fieldPath: "{{ .Values.controllerManager.manager.env.nodeLabelFieldPath }}"
+    - op: add
+      path: "/spec/template/spec/tolerations"
+      value:
+      - key: "node.gardener.cloud/critical-components-not-ready"
+        operator: "Exists"
+        effect: "NoSchedule"
   target:
     kind: DaemonSet
     name: controller-manager
