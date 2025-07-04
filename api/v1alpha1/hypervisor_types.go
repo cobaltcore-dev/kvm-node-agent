@@ -40,7 +40,7 @@ type HypervisorSpec struct {
 	// EvacuateOnReboot request an evacuation of all instances before reboot.
 	EvacuateOnReboot bool `json:"evacuateOnReboot"`
 
-	// +kubebuilder:default:=true
+	// +kubebuilder:default:=false
 	// Require to issue a certificate from cert-manager for the hypervisor, to be used for
 	// secure communication with the libvirt API.
 	CreateCertManagerCertificate bool `json:"createCertManagerCertificate"`
