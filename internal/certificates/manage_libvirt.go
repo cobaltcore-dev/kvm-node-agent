@@ -21,19 +21,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
-	"time"
 
-	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 )
 
 func GetSecretAndCertName(host string) (string, string) {
@@ -45,86 +36,6 @@ func GetSecretAndCertName(host string) (string, string) {
 var (
 	pki = os.Getenv("PKI_PATH")
 )
-
-// EnsureCertificate ensures that a certificate exists for the given host and IPs
-// TODO: move this code to a controller, so the node-agent doesn't need to have the rights
-// to create certificates for any host
-func EnsureCertificate(ctx context.Context, c client.Client, host string) error {
-	log := logger.FromContext(ctx)
-
-	var ipAddresses []string
-	if ips, err := net.LookupIP(sys.Hostname); err != nil {
-		if ip, ok := os.LookupEnv("HOST_IP_ADDRESS"); !ok {
-			return fmt.Errorf("failed to resolve hostname %s: %w", sys.Hostname, err)
-		} else {
-			ipAddresses = append(ipAddresses, ip)
-		}
-	} else {
-		for _, ip := range ips {
-			if ipv4 := ip.To4(); ipv4 != nil {
-				ipAddresses = append(ipAddresses, ipv4.String())
-			}
-		}
-	}
-
-	apiVersion := "cert-manager.io/v1"
-	secretName, certName := GetSecretAndCertName(host)
-
-	certificate := cmapi.Certificate{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       cmapi.CertificateKind,
-			APIVersion: apiVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      certName,
-			Namespace: sys.Namespace,
-		},
-	}
-
-	update, err := controllerutil.CreateOrUpdate(ctx, c, &certificate, func() error {
-		certificate.Spec = cmapi.CertificateSpec{
-			SecretName: secretName,
-			PrivateKey: &cmapi.CertificatePrivateKey{
-				Algorithm: cmapi.RSAKeyAlgorithm,
-				Encoding:  cmapi.PKCS1,
-				Size:      4096,
-			},
-			// Values for testing, increase for production to something sensible
-			Duration:    &metav1.Duration{Duration: 8 * time.Hour},
-			RenewBefore: &metav1.Duration{Duration: 2 * time.Hour},
-			IsCA:        false,
-			Usages: []cmapi.KeyUsage{
-				cmapi.UsageServerAuth,
-				cmapi.UsageClientAuth,
-				cmapi.UsageCertSign,
-				cmapi.UsageDigitalSignature,
-				cmapi.UsageKeyEncipherment,
-			},
-			Subject: &cmapi.X509Subject{
-				Organizations: []string{"nova"},
-			},
-			CommonName:  host,
-			DNSNames:    []string{host},
-			IPAddresses: ipAddresses,
-			IssuerRef: v1.ObjectReference{
-				Name:  os.Getenv("ISSUER_NAME"),
-				Kind:  cmapi.IssuerKind,
-				Group: "cert-manager.io",
-			},
-		}
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	if update != controllerutil.OperationResultNone {
-		log.Info(fmt.Sprintf("Certificate %s %s", certName, update))
-	}
-
-	return nil
-}
 
 var secretToFileMap = map[string][]string{
 	"ca.crt":  {"CA/cacert.pem", "qemu/ca-cert.pem"},

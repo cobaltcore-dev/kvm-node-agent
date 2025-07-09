@@ -21,17 +21,6 @@ rules:
   verbs:
   - get
 - apiGroups:
-  - cert-manager.io
-  resources:
-  - certificates
-  verbs:
-  - create
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - kvm.cloud.sap
   resources:
   - evictions

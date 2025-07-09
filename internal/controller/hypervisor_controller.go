@@ -33,7 +33,6 @@ import (
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
 	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/evacuation"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
@@ -62,7 +61,6 @@ const (
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=evictions,verbs=get;create
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations,verbs=get;list;watch;create
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=migrations/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch
 
 func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logger.FromContext(ctx, "controller", "hypervisor")
@@ -256,12 +254,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			hypervisor.Status.Update.Installed = hypervisor.Spec.OperatingSystemVersion
 		}
 		hypervisor.Status.Update.InProgress = running
-	}
-
-	if hypervisor.Spec.CreateCertManagerCertificate {
-		if err := certificates.EnsureCertificate(ctx, r.Client, sys.Hostname); err != nil {
-			return ctrl.Result{}, err
-		}
 	}
 
 	meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
