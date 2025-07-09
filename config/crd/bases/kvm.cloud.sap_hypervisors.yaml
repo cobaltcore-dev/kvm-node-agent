@@ -59,7 +59,7 @@ spec:
             description: HypervisorSpec defines the desired state of Hypervisor
             properties:
               createCertManagerCertificate:
-                default: true
+                default: false
                 description: |-
                   Require to issue a certificate from cert-manager for the hypervisor, to be used for
                   secure communication with the libvirt API.
