@@ -14,6 +14,7 @@ controllerManager:
         drop:
         - ALL
     env:
+      disableCreateCertManagerCertificate: "true"
       issuerName: kvm-node-agent-ca-issuer
       pkiPath: /pki
     image:

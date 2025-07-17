@@ -83,6 +83,8 @@ spec:
               fieldPath: status.hostIP
         - name: ISSUER_NAME
           value: kvm-node-agent-ca-issuer
+        - name: DISABLE_CREATE_CERT_MANAGER_CERTIFICATE
+          value: "true"
         image: controller:latest
         name: manager
         securityContext:
