@@ -35,6 +35,9 @@ spec:
               fieldPath: status.hostIP
         - name: ISSUER_NAME
           value: {{ quote .Values.controllerManager.manager.env.issuerName }}
+        - name: DISABLE_CREATE_CERT_MANAGER_CERTIFICATE
+          value: {{ quote .Values.controllerManager.manager.env.disableCreateCertManagerCertificate
+            }}
         - name: NODE_LABEL
           valueFrom:
             fieldRef:
