@@ -27,8 +27,6 @@ controllerManager:
       requests:
         cpu: 10m
         memory: 64Mi
-  nodeSelector:
-    nova.openstack.cloud.sap/virt-driver: libvirt
   podSecurityContext:
     supplementalGroups:
     - 108
