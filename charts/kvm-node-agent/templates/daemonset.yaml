@@ -71,11 +71,8 @@ spec:
         securityContext: {{- toYaml .Values.controllerManager.manager.containerSecurityContext
           | nindent 10 }}
         volumeMounts:
-        - mountPath: /run/libvirt/libvirt-sock
-          name: libvirt-sock
-          readOnly: true
-        - mountPath: /run/libvirt/libvirt-admin-sock
-          name: libvirt-admin-sock
+        - mountPath: /run/libvirt
+          name: run-libvirt
           readOnly: true
         - mountPath: /var/run/dbus/system_bus_socket
           name: systemd-sock
@@ -118,13 +115,9 @@ spec:
         operator: Exists
       volumes:
       - hostPath:
-          path: /run/libvirt/libvirt-sock
-          type: Socket
-        name: libvirt-sock
-      - hostPath:
-          path: /run/libvirt/libvirt-admin-sock
-          type: Socket
-        name: libvirt-admin-sock
+          path: /run/libvirt
+          type: Directory
+        name: run-libvirt
       - hostPath:
           path: /run/dbus/system_bus_socket
           type: Socket
