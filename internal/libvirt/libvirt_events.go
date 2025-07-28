@@ -57,6 +57,8 @@ const (
 	VIR_DOMAIN_JOB_OPERATION_SNAPSHOT_DELETE        /* (Since: 9.0.0) */
 )
 
+var errDomainNotFoud = errors.New("domain not found")
+
 func (l *LibVirt) runMigrationListener(ctx context.Context) {
 	log := logger.FromContext(ctx)
 	lifecycleEvents, err := l.virt.SubscribeEvents(ctx, libvirt.DomainEventIDLifecycle, libvirt.OptDomain{})
@@ -278,7 +280,7 @@ func (l *LibVirt) patchMigration(ctx context.Context, domain libvirt.Domain, com
 		}
 
 		// quirk if the domain job details have been reaped, set migration type to completed
-		if completed && strings.HasSuffix(err.Error(), "Domain not found") {
+		if completed && errors.Is(err, errDomainNotFoud) {
 			logger.FromContext(ctx).Info("migration job details reaped, setting migration status to completed")
 			migration.Status.Type = "completed"
 		}
@@ -310,7 +312,7 @@ func (l *LibVirt) watchMigrationLoop(ctx context.Context, cancel context.CancelF
 
 			// Patch migration status
 			if err := l.patchMigration(ctx, domain, false); err != nil {
-				if strings.HasSuffix(err.Error(), "Domain not found") {
+				if errors.Is(err, errDomainNotFoud) {
 					// quirk if the domain job details have been reaped, stop migration watch
 					// could happen if the migration fails
 					log.Info("migration job details reaped, stopping migration watch")
@@ -340,7 +342,7 @@ func (l *LibVirt) populateDomainJobInfo(domain libvirt.Domain, migration *kvmv1a
 
 	switch rType {
 	case VIR_DOMAIN_JOB_NONE:
-		return errors.New("Domain not found")
+		return errDomainNotFoud
 	case VIR_DOMAIN_JOB_BOUNDED:
 		migration.Status.Type = "bounded"
 	case VIR_DOMAIN_JOB_UNBOUNDED:
