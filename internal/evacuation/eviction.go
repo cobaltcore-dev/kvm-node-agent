@@ -19,6 +19,7 @@ package evacuation
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
+	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 )
 
@@ -39,6 +41,17 @@ type EvictionController struct {
 // see `systemd-analyze cat-config systemd/logind.conf` for the current setting.
 func (e *EvictionController) EvictCurrentHost(ctx context.Context) error {
 	log := logger.FromContext(ctx)
+
+	// Check for running VMs before creating the eviction custom resource
+	var hypervisor kvmv1alpha1.Hypervisor
+	if err := e.Get(ctx, client.ObjectKey{Namespace: sys.Namespace, Name: sys.Hostname}, &hypervisor); err != nil {
+		return fmt.Errorf("could not get hypervisor: %w", err)
+	}
+
+	if hypervisor.Status.NumInstances == 0 {
+		log.Info("EvictCurrentHost due shutdown: No running VMs found on current host, no eviction needed")
+		return nil
+	}
 
 	u := &unstructured.Unstructured{}
 	u.SetUnstructuredContent(map[string]interface{}{
