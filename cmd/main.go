@@ -26,6 +26,7 @@ import (
 
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/emulator"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
@@ -112,6 +113,8 @@ func main() {
 		TLSOpts: tlsOpts,
 	})
 
+	secretName, _ := certificates.GetSecretAndCertName(sys.Hostname)
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		// Metrics endpoint is enabled in 'config/default/kustomization.yaml'. The Metrics options configure the server.
@@ -159,6 +162,9 @@ func main() {
 				},
 				&kvmv1alpha1.Hypervisor{}: {
 					Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", sys.Hostname)),
+				},
+				&corev1.Secret{}: {
+					Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", secretName)),
 				},
 			},
 		},
