@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,6 +55,15 @@ func (e *EvictionController) EvictCurrentHost(ctx context.Context) error {
 	}
 
 	u := &unstructured.Unstructured{}
+	gvk := hypervisor.GroupVersionKind()
+	u.SetOwnerReferences([]v1.OwnerReference{
+		{
+			APIVersion: gvk.GroupVersion().String(),
+			Kind:       gvk.Kind,
+			UID:        hypervisor.GetUID(),
+			Name:       hypervisor.GetName(),
+		},
+	})
 	u.SetUnstructuredContent(map[string]interface{}{
 		"spec": map[string]interface{}{
 			"hypervisor": sys.Hostname,
