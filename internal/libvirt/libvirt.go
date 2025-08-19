@@ -62,7 +62,11 @@ func (l *LibVirt) Connect() error {
 		return nil
 	}
 
-	err := l.virt.Connect()
+	var libVirtUri = libvirt.ConnectURI("ch:///system")
+	if uri, present := os.LookupEnv("LIBVIRT_DEFAULT_URI"); present {
+		libVirtUri = libvirt.ConnectURI(uri)
+	}
+	err := l.virt.ConnectToURI(libVirtUri)
 	if err == nil {
 		// Update the version
 		if version, err := l.virt.ConnectGetVersion(); err != nil {
