@@ -10,8 +10,10 @@ spec:
     kind: Hypervisor
     listKind: HypervisorList
     plural: hypervisors
+    shortNames:
+    - hv
     singular: hypervisor
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .status.node
