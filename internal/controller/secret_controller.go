@@ -32,9 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/certificates"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/certificates"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
 )
 
 // SecretReconciler reconciles a Secret object

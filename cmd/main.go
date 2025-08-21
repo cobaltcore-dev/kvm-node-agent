@@ -26,11 +26,11 @@ import (
 
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/certificates"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/emulator"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/certificates"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/emulator"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -51,8 +51,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/controller"
+	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 

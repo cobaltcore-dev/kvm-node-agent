@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 )
 
 func GetSecretAndCertName(host string) (string, string) {

@@ -24,8 +24,8 @@ import (
 
 	golibvirt "github.com/digitalocean/go-libvirt"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
 )
 
 func NewLibVirtEmulator(ctx context.Context) *libvirt.InterfaceMock {

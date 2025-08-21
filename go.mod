@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 SAP SE or an SAP affiliate company and cobaltcore-dev contributors
 //
 // SPDX-License-Identifier: Apache-2.0
-module github.com/cobaltcode-dev/kvm-node-agent
+module github.com/cobaltcore-dev/kvm-node-agent
 
 go 1.24.4
 

@@ -30,8 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
+	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 )
 
 const (

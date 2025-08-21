@@ -6,7 +6,7 @@ domain: cloud.sap
 layout:
 - go.kubebuilder.io/v4
 projectName: kvm-node-agent
-repo: github.com/cobaltcode-dev/kvm-node-agent
+repo: github.com/cobaltcore-dev/kvm-node-agent
 resources:
 - api:
     crdVersion: v1
@@ -15,7 +15,7 @@ resources:
   domain: cloud.sap
   group: kvm
   kind: Hypervisor
-  path: github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1
+  path: github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1
   version: v1alpha1
 - controller: true
   domain: cloud.sap
@@ -27,7 +27,7 @@ resources:
   domain: cloud.sap
   group: kvm
   kind: Migration
-  path: github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1
+  path: github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1
   version: v1alpha1
 - controller: true
   domain: cloud.sap
