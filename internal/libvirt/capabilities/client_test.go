@@ -19,7 +19,6 @@ package capabilities
 
 import (
 	"encoding/xml"
-	"os"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -40,18 +39,9 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestNewClientWithCustomSocket(t *testing.T) {
-	// Set custom socket path
-	originalSocket := os.Getenv("LIBVIRT_SOCKET")
-	defer func() {
-		if originalSocket != "" {
-			os.Setenv("LIBVIRT_SOCKET", originalSocket)
-		} else {
-			os.Unsetenv("LIBVIRT_SOCKET")
-		}
-	}()
-
+	// Set custom socket path using t.Setenv for automatic cleanup
 	customSocket := "/custom/libvirt-sock"
-	os.Setenv("LIBVIRT_SOCKET", customSocket)
+	t.Setenv("LIBVIRT_SOCKET", customSocket)
 
 	client := NewClient()
 	if client == nil {
@@ -386,10 +376,9 @@ func TestConvertWithRealExampleData(t *testing.T) {
 
 // Test helper function to create a mock capabilities structure
 func createMockCapabilities(arch string, cells []mockCell) Capabilities {
-	var capabilitiesCells []CapabilitiesHostTopologyCell
-
-	for _, cell := range cells {
-		capabilitiesCells = append(capabilitiesCells, CapabilitiesHostTopologyCell{
+	capabilitiesCells := make([]CapabilitiesHostTopologyCell, 0, len(cells))
+	for i, cell := range cells {
+		capabilitiesCells[i] = CapabilitiesHostTopologyCell{
 			ID: cell.ID,
 			Memory: CapabilitiesHostTopologyCellMemory{
 				Unit:  cell.MemoryUnit,
@@ -398,7 +387,7 @@ func createMockCapabilities(arch string, cells []mockCell) Capabilities {
 			CPUs: CapabilitiesHostTopologyCellCPUs{
 				Num: cell.CPUCount,
 			},
-		})
+		}
 	}
 
 	return Capabilities{
