@@ -22,7 +22,7 @@ package libvirt
 import (
 	"github.com/digitalocean/go-libvirt"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 )
 
 type Interface interface {

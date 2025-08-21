@@ -5,7 +5,7 @@ package systemd
 
 import (
 	"context"
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	systemd "github.com/coreos/go-systemd/v22/dbus"
 	"sync"
 )

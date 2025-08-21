@@ -30,11 +30,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt/capabilities"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
+	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
 )
 
 var _ = Describe("Hypervisor Controller", func() {

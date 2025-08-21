@@ -4,7 +4,7 @@
 package libvirt
 
 import (
-	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/digitalocean/go-libvirt"
 	"sync"
 )

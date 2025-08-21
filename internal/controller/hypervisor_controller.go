@@ -32,13 +32,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/certificates"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/evacuation"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt/capabilities"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
+	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/certificates"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/evacuation"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
 )
 
 // HypervisorReconciler reconciles a Hypervisor object

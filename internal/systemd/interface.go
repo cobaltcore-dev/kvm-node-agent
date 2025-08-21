@@ -24,7 +24,7 @@ import (
 
 	"github.com/coreos/go-systemd/v22/dbus"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 )
 
 type Descriptor struct {

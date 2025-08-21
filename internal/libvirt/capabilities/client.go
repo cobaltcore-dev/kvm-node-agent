@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	libvirt "github.com/digitalocean/go-libvirt"
 	"github.com/digitalocean/go-libvirt/socket/dialers"
 	"k8s.io/apimachinery/pkg/api/resource"
