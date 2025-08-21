@@ -376,7 +376,7 @@ func TestConvertWithRealExampleData(t *testing.T) {
 
 // Test helper function to create a mock capabilities structure
 func createMockCapabilities(arch string, cells []mockCell) Capabilities {
-	capabilitiesCells := make([]CapabilitiesHostTopologyCell, 0, len(cells))
+	capabilitiesCells := make([]CapabilitiesHostTopologyCell, len(cells))
 	for i, cell := range cells {
 		capabilitiesCells[i] = CapabilitiesHostTopologyCell{
 			ID: cell.ID,
