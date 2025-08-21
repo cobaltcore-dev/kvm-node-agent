@@ -23,8 +23,8 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
-	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
+	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
 )
 
 func NewSystemdEmulator(ctx context.Context) *systemd.InterfaceMock {
