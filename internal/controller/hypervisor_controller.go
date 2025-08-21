@@ -36,6 +36,7 @@ import (
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/evacuation"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt/capabilities"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
 )
@@ -47,13 +48,17 @@ type HypervisorReconciler struct {
 	Systemd systemd.Interface
 	Libvirt libvirt.Interface
 
+	// Client that connects to libvirt and fetches capabilities of the hypervisor.
+	CapabilitiesClient capabilities.Client
+
 	osDescriptor     *systemd.Descriptor
 	evacuateOnReboot bool
 }
 
 const (
-	OSUpdateType = "OperatingSystemUpdate"
-	LibVirtType  = "LibVirtConnection"
+	OSUpdateType           = "OperatingSystemUpdate"
+	LibVirtType            = "LibVirtConnection"
+	CapabilitiesClientType = "CapabilitiesClientConnection"
 )
 
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors,verbs=get;list;watch;create;update;patch;delete
@@ -131,6 +136,19 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		// Update hypervisor instances
 		hypervisor.Status.NumInstances = r.Libvirt.GetNumInstances()
 		hypervisor.Status.Instances, _ = r.Libvirt.GetInstances()
+	}
+
+	// Update capabilities status.
+	var err error
+	hypervisor.Status.Capabilities, err = r.CapabilitiesClient.Get()
+	if err != nil {
+		log.Error(err, "failed to get capabilities")
+		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+			Type:    CapabilitiesClientType,
+			Status:  metav1.ConditionFalse,
+			Message: err.Error(),
+			Reason:  "CapabilitiesClientGetFailed",
+		})
 	}
 
 	// ====================================================================================================

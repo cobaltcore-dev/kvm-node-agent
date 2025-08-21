@@ -32,6 +32,7 @@ import (
 
 	kvmv1alpha1 "github.com/cobaltcode-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt/capabilities"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
 )
@@ -127,6 +128,7 @@ var _ = Describe("Hypervisor Controller", func() {
 						return nil, nil
 					},
 				},
+				CapabilitiesClient: capabilities.NewClientEmulator(),
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{

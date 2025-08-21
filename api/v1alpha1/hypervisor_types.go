@@ -18,6 +18,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -106,6 +107,17 @@ type OperatingSystemStatus struct {
 	FirmwareDate metav1.Time `json:"firmwareDate,omitempty"`
 }
 
+// Current capabilities reported by libvirt.
+type CapabilitiesStatus struct {
+	// +kubebuilder:default:=unknown
+	// The hosts CPU architecture (not the guests).
+	HostCpuArch string `json:"cpuArch,omitempty"`
+	// Total host memory available as a sum of memory over all numa cells.
+	HostMemory resource.Quantity `json:"memory,omitempty"`
+	// Total host cpus available as a sum of cpus over all numa cells.
+	HostCpus resource.Quantity `json:"cpus,omitempty"`
+}
+
 // HypervisorStatus defines the observed state of Hypervisor
 type HypervisorStatus struct {
 	// +kubebuilder:default:=unknown
@@ -123,6 +135,9 @@ type HypervisorStatus struct {
 
 	// Represents the Hypervisor hosted Virtual Machines
 	Instances []Instance `json:"instances,omitempty"`
+
+	// The capabilities of the hypervisors as reported by libvirt.
+	Capabilities CapabilitiesStatus `json:"capabilities,omitempty"`
 
 	// +kubebuilder:default:=0
 	// Represent the num of instances

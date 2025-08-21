@@ -29,6 +29,7 @@ import (
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/emulator"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcode-dev/kvm-node-agent/internal/libvirt/capabilities"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcode-dev/kvm-node-agent/internal/systemd"
 
@@ -176,10 +177,12 @@ func main() {
 
 	var sysd systemd.Interface
 	var libv libvirt.Interface
+	var capabilitiesClient capabilities.Client
 	if os.Getenv("EMULATE") != "" {
 		ctx := logger.IntoContext(context.Background(), setupLog)
 		libv = emulator.NewLibVirtEmulator(ctx)
 		sysd = emulator.NewSystemdEmulator(ctx)
+		capabilitiesClient = capabilities.NewClientEmulator()
 	} else {
 		var err error
 		ctx := logger.IntoContext(context.Background(), setupLog)
@@ -189,13 +192,15 @@ func main() {
 			setupLog.Error(err, "unable to create systemd instance")
 			os.Exit(1)
 		}
+		capabilitiesClient = capabilities.NewClient()
 	}
 
 	if err = (&controller.HypervisorReconciler{
-		Client:  mgr.GetClient(),
-		Scheme:  mgr.GetScheme(),
-		Systemd: sysd,
-		Libvirt: libv,
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		Systemd:            sysd,
+		Libvirt:            libv,
+		CapabilitiesClient: capabilitiesClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Hypervisor")
 		os.Exit(1)
