@@ -20,11 +20,9 @@ package capabilities
 import (
 	"encoding/xml"
 	"fmt"
-	"os"
 
 	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	libvirt "github.com/digitalocean/go-libvirt"
-	"github.com/digitalocean/go-libvirt/socket/dialers"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -32,36 +30,20 @@ import (
 // Client that returns the capabilities of the host we are mounted on.
 type Client interface {
 	// Return the capabilities status of the host we are mounted on.
-	Get() (v1alpha1.CapabilitiesStatus, error)
+	Get(virt *libvirt.Libvirt) (v1alpha1.CapabilitiesStatus, error)
 }
 
 // Implementation of the CapabilitiesClient interface.
-type client struct {
-	// Libvirt instance to connect to.
-	virt *libvirt.Libvirt
-}
+type client struct{}
 
-// Create a new capabilities client using the provided LIBVIRT_SOCKET env variable.
+// Create a new capabilities client.
 func NewClient() Client {
-	socketPath := os.Getenv("LIBVIRT_SOCKET")
-	if socketPath == "" {
-		socketPath = "/run/libvirt/libvirt-sock"
-	}
-	log.Log.Info("capabilities client uses libvirt socket", "socket", socketPath)
-	dialer := dialers.NewLocal(dialers.WithSocket(socketPath))
-	virt := libvirt.NewWithDialer(dialer)
-	return &client{virt: virt}
+	return &client{}
 }
 
 // Return the capabilities of the host we are mounted on.
-func (m *client) Get() (v1alpha1.CapabilitiesStatus, error) {
-	if !m.virt.IsConnected() {
-		if err := m.virt.Connect(); err != nil {
-			log.Log.Error(err, "failed to connect to libvirt")
-			return v1alpha1.CapabilitiesStatus{}, err
-		}
-	}
-	capabilitiesXMLBytes, err := m.virt.Capabilities()
+func (m *client) Get(virt *libvirt.Libvirt) (v1alpha1.CapabilitiesStatus, error) {
+	capabilitiesXMLBytes, err := virt.Capabilities()
 	if err != nil {
 		log.Log.Error(err, "failed to get libvirt capabilities")
 		return v1alpha1.CapabilitiesStatus{}, err
@@ -83,7 +65,7 @@ func NewClientEmulator() Client {
 }
 
 // Get the capabilities of the host we are mounted on.
-func (c *clientEmulator) Get() (v1alpha1.CapabilitiesStatus, error) {
+func (c *clientEmulator) Get(virt *libvirt.Libvirt) (v1alpha1.CapabilitiesStatus, error) {
 	var capabilities Capabilities
 	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
 		log.Log.Error(err, "failed to unmarshal example capabilities")

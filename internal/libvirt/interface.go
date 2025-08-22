@@ -46,4 +46,7 @@ type Interface interface {
 
 	// GetNumInstances returns the number of instances.
 	GetNumInstances() int
+
+	// Get the capabilities of the libvirt daemon.
+	GetCapabilities() (v1alpha1.CapabilitiesStatus, error)
 }

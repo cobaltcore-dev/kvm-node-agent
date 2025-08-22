@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -32,7 +33,6 @@ import (
 
 	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
-	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
 )
@@ -109,6 +109,13 @@ var _ = Describe("Hypervisor Controller", func() {
 					GetNumInstancesFunc: func() int {
 						return 1
 					},
+					GetCapabilitiesFunc: func() (kvmv1alpha1.CapabilitiesStatus, error) {
+						return kvmv1alpha1.CapabilitiesStatus{
+							HostCpuArch: "x86_64",
+							HostCpus:    *resource.NewQuantity(4, resource.DecimalSI),
+							HostMemory:  *resource.NewQuantity(8192, resource.DecimalSI),
+						}, nil
+					},
 				},
 				Systemd: &systemd.InterfaceMock{
 					CloseFunc: func() {},
@@ -128,7 +135,6 @@ var _ = Describe("Hypervisor Controller", func() {
 						return nil, nil
 					},
 				},
-				CapabilitiesClient: capabilities.NewClientEmulator(),
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
@@ -153,6 +159,12 @@ var _ = Describe("Hypervisor Controller", func() {
 			Expect(hypervisor.Status.Conditions[2].Type).To(Equal("test-unit"))
 			Expect(hypervisor.Status.Conditions[2].Status).To(Equal(metav1.ConditionTrue))
 			Expect(hypervisor.Status.Conditions[2].Reason).To(Equal("Running"))
+
+			Expect(hypervisor.Status.Capabilities.HostCpuArch).To(Equal("x86_64"))
+			Expect(hypervisor.Status.Capabilities.HostCpus.AsDec().UnscaledBig()).
+				To(Equal(resource.NewQuantity(4, resource.DecimalSI).AsDec().UnscaledBig()))
+			Expect(hypervisor.Status.Capabilities.HostMemory.AsDec().UnscaledBig()).
+				To(Equal(resource.NewQuantity(8192, resource.DecimalSI).AsDec().UnscaledBig()))
 		})
 	})
 })

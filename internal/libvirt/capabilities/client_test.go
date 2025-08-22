@@ -69,7 +69,7 @@ func TestNewClientEmulator(t *testing.T) {
 func TestClientEmulatorGet(t *testing.T) {
 	client := NewClientEmulator()
 
-	status, err := client.Get()
+	status, err := client.Get(nil)
 	if err != nil {
 		t.Fatalf("clientEmulator.Get() returned error: %v", err)
 	}

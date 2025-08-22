@@ -36,7 +36,6 @@ import (
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/evacuation"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
-	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
 )
@@ -47,9 +46,6 @@ type HypervisorReconciler struct {
 	Scheme  *runtime.Scheme
 	Systemd systemd.Interface
 	Libvirt libvirt.Interface
-
-	// Client that connects to libvirt and fetches capabilities of the hypervisor.
-	CapabilitiesClient capabilities.Client
 
 	osDescriptor     *systemd.Descriptor
 	evacuateOnReboot bool
@@ -140,7 +136,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Update capabilities status.
 	var err error
-	hypervisor.Status.Capabilities, err = r.CapabilitiesClient.Get()
+	hypervisor.Status.Capabilities, err = r.Libvirt.GetCapabilities()
 	if err != nil {
 		log.Error(err, "failed to get capabilities")
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
