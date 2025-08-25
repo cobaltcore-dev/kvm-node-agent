@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
@@ -57,7 +56,7 @@ const (
 	CapabilitiesClientType = "CapabilitiesClientConnection"
 )
 
-// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors,verbs=get;list;watch;update;patch;delete
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors/finalizers,verbs=update
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=evictions,verbs=get;create
@@ -80,13 +79,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// ====================================================================================================
-	// Hypervisor Metal node name
-	// ====================================================================================================
-	if name, ok := hypervisor.Labels[LabelMetalNodeName]; ok {
-		hypervisor.Status.Node = types.NodeName(name)
-	}
-
 	if hypervisor.Spec.EvacuateOnReboot != r.evacuateOnReboot {
 		if hypervisor.Spec.EvacuateOnReboot {
 			e := &evacuation.EvictionController{Client: r.Client}
@@ -100,13 +92,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 		r.evacuateOnReboot = hypervisor.Spec.EvacuateOnReboot
 	}
-
-	meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-		Type:    "Ready",
-		Status:  metav1.ConditionFalse,
-		Message: "Reconciling",
-		Reason:  "Reconciling",
-	})
 
 	// ====================================================================================================
 	// Libvirt
@@ -282,12 +267,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return ctrl.Result{}, err
 		}
 	}
-
-	meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-		Type:   "Ready",
-		Status: metav1.ConditionTrue,
-		Reason: "Reconciled",
-	})
 
 	if err := r.Status().Update(ctx, &hypervisor); err != nil {
 		log.Error(err, "unable to update hypervisor status")

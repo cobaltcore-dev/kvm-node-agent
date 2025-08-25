@@ -17,9 +17,15 @@ spec:
   scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.node
-      name: Node
+    - jsonPath: .status.conditions[?(@.type=="Ready")].reason
+      name: State
       type: string
+    - jsonPath: .spec.lifecycleEnabled
+      name: Lifecycle
+      type: boolean
+    - jsonPath: .spec.highAvailability
+      name: High Availability
+      type: boolean
     - jsonPath: .status.operatingSystem.prettyVersion
       name: Version
       type: string
@@ -28,9 +34,11 @@ spec:
       type: integer
     - jsonPath: .status.operatingSystem.hardwareModel
       name: Hardware
+      priority: 2
       type: string
     - jsonPath: .status.operatingSystem.kernelRelease
       name: Kernel
+      priority: 2
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
@@ -66,15 +74,40 @@ spec:
                   Require to issue a certificate from cert-manager for the hypervisor, to be used for
                   secure communication with the libvirt API.
                 type: boolean
+              customTraits:
+                default: []
+                description: CustomTraits are used to apply custom traits to the hypervisor.
+                items:
+                  type: string
+                type: array
               evacuateOnReboot:
                 default: true
                 description: EvacuateOnReboot request an evacuation of all instances
                   before reboot.
                 type: boolean
+              highAvailability:
+                default: true
+                description: HighAvailability is used to enable the high availability
+                  handling of the hypervisor.
+                type: boolean
+              installCertificate:
+                default: true
+                description: InstallCertificate is used to enable the installations
+                  of the certificates via kvm-node-agent.
+                type: boolean
+              lifecycleEnabled:
+                default: true
+                description: LifecycleEnabled enables the lifecycle management of
+                  the hypervisor via hypervisor-operator.
+                type: boolean
               reboot:
                 default: false
                 description: Reboot request an reboot after successful installation
                   of an upgrade.
+                type: boolean
+              skipTests:
+                default: false
+                description: SkipTests skips the tests during the onboarding process.
                 type: boolean
               version:
                 description: OperatingSystemVersion represents the desired operating
@@ -82,8 +115,13 @@ spec:
                 type: string
             required:
             - createCertManagerCertificate
+            - customTraits
             - evacuateOnReboot
+            - highAvailability
+            - installCertificate
+            - lifecycleEnabled
             - reboot
+            - skipTests
             type: object
           status:
             description: HypervisorStatus defines the observed state of Hypervisor

@@ -27,6 +27,11 @@ import (
 // INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 // Important: Run "make" to regenerate code after modifying this file
 
+const (
+	// ConditionTypeReady is the type of condition for ready status of a hypervisor
+	ConditionTypeReady = "Ready"
+)
+
 // HypervisorSpec defines the desired state of Hypervisor
 type HypervisorSpec struct {
 	// +kubebuilder:validation:Optional
@@ -41,10 +46,30 @@ type HypervisorSpec struct {
 	// EvacuateOnReboot request an evacuation of all instances before reboot.
 	EvacuateOnReboot bool `json:"evacuateOnReboot"`
 
+	// +kubebuilder:default:=true
+	// LifecycleEnabled enables the lifecycle management of the hypervisor via hypervisor-operator.
+	LifecycleEnabled bool `json:"lifecycleEnabled"`
+
+	// +kubebuilder:default:=false
+	// SkipTests skips the tests during the onboarding process.
+	SkipTests bool `json:"skipTests"`
+
+	// +kubebuilder:default:={}
+	// CustomTraits are used to apply custom traits to the hypervisor.
+	CustomTraits []string `json:"customTraits"`
+
+	// +kubebuilder:default:=true
+	// HighAvailability is used to enable the high availability handling of the hypervisor.
+	HighAvailability bool `json:"highAvailability"`
+
 	// +kubebuilder:default:=false
 	// Require to issue a certificate from cert-manager for the hypervisor, to be used for
 	// secure communication with the libvirt API.
 	CreateCertManagerCertificate bool `json:"createCertManagerCertificate"`
+
+	// +kubebuilder:default:=true
+	// InstallCertificate is used to enable the installations of the certificates via kvm-node-agent.
+	InstallCertificate bool `json:"installCertificate"`
 }
 
 type Instance struct {
@@ -152,11 +177,13 @@ type HypervisorStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,shortName=hv
-// +kubebuilder:printcolumn:JSONPath=".status.node",name="Node",type="string"
+// +kubebuilder:printcolumn:JSONPath=".status.conditions[?(@.type==\"Ready\")].reason",name="State",type="string"
+// +kubebuilder:printcolumn:JSONPath=".spec.lifecycleEnabled",name="Lifecycle",type="boolean"
+// +kubebuilder:printcolumn:JSONPath=".spec.highAvailability",name="High Availability",type="boolean"
 // +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.prettyVersion",name="Version",type="string"
 // +kubebuilder:printcolumn:JSONPath=".status.numInstances",name="Instances",type="integer"
-// +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.hardwareModel",name="Hardware",type="string"
-// +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.kernelRelease",name="Kernel",type="string"
+// +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.hardwareModel",name="Hardware",type="string",priority=2
+// +kubebuilder:printcolumn:JSONPath=".status.operatingSystem.kernelRelease",name="Kernel",type="string",priority=2
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type="date"
 
 // Hypervisor is the Schema for the hypervisors API

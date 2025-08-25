@@ -7,18 +7,11 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - nodes
   - secrets
   verbs:
   - get
   - list
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - nodes/status
-  verbs:
-  - get
 - apiGroups:
   - cert-manager.io
   resources:
@@ -42,7 +35,6 @@ rules:
   resources:
   - hypervisors
   verbs:
-  - create
   - delete
   - get
   - list
