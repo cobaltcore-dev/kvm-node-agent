@@ -26,6 +26,7 @@ import (
 
 	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
 )
 
 func NewLibVirtEmulator(ctx context.Context) *libvirt.InterfaceMock {
@@ -54,6 +55,9 @@ func NewLibVirtEmulator(ctx context.Context) *libvirt.InterfaceMock {
 		IsConnectedFunc: func() bool {
 			log.Info("IsConnectedFunc Func called")
 			return true
+		},
+		GetCapabilitiesFunc: func() (v1alpha1.CapabilitiesStatus, error) {
+			return capabilities.NewClientEmulator().Get(nil)
 		},
 	}
 	return mockedInterface

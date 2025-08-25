@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
 )
 
 type LibVirt struct {
@@ -38,6 +39,9 @@ type LibVirt struct {
 	migrationLock sync.Mutex
 	version       string
 	domains       map[libvirt.ConnectListAllDomainsFlags][]libvirt.Domain
+
+	// Client that connects to libvirt and fetches capabilities of the hypervisor.
+	capabilitiesClient capabilities.Client
 }
 
 func NewLibVirt(k client.Client) *LibVirt {
@@ -53,6 +57,7 @@ func NewLibVirt(k client.Client) *LibVirt {
 		sync.Mutex{},
 		"N/A",
 		make(map[libvirt.ConnectListAllDomainsFlags][]libvirt.Domain, 2),
+		capabilities.NewClient(),
 	}
 }
 
@@ -122,4 +127,9 @@ func (l *LibVirt) IsConnected() bool {
 
 func (l *LibVirt) GetNumInstances() int {
 	return len(l.domains[libvirt.ConnectListDomainsActive])
+}
+
+// Get the capabilities of the libvirt daemon.
+func (l *LibVirt) GetCapabilities() (v1alpha1.CapabilitiesStatus, error) {
+	return l.capabilitiesClient.Get(l.virt)
 }

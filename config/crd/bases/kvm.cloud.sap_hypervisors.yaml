@@ -88,6 +88,30 @@ spec:
           status:
             description: HypervisorStatus defines the observed state of Hypervisor
             properties:
+              capabilities:
+                description: The capabilities of the hypervisors as reported by libvirt.
+                properties:
+                  cpuArch:
+                    default: unknown
+                    description: The hosts CPU architecture (not the guests).
+                    type: string
+                  cpus:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: Total host cpus available as a sum of cpus over all
+                      numa cells.
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  memory:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: Total host memory available as a sum of memory over
+                      all numa cells.
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                type: object
               conditions:
                 description: Represents the Hypervisor node conditions.
                 items:

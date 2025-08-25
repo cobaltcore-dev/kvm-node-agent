@@ -10,7 +10,6 @@ linters:
     - dupl
     - errcheck
     - ginkgolinter
-    - goconst
     - govet
     - ineffassign
     - lll

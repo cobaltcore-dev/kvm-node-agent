@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -108,6 +109,13 @@ var _ = Describe("Hypervisor Controller", func() {
 					GetNumInstancesFunc: func() int {
 						return 1
 					},
+					GetCapabilitiesFunc: func() (kvmv1alpha1.CapabilitiesStatus, error) {
+						return kvmv1alpha1.CapabilitiesStatus{
+							HostCpuArch: "x86_64",
+							HostCpus:    *resource.NewQuantity(4, resource.DecimalSI),
+							HostMemory:  *resource.NewQuantity(8192, resource.DecimalSI),
+						}, nil
+					},
 				},
 				Systemd: &systemd.InterfaceMock{
 					CloseFunc: func() {},
@@ -139,7 +147,7 @@ var _ = Describe("Hypervisor Controller", func() {
 			Expect(hypervisor.Status.Instances).To(HaveLen(1))
 			Expect(hypervisor.Status.Instances[0].ID).To(Equal("25e2ea06-f6be-4bac-856d-8c2d0bdbcdee"))
 
-			Expect(hypervisor.Status.Conditions).To(HaveLen(3))
+			Expect(hypervisor.Status.Conditions).To(HaveLen(4))
 			Expect(hypervisor.Status.Conditions[0].Type).To(Equal("Ready"))
 			Expect(hypervisor.Status.Conditions[0].Status).To(Equal(metav1.ConditionTrue))
 			Expect(hypervisor.Status.Conditions[0].Reason).To(Equal("Reconciled"))
@@ -148,9 +156,19 @@ var _ = Describe("Hypervisor Controller", func() {
 			Expect(hypervisor.Status.Conditions[1].Status).To(Equal(metav1.ConditionTrue))
 			Expect(hypervisor.Status.Conditions[1].Reason).To(Equal("Connected"))
 
-			Expect(hypervisor.Status.Conditions[2].Type).To(Equal("test-unit"))
+			Expect(hypervisor.Status.Conditions[2].Type).To(Equal("CapabilitiesClientConnection"))
 			Expect(hypervisor.Status.Conditions[2].Status).To(Equal(metav1.ConditionTrue))
-			Expect(hypervisor.Status.Conditions[2].Reason).To(Equal("Running"))
+			Expect(hypervisor.Status.Conditions[2].Reason).To(Equal("CapabilitiesClientGetSucceeded"))
+
+			Expect(hypervisor.Status.Conditions[3].Type).To(Equal("test-unit"))
+			Expect(hypervisor.Status.Conditions[3].Status).To(Equal(metav1.ConditionTrue))
+			Expect(hypervisor.Status.Conditions[3].Reason).To(Equal("Running"))
+
+			Expect(hypervisor.Status.Capabilities.HostCpuArch).To(Equal("x86_64"))
+			Expect(hypervisor.Status.Capabilities.HostCpus.AsDec().UnscaledBig()).
+				To(Equal(resource.NewQuantity(4, resource.DecimalSI).AsDec().UnscaledBig()))
+			Expect(hypervisor.Status.Capabilities.HostMemory.AsDec().UnscaledBig()).
+				To(Equal(resource.NewQuantity(8192, resource.DecimalSI).AsDec().UnscaledBig()))
 		})
 	})
 })

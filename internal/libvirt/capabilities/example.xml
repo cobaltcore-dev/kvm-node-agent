@@ -1,0 +1,487 @@
+<!-- Copyright 2025 SAP SE -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<capabilities>
+  <host>
+    <cpu>
+      <arch>x86_64</arch>
+    </cpu>
+    <power_management/>
+    <iommu support='no'/>
+    <topology>
+      <cells num='4'>
+        <cell id='0'>
+          <memory unit='KiB'>1056462864</memory>
+          <pages unit='KiB' size='4'>11796996</pages>
+          <pages unit='KiB' size='2048'>492810</pages>
+          <pages unit='KiB' size='1048576'>0</pages>
+          <distances>
+            <sibling id='0' value='10'/>
+            <sibling id='1' value='20'/>
+            <sibling id='2' value='20'/>
+            <sibling id='3' value='20'/>
+          </distances>
+          <cpus num='64'>
+            <cpu id='0' socket_id='0' die_id='0' cluster_id='0' core_id='0' siblings='0,128'/>
+            <cpu id='1' socket_id='0' die_id='0' cluster_id='2' core_id='1' siblings='1,129'/>
+            <cpu id='2' socket_id='0' die_id='0' cluster_id='4' core_id='2' siblings='2,130'/>
+            <cpu id='3' socket_id='0' die_id='0' cluster_id='6' core_id='3' siblings='3,131'/>
+            <cpu id='4' socket_id='0' die_id='0' cluster_id='8' core_id='4' siblings='4,132'/>
+            <cpu id='5' socket_id='0' die_id='0' cluster_id='10' core_id='5' siblings='5,133'/>
+            <cpu id='6' socket_id='0' die_id='0' cluster_id='12' core_id='6' siblings='6,134'/>
+            <cpu id='7' socket_id='0' die_id='0' cluster_id='14' core_id='7' siblings='7,135'/>
+            <cpu id='8' socket_id='0' die_id='0' cluster_id='16' core_id='8' siblings='8,136'/>
+            <cpu id='9' socket_id='0' die_id='0' cluster_id='18' core_id='9' siblings='9,137'/>
+            <cpu id='10' socket_id='0' die_id='0' cluster_id='20' core_id='10' siblings='10,138'/>
+            <cpu id='11' socket_id='0' die_id='0' cluster_id='22' core_id='11' siblings='11,139'/>
+            <cpu id='12' socket_id='0' die_id='0' cluster_id='24' core_id='12' siblings='12,140'/>
+            <cpu id='13' socket_id='0' die_id='0' cluster_id='26' core_id='13' siblings='13,141'/>
+            <cpu id='14' socket_id='0' die_id='0' cluster_id='28' core_id='14' siblings='14,142'/>
+            <cpu id='15' socket_id='0' die_id='0' cluster_id='30' core_id='15' siblings='15,143'/>
+            <cpu id='16' socket_id='0' die_id='0' cluster_id='32' core_id='16' siblings='16,144'/>
+            <cpu id='17' socket_id='0' die_id='0' cluster_id='34' core_id='17' siblings='17,145'/>
+            <cpu id='18' socket_id='0' die_id='0' cluster_id='36' core_id='18' siblings='18,146'/>
+            <cpu id='19' socket_id='0' die_id='0' cluster_id='38' core_id='19' siblings='19,147'/>
+            <cpu id='20' socket_id='0' die_id='0' cluster_id='40' core_id='20' siblings='20,148'/>
+            <cpu id='21' socket_id='0' die_id='0' cluster_id='42' core_id='21' siblings='21,149'/>
+            <cpu id='22' socket_id='0' die_id='0' cluster_id='44' core_id='22' siblings='22,150'/>
+            <cpu id='23' socket_id='0' die_id='0' cluster_id='46' core_id='23' siblings='23,151'/>
+            <cpu id='24' socket_id='0' die_id='0' cluster_id='48' core_id='24' siblings='24,152'/>
+            <cpu id='25' socket_id='0' die_id='0' cluster_id='50' core_id='25' siblings='25,153'/>
+            <cpu id='26' socket_id='0' die_id='0' cluster_id='52' core_id='26' siblings='26,154'/>
+            <cpu id='27' socket_id='0' die_id='0' cluster_id='54' core_id='27' siblings='27,155'/>
+            <cpu id='28' socket_id='0' die_id='0' cluster_id='56' core_id='28' siblings='28,156'/>
+            <cpu id='29' socket_id='0' die_id='0' cluster_id='58' core_id='29' siblings='29,157'/>
+            <cpu id='30' socket_id='0' die_id='0' cluster_id='60' core_id='30' siblings='30,158'/>
+            <cpu id='31' socket_id='0' die_id='0' cluster_id='62' core_id='31' siblings='31,159'/>
+            <cpu id='128' socket_id='0' die_id='0' cluster_id='0' core_id='0' siblings='0,128'/>
+            <cpu id='129' socket_id='0' die_id='0' cluster_id='2' core_id='1' siblings='1,129'/>
+            <cpu id='130' socket_id='0' die_id='0' cluster_id='4' core_id='2' siblings='2,130'/>
+            <cpu id='131' socket_id='0' die_id='0' cluster_id='6' core_id='3' siblings='3,131'/>
+            <cpu id='132' socket_id='0' die_id='0' cluster_id='8' core_id='4' siblings='4,132'/>
+            <cpu id='133' socket_id='0' die_id='0' cluster_id='10' core_id='5' siblings='5,133'/>
+            <cpu id='134' socket_id='0' die_id='0' cluster_id='12' core_id='6' siblings='6,134'/>
+            <cpu id='135' socket_id='0' die_id='0' cluster_id='14' core_id='7' siblings='7,135'/>
+            <cpu id='136' socket_id='0' die_id='0' cluster_id='16' core_id='8' siblings='8,136'/>
+            <cpu id='137' socket_id='0' die_id='0' cluster_id='18' core_id='9' siblings='9,137'/>
+            <cpu id='138' socket_id='0' die_id='0' cluster_id='20' core_id='10' siblings='10,138'/>
+            <cpu id='139' socket_id='0' die_id='0' cluster_id='22' core_id='11' siblings='11,139'/>
+            <cpu id='140' socket_id='0' die_id='0' cluster_id='24' core_id='12' siblings='12,140'/>
+            <cpu id='141' socket_id='0' die_id='0' cluster_id='26' core_id='13' siblings='13,141'/>
+            <cpu id='142' socket_id='0' die_id='0' cluster_id='28' core_id='14' siblings='14,142'/>
+            <cpu id='143' socket_id='0' die_id='0' cluster_id='30' core_id='15' siblings='15,143'/>
+            <cpu id='144' socket_id='0' die_id='0' cluster_id='32' core_id='16' siblings='16,144'/>
+            <cpu id='145' socket_id='0' die_id='0' cluster_id='34' core_id='17' siblings='17,145'/>
+            <cpu id='146' socket_id='0' die_id='0' cluster_id='36' core_id='18' siblings='18,146'/>
+            <cpu id='147' socket_id='0' die_id='0' cluster_id='38' core_id='19' siblings='19,147'/>
+            <cpu id='148' socket_id='0' die_id='0' cluster_id='40' core_id='20' siblings='20,148'/>
+            <cpu id='149' socket_id='0' die_id='0' cluster_id='42' core_id='21' siblings='21,149'/>
+            <cpu id='150' socket_id='0' die_id='0' cluster_id='44' core_id='22' siblings='22,150'/>
+            <cpu id='151' socket_id='0' die_id='0' cluster_id='46' core_id='23' siblings='23,151'/>
+            <cpu id='152' socket_id='0' die_id='0' cluster_id='48' core_id='24' siblings='24,152'/>
+            <cpu id='153' socket_id='0' die_id='0' cluster_id='50' core_id='25' siblings='25,153'/>
+            <cpu id='154' socket_id='0' die_id='0' cluster_id='52' core_id='26' siblings='26,154'/>
+            <cpu id='155' socket_id='0' die_id='0' cluster_id='54' core_id='27' siblings='27,155'/>
+            <cpu id='156' socket_id='0' die_id='0' cluster_id='56' core_id='28' siblings='28,156'/>
+            <cpu id='157' socket_id='0' die_id='0' cluster_id='58' core_id='29' siblings='29,157'/>
+            <cpu id='158' socket_id='0' die_id='0' cluster_id='60' core_id='30' siblings='30,158'/>
+            <cpu id='159' socket_id='0' die_id='0' cluster_id='62' core_id='31' siblings='31,159'/>
+          </cpus>
+        </cell>
+        <cell id='1'>
+          <memory unit='KiB'>1056946772</memory>
+          <pages unit='KiB' size='4'>11918485</pages>
+          <pages unit='KiB' size='2048'>492809</pages>
+          <pages unit='KiB' size='1048576'>0</pages>
+          <distances>
+            <sibling id='0' value='20'/>
+            <sibling id='1' value='10'/>
+            <sibling id='2' value='20'/>
+            <sibling id='3' value='20'/>
+          </distances>
+          <cpus num='64'>
+            <cpu id='32' socket_id='1' die_id='1' cluster_id='128' core_id='0' siblings='32,160'/>
+            <cpu id='33' socket_id='1' die_id='1' cluster_id='130' core_id='1' siblings='33,161'/>
+            <cpu id='34' socket_id='1' die_id='1' cluster_id='132' core_id='2' siblings='34,162'/>
+            <cpu id='35' socket_id='1' die_id='1' cluster_id='134' core_id='3' siblings='35,163'/>
+            <cpu id='36' socket_id='1' die_id='1' cluster_id='136' core_id='4' siblings='36,164'/>
+            <cpu id='37' socket_id='1' die_id='1' cluster_id='138' core_id='5' siblings='37,165'/>
+            <cpu id='38' socket_id='1' die_id='1' cluster_id='140' core_id='6' siblings='38,166'/>
+            <cpu id='39' socket_id='1' die_id='1' cluster_id='142' core_id='7' siblings='39,167'/>
+            <cpu id='40' socket_id='1' die_id='1' cluster_id='144' core_id='8' siblings='40,168'/>
+            <cpu id='41' socket_id='1' die_id='1' cluster_id='146' core_id='9' siblings='41,169'/>
+            <cpu id='42' socket_id='1' die_id='1' cluster_id='148' core_id='10' siblings='42,170'/>
+            <cpu id='43' socket_id='1' die_id='1' cluster_id='150' core_id='11' siblings='43,171'/>
+            <cpu id='44' socket_id='1' die_id='1' cluster_id='152' core_id='12' siblings='44,172'/>
+            <cpu id='45' socket_id='1' die_id='1' cluster_id='154' core_id='13' siblings='45,173'/>
+            <cpu id='46' socket_id='1' die_id='1' cluster_id='156' core_id='14' siblings='46,174'/>
+            <cpu id='47' socket_id='1' die_id='1' cluster_id='158' core_id='15' siblings='47,175'/>
+            <cpu id='48' socket_id='1' die_id='1' cluster_id='160' core_id='16' siblings='48,176'/>
+            <cpu id='49' socket_id='1' die_id='1' cluster_id='162' core_id='17' siblings='49,177'/>
+            <cpu id='50' socket_id='1' die_id='1' cluster_id='164' core_id='18' siblings='50,178'/>
+            <cpu id='51' socket_id='1' die_id='1' cluster_id='166' core_id='19' siblings='51,179'/>
+            <cpu id='52' socket_id='1' die_id='1' cluster_id='168' core_id='20' siblings='52,180'/>
+            <cpu id='53' socket_id='1' die_id='1' cluster_id='170' core_id='21' siblings='53,181'/>
+            <cpu id='54' socket_id='1' die_id='1' cluster_id='172' core_id='22' siblings='54,182'/>
+            <cpu id='55' socket_id='1' die_id='1' cluster_id='174' core_id='23' siblings='55,183'/>
+            <cpu id='56' socket_id='1' die_id='1' cluster_id='176' core_id='24' siblings='56,184'/>
+            <cpu id='57' socket_id='1' die_id='1' cluster_id='178' core_id='25' siblings='57,185'/>
+            <cpu id='58' socket_id='1' die_id='1' cluster_id='180' core_id='26' siblings='58,186'/>
+            <cpu id='59' socket_id='1' die_id='1' cluster_id='182' core_id='27' siblings='59,187'/>
+            <cpu id='60' socket_id='1' die_id='1' cluster_id='184' core_id='28' siblings='60,188'/>
+            <cpu id='61' socket_id='1' die_id='1' cluster_id='186' core_id='29' siblings='61,189'/>
+            <cpu id='62' socket_id='1' die_id='1' cluster_id='188' core_id='30' siblings='62,190'/>
+            <cpu id='63' socket_id='1' die_id='1' cluster_id='190' core_id='31' siblings='63,191'/>
+            <cpu id='160' socket_id='1' die_id='1' cluster_id='128' core_id='0' siblings='32,160'/>
+            <cpu id='161' socket_id='1' die_id='1' cluster_id='130' core_id='1' siblings='33,161'/>
+            <cpu id='162' socket_id='1' die_id='1' cluster_id='132' core_id='2' siblings='34,162'/>
+            <cpu id='163' socket_id='1' die_id='1' cluster_id='134' core_id='3' siblings='35,163'/>
+            <cpu id='164' socket_id='1' die_id='1' cluster_id='136' core_id='4' siblings='36,164'/>
+            <cpu id='165' socket_id='1' die_id='1' cluster_id='138' core_id='5' siblings='37,165'/>
+            <cpu id='166' socket_id='1' die_id='1' cluster_id='140' core_id='6' siblings='38,166'/>
+            <cpu id='167' socket_id='1' die_id='1' cluster_id='142' core_id='7' siblings='39,167'/>
+            <cpu id='168' socket_id='1' die_id='1' cluster_id='144' core_id='8' siblings='40,168'/>
+            <cpu id='169' socket_id='1' die_id='1' cluster_id='146' core_id='9' siblings='41,169'/>
+            <cpu id='170' socket_id='1' die_id='1' cluster_id='148' core_id='10' siblings='42,170'/>
+            <cpu id='171' socket_id='1' die_id='1' cluster_id='150' core_id='11' siblings='43,171'/>
+            <cpu id='172' socket_id='1' die_id='1' cluster_id='152' core_id='12' siblings='44,172'/>
+            <cpu id='173' socket_id='1' die_id='1' cluster_id='154' core_id='13' siblings='45,173'/>
+            <cpu id='174' socket_id='1' die_id='1' cluster_id='156' core_id='14' siblings='46,174'/>
+            <cpu id='175' socket_id='1' die_id='1' cluster_id='158' core_id='15' siblings='47,175'/>
+            <cpu id='176' socket_id='1' die_id='1' cluster_id='160' core_id='16' siblings='48,176'/>
+            <cpu id='177' socket_id='1' die_id='1' cluster_id='162' core_id='17' siblings='49,177'/>
+            <cpu id='178' socket_id='1' die_id='1' cluster_id='164' core_id='18' siblings='50,178'/>
+            <cpu id='179' socket_id='1' die_id='1' cluster_id='166' core_id='19' siblings='51,179'/>
+            <cpu id='180' socket_id='1' die_id='1' cluster_id='168' core_id='20' siblings='52,180'/>
+            <cpu id='181' socket_id='1' die_id='1' cluster_id='170' core_id='21' siblings='53,181'/>
+            <cpu id='182' socket_id='1' die_id='1' cluster_id='172' core_id='22' siblings='54,182'/>
+            <cpu id='183' socket_id='1' die_id='1' cluster_id='174' core_id='23' siblings='55,183'/>
+            <cpu id='184' socket_id='1' die_id='1' cluster_id='176' core_id='24' siblings='56,184'/>
+            <cpu id='185' socket_id='1' die_id='1' cluster_id='178' core_id='25' siblings='57,185'/>
+            <cpu id='186' socket_id='1' die_id='1' cluster_id='180' core_id='26' siblings='58,186'/>
+            <cpu id='187' socket_id='1' die_id='1' cluster_id='182' core_id='27' siblings='59,187'/>
+            <cpu id='188' socket_id='1' die_id='1' cluster_id='184' core_id='28' siblings='60,188'/>
+            <cpu id='189' socket_id='1' die_id='1' cluster_id='186' core_id='29' siblings='61,189'/>
+            <cpu id='190' socket_id='1' die_id='1' cluster_id='188' core_id='30' siblings='62,190'/>
+            <cpu id='191' socket_id='1' die_id='1' cluster_id='190' core_id='31' siblings='63,191'/>
+          </cpus>
+        </cell>
+        <cell id='2'>
+          <memory unit='KiB'>1056946772</memory>
+          <pages unit='KiB' size='4'>11922581</pages>
+          <pages unit='KiB' size='2048'>492801</pages>
+          <pages unit='KiB' size='1048576'>0</pages>
+          <distances>
+            <sibling id='0' value='20'/>
+            <sibling id='1' value='20'/>
+            <sibling id='2' value='10'/>
+            <sibling id='3' value='20'/>
+          </distances>
+          <cpus num='64'>
+            <cpu id='64' socket_id='2' die_id='2' cluster_id='256' core_id='0' siblings='64,192'/>
+            <cpu id='65' socket_id='2' die_id='2' cluster_id='258' core_id='1' siblings='65,193'/>
+            <cpu id='66' socket_id='2' die_id='2' cluster_id='260' core_id='2' siblings='66,194'/>
+            <cpu id='67' socket_id='2' die_id='2' cluster_id='262' core_id='3' siblings='67,195'/>
+            <cpu id='68' socket_id='2' die_id='2' cluster_id='264' core_id='4' siblings='68,196'/>
+            <cpu id='69' socket_id='2' die_id='2' cluster_id='266' core_id='5' siblings='69,197'/>
+            <cpu id='70' socket_id='2' die_id='2' cluster_id='268' core_id='6' siblings='70,198'/>
+            <cpu id='71' socket_id='2' die_id='2' cluster_id='270' core_id='7' siblings='71,199'/>
+            <cpu id='72' socket_id='2' die_id='2' cluster_id='272' core_id='8' siblings='72,200'/>
+            <cpu id='73' socket_id='2' die_id='2' cluster_id='274' core_id='9' siblings='73,201'/>
+            <cpu id='74' socket_id='2' die_id='2' cluster_id='276' core_id='10' siblings='74,202'/>
+            <cpu id='75' socket_id='2' die_id='2' cluster_id='278' core_id='11' siblings='75,203'/>
+            <cpu id='76' socket_id='2' die_id='2' cluster_id='280' core_id='12' siblings='76,204'/>
+            <cpu id='77' socket_id='2' die_id='2' cluster_id='282' core_id='13' siblings='77,205'/>
+            <cpu id='78' socket_id='2' die_id='2' cluster_id='284' core_id='14' siblings='78,206'/>
+            <cpu id='79' socket_id='2' die_id='2' cluster_id='286' core_id='15' siblings='79,207'/>
+            <cpu id='80' socket_id='2' die_id='2' cluster_id='288' core_id='16' siblings='80,208'/>
+            <cpu id='81' socket_id='2' die_id='2' cluster_id='290' core_id='17' siblings='81,209'/>
+            <cpu id='82' socket_id='2' die_id='2' cluster_id='292' core_id='18' siblings='82,210'/>
+            <cpu id='83' socket_id='2' die_id='2' cluster_id='294' core_id='19' siblings='83,211'/>
+            <cpu id='84' socket_id='2' die_id='2' cluster_id='296' core_id='20' siblings='84,212'/>
+            <cpu id='85' socket_id='2' die_id='2' cluster_id='298' core_id='21' siblings='85,213'/>
+            <cpu id='86' socket_id='2' die_id='2' cluster_id='300' core_id='22' siblings='86,214'/>
+            <cpu id='87' socket_id='2' die_id='2' cluster_id='302' core_id='23' siblings='87,215'/>
+            <cpu id='88' socket_id='2' die_id='2' cluster_id='304' core_id='24' siblings='88,216'/>
+            <cpu id='89' socket_id='2' die_id='2' cluster_id='306' core_id='25' siblings='89,217'/>
+            <cpu id='90' socket_id='2' die_id='2' cluster_id='308' core_id='26' siblings='90,218'/>
+            <cpu id='91' socket_id='2' die_id='2' cluster_id='310' core_id='27' siblings='91,219'/>
+            <cpu id='92' socket_id='2' die_id='2' cluster_id='312' core_id='28' siblings='92,220'/>
+            <cpu id='93' socket_id='2' die_id='2' cluster_id='314' core_id='29' siblings='93,221'/>
+            <cpu id='94' socket_id='2' die_id='2' cluster_id='316' core_id='30' siblings='94,222'/>
+            <cpu id='95' socket_id='2' die_id='2' cluster_id='318' core_id='31' siblings='95,223'/>
+            <cpu id='192' socket_id='2' die_id='2' cluster_id='256' core_id='0' siblings='64,192'/>
+            <cpu id='193' socket_id='2' die_id='2' cluster_id='258' core_id='1' siblings='65,193'/>
+            <cpu id='194' socket_id='2' die_id='2' cluster_id='260' core_id='2' siblings='66,194'/>
+            <cpu id='195' socket_id='2' die_id='2' cluster_id='262' core_id='3' siblings='67,195'/>
+            <cpu id='196' socket_id='2' die_id='2' cluster_id='264' core_id='4' siblings='68,196'/>
+            <cpu id='197' socket_id='2' die_id='2' cluster_id='266' core_id='5' siblings='69,197'/>
+            <cpu id='198' socket_id='2' die_id='2' cluster_id='268' core_id='6' siblings='70,198'/>
+            <cpu id='199' socket_id='2' die_id='2' cluster_id='270' core_id='7' siblings='71,199'/>
+            <cpu id='200' socket_id='2' die_id='2' cluster_id='272' core_id='8' siblings='72,200'/>
+            <cpu id='201' socket_id='2' die_id='2' cluster_id='274' core_id='9' siblings='73,201'/>
+            <cpu id='202' socket_id='2' die_id='2' cluster_id='276' core_id='10' siblings='74,202'/>
+            <cpu id='203' socket_id='2' die_id='2' cluster_id='278' core_id='11' siblings='75,203'/>
+            <cpu id='204' socket_id='2' die_id='2' cluster_id='280' core_id='12' siblings='76,204'/>
+            <cpu id='205' socket_id='2' die_id='2' cluster_id='282' core_id='13' siblings='77,205'/>
+            <cpu id='206' socket_id='2' die_id='2' cluster_id='284' core_id='14' siblings='78,206'/>
+            <cpu id='207' socket_id='2' die_id='2' cluster_id='286' core_id='15' siblings='79,207'/>
+            <cpu id='208' socket_id='2' die_id='2' cluster_id='288' core_id='16' siblings='80,208'/>
+            <cpu id='209' socket_id='2' die_id='2' cluster_id='290' core_id='17' siblings='81,209'/>
+            <cpu id='210' socket_id='2' die_id='2' cluster_id='292' core_id='18' siblings='82,210'/>
+            <cpu id='211' socket_id='2' die_id='2' cluster_id='294' core_id='19' siblings='83,211'/>
+            <cpu id='212' socket_id='2' die_id='2' cluster_id='296' core_id='20' siblings='84,212'/>
+            <cpu id='213' socket_id='2' die_id='2' cluster_id='298' core_id='21' siblings='85,213'/>
+            <cpu id='214' socket_id='2' die_id='2' cluster_id='300' core_id='22' siblings='86,214'/>
+            <cpu id='215' socket_id='2' die_id='2' cluster_id='302' core_id='23' siblings='87,215'/>
+            <cpu id='216' socket_id='2' die_id='2' cluster_id='304' core_id='24' siblings='88,216'/>
+            <cpu id='217' socket_id='2' die_id='2' cluster_id='306' core_id='25' siblings='89,217'/>
+            <cpu id='218' socket_id='2' die_id='2' cluster_id='308' core_id='26' siblings='90,218'/>
+            <cpu id='219' socket_id='2' die_id='2' cluster_id='310' core_id='27' siblings='91,219'/>
+            <cpu id='220' socket_id='2' die_id='2' cluster_id='312' core_id='28' siblings='92,220'/>
+            <cpu id='221' socket_id='2' die_id='2' cluster_id='314' core_id='29' siblings='93,221'/>
+            <cpu id='222' socket_id='2' die_id='2' cluster_id='316' core_id='30' siblings='94,222'/>
+            <cpu id='223' socket_id='2' die_id='2' cluster_id='318' core_id='31' siblings='95,223'/>
+          </cpus>
+        </cell>
+        <cell id='3'>
+          <memory unit='KiB'>1056932756</memory>
+          <pages unit='KiB' size='4'>11919077</pages>
+          <pages unit='KiB' size='2048'>492801</pages>
+          <pages unit='KiB' size='1048576'>0</pages>
+          <distances>
+            <sibling id='0' value='20'/>
+            <sibling id='1' value='20'/>
+            <sibling id='2' value='20'/>
+            <sibling id='3' value='10'/>
+          </distances>
+          <cpus num='64'>
+            <cpu id='96' socket_id='3' die_id='3' cluster_id='384' core_id='0' siblings='96,224'/>
+            <cpu id='97' socket_id='3' die_id='3' cluster_id='386' core_id='1' siblings='97,225'/>
+            <cpu id='98' socket_id='3' die_id='3' cluster_id='388' core_id='2' siblings='98,226'/>
+            <cpu id='99' socket_id='3' die_id='3' cluster_id='390' core_id='3' siblings='99,227'/>
+            <cpu id='100' socket_id='3' die_id='3' cluster_id='392' core_id='4' siblings='100,228'/>
+            <cpu id='101' socket_id='3' die_id='3' cluster_id='394' core_id='5' siblings='101,229'/>
+            <cpu id='102' socket_id='3' die_id='3' cluster_id='396' core_id='6' siblings='102,230'/>
+            <cpu id='103' socket_id='3' die_id='3' cluster_id='398' core_id='7' siblings='103,231'/>
+            <cpu id='104' socket_id='3' die_id='3' cluster_id='400' core_id='8' siblings='104,232'/>
+            <cpu id='105' socket_id='3' die_id='3' cluster_id='402' core_id='9' siblings='105,233'/>
+            <cpu id='106' socket_id='3' die_id='3' cluster_id='404' core_id='10' siblings='106,234'/>
+            <cpu id='107' socket_id='3' die_id='3' cluster_id='406' core_id='11' siblings='107,235'/>
+            <cpu id='108' socket_id='3' die_id='3' cluster_id='408' core_id='12' siblings='108,236'/>
+            <cpu id='109' socket_id='3' die_id='3' cluster_id='410' core_id='13' siblings='109,237'/>
+            <cpu id='110' socket_id='3' die_id='3' cluster_id='412' core_id='14' siblings='110,238'/>
+            <cpu id='111' socket_id='3' die_id='3' cluster_id='414' core_id='15' siblings='111,239'/>
+            <cpu id='112' socket_id='3' die_id='3' cluster_id='416' core_id='16' siblings='112,240'/>
+            <cpu id='113' socket_id='3' die_id='3' cluster_id='418' core_id='17' siblings='113,241'/>
+            <cpu id='114' socket_id='3' die_id='3' cluster_id='420' core_id='18' siblings='114,242'/>
+            <cpu id='115' socket_id='3' die_id='3' cluster_id='422' core_id='19' siblings='115,243'/>
+            <cpu id='116' socket_id='3' die_id='3' cluster_id='424' core_id='20' siblings='116,244'/>
+            <cpu id='117' socket_id='3' die_id='3' cluster_id='426' core_id='21' siblings='117,245'/>
+            <cpu id='118' socket_id='3' die_id='3' cluster_id='428' core_id='22' siblings='118,246'/>
+            <cpu id='119' socket_id='3' die_id='3' cluster_id='430' core_id='23' siblings='119,247'/>
+            <cpu id='120' socket_id='3' die_id='3' cluster_id='432' core_id='24' siblings='120,248'/>
+            <cpu id='121' socket_id='3' die_id='3' cluster_id='434' core_id='25' siblings='121,249'/>
+            <cpu id='122' socket_id='3' die_id='3' cluster_id='436' core_id='26' siblings='122,250'/>
+            <cpu id='123' socket_id='3' die_id='3' cluster_id='438' core_id='27' siblings='123,251'/>
+            <cpu id='124' socket_id='3' die_id='3' cluster_id='440' core_id='28' siblings='124,252'/>
+            <cpu id='125' socket_id='3' die_id='3' cluster_id='442' core_id='29' siblings='125,253'/>
+            <cpu id='126' socket_id='3' die_id='3' cluster_id='444' core_id='30' siblings='126,254'/>
+            <cpu id='127' socket_id='3' die_id='3' cluster_id='446' core_id='31' siblings='127,255'/>
+            <cpu id='224' socket_id='3' die_id='3' cluster_id='384' core_id='0' siblings='96,224'/>
+            <cpu id='225' socket_id='3' die_id='3' cluster_id='386' core_id='1' siblings='97,225'/>
+            <cpu id='226' socket_id='3' die_id='3' cluster_id='388' core_id='2' siblings='98,226'/>
+            <cpu id='227' socket_id='3' die_id='3' cluster_id='390' core_id='3' siblings='99,227'/>
+            <cpu id='228' socket_id='3' die_id='3' cluster_id='392' core_id='4' siblings='100,228'/>
+            <cpu id='229' socket_id='3' die_id='3' cluster_id='394' core_id='5' siblings='101,229'/>
+            <cpu id='230' socket_id='3' die_id='3' cluster_id='396' core_id='6' siblings='102,230'/>
+            <cpu id='231' socket_id='3' die_id='3' cluster_id='398' core_id='7' siblings='103,231'/>
+            <cpu id='232' socket_id='3' die_id='3' cluster_id='400' core_id='8' siblings='104,232'/>
+            <cpu id='233' socket_id='3' die_id='3' cluster_id='402' core_id='9' siblings='105,233'/>
+            <cpu id='234' socket_id='3' die_id='3' cluster_id='404' core_id='10' siblings='106,234'/>
+            <cpu id='235' socket_id='3' die_id='3' cluster_id='406' core_id='11' siblings='107,235'/>
+            <cpu id='236' socket_id='3' die_id='3' cluster_id='408' core_id='12' siblings='108,236'/>
+            <cpu id='237' socket_id='3' die_id='3' cluster_id='410' core_id='13' siblings='109,237'/>
+            <cpu id='238' socket_id='3' die_id='3' cluster_id='412' core_id='14' siblings='110,238'/>
+            <cpu id='239' socket_id='3' die_id='3' cluster_id='414' core_id='15' siblings='111,239'/>
+            <cpu id='240' socket_id='3' die_id='3' cluster_id='416' core_id='16' siblings='112,240'/>
+            <cpu id='241' socket_id='3' die_id='3' cluster_id='418' core_id='17' siblings='113,241'/>
+            <cpu id='242' socket_id='3' die_id='3' cluster_id='420' core_id='18' siblings='114,242'/>
+            <cpu id='243' socket_id='3' die_id='3' cluster_id='422' core_id='19' siblings='115,243'/>
+            <cpu id='244' socket_id='3' die_id='3' cluster_id='424' core_id='20' siblings='116,244'/>
+            <cpu id='245' socket_id='3' die_id='3' cluster_id='426' core_id='21' siblings='117,245'/>
+            <cpu id='246' socket_id='3' die_id='3' cluster_id='428' core_id='22' siblings='118,246'/>
+            <cpu id='247' socket_id='3' die_id='3' cluster_id='430' core_id='23' siblings='119,247'/>
+            <cpu id='248' socket_id='3' die_id='3' cluster_id='432' core_id='24' siblings='120,248'/>
+            <cpu id='249' socket_id='3' die_id='3' cluster_id='434' core_id='25' siblings='121,249'/>
+            <cpu id='250' socket_id='3' die_id='3' cluster_id='436' core_id='26' siblings='122,250'/>
+            <cpu id='251' socket_id='3' die_id='3' cluster_id='438' core_id='27' siblings='123,251'/>
+            <cpu id='252' socket_id='3' die_id='3' cluster_id='440' core_id='28' siblings='124,252'/>
+            <cpu id='253' socket_id='3' die_id='3' cluster_id='442' core_id='29' siblings='125,253'/>
+            <cpu id='254' socket_id='3' die_id='3' cluster_id='444' core_id='30' siblings='126,254'/>
+            <cpu id='255' socket_id='3' die_id='3' cluster_id='446' core_id='31' siblings='127,255'/>
+          </cpus>
+        </cell>
+      </cells>
+      <interconnects>
+        <latency initiator='0' target='0' type='read' value='0'/>
+        <latency initiator='0' target='0' type='write' value='0'/>
+        <latency initiator='1' target='1' type='read' value='0'/>
+        <latency initiator='1' target='1' type='write' value='0'/>
+        <latency initiator='2' target='2' type='read' value='0'/>
+        <latency initiator='2' target='2' type='write' value='0'/>
+        <latency initiator='3' target='3' type='read' value='0'/>
+        <latency initiator='3' target='3' type='write' value='0'/>
+        <bandwidth initiator='0' target='0' type='read' value='288358400' unit='KiB'/>
+        <bandwidth initiator='0' target='0' type='write' value='288358400' unit='KiB'/>
+        <bandwidth initiator='1' target='1' type='read' value='288358400' unit='KiB'/>
+        <bandwidth initiator='1' target='1' type='write' value='288358400' unit='KiB'/>
+        <bandwidth initiator='2' target='2' type='read' value='288358400' unit='KiB'/>
+        <bandwidth initiator='2' target='2' type='write' value='288358400' unit='KiB'/>
+        <bandwidth initiator='3' target='3' type='read' value='288358400' unit='KiB'/>
+        <bandwidth initiator='3' target='3' type='write' value='288358400' unit='KiB'/>
+      </interconnects>
+    </topology>
+    <cache>
+      <bank id='0' level='2' type='both' size='2' unit='MiB' cpus='0,128'/>
+      <bank id='1' level='2' type='both' size='2' unit='MiB' cpus='1,129'/>
+      <bank id='2' level='2' type='both' size='2' unit='MiB' cpus='2,130'/>
+      <bank id='3' level='2' type='both' size='2' unit='MiB' cpus='3,131'/>
+      <bank id='4' level='2' type='both' size='2' unit='MiB' cpus='4,132'/>
+      <bank id='5' level='2' type='both' size='2' unit='MiB' cpus='5,133'/>
+      <bank id='6' level='2' type='both' size='2' unit='MiB' cpus='6,134'/>
+      <bank id='7' level='2' type='both' size='2' unit='MiB' cpus='7,135'/>
+      <bank id='8' level='2' type='both' size='2' unit='MiB' cpus='8,136'/>
+      <bank id='9' level='2' type='both' size='2' unit='MiB' cpus='9,137'/>
+      <bank id='10' level='2' type='both' size='2' unit='MiB' cpus='10,138'/>
+      <bank id='11' level='2' type='both' size='2' unit='MiB' cpus='11,139'/>
+      <bank id='12' level='2' type='both' size='2' unit='MiB' cpus='12,140'/>
+      <bank id='13' level='2' type='both' size='2' unit='MiB' cpus='13,141'/>
+      <bank id='14' level='2' type='both' size='2' unit='MiB' cpus='14,142'/>
+      <bank id='15' level='2' type='both' size='2' unit='MiB' cpus='15,143'/>
+      <bank id='16' level='2' type='both' size='2' unit='MiB' cpus='16,144'/>
+      <bank id='17' level='2' type='both' size='2' unit='MiB' cpus='17,145'/>
+      <bank id='18' level='2' type='both' size='2' unit='MiB' cpus='18,146'/>
+      <bank id='19' level='2' type='both' size='2' unit='MiB' cpus='19,147'/>
+      <bank id='20' level='2' type='both' size='2' unit='MiB' cpus='20,148'/>
+      <bank id='21' level='2' type='both' size='2' unit='MiB' cpus='21,149'/>
+      <bank id='22' level='2' type='both' size='2' unit='MiB' cpus='22,150'/>
+      <bank id='23' level='2' type='both' size='2' unit='MiB' cpus='23,151'/>
+      <bank id='24' level='2' type='both' size='2' unit='MiB' cpus='24,152'/>
+      <bank id='25' level='2' type='both' size='2' unit='MiB' cpus='25,153'/>
+      <bank id='26' level='2' type='both' size='2' unit='MiB' cpus='26,154'/>
+      <bank id='27' level='2' type='both' size='2' unit='MiB' cpus='27,155'/>
+      <bank id='28' level='2' type='both' size='2' unit='MiB' cpus='28,156'/>
+      <bank id='29' level='2' type='both' size='2' unit='MiB' cpus='29,157'/>
+      <bank id='30' level='2' type='both' size='2' unit='MiB' cpus='30,158'/>
+      <bank id='31' level='2' type='both' size='2' unit='MiB' cpus='31,159'/>
+      <bank id='64' level='2' type='both' size='2' unit='MiB' cpus='32,160'/>
+      <bank id='65' level='2' type='both' size='2' unit='MiB' cpus='33,161'/>
+      <bank id='66' level='2' type='both' size='2' unit='MiB' cpus='34,162'/>
+      <bank id='67' level='2' type='both' size='2' unit='MiB' cpus='35,163'/>
+      <bank id='68' level='2' type='both' size='2' unit='MiB' cpus='36,164'/>
+      <bank id='69' level='2' type='both' size='2' unit='MiB' cpus='37,165'/>
+      <bank id='70' level='2' type='both' size='2' unit='MiB' cpus='38,166'/>
+      <bank id='71' level='2' type='both' size='2' unit='MiB' cpus='39,167'/>
+      <bank id='72' level='2' type='both' size='2' unit='MiB' cpus='40,168'/>
+      <bank id='73' level='2' type='both' size='2' unit='MiB' cpus='41,169'/>
+      <bank id='74' level='2' type='both' size='2' unit='MiB' cpus='42,170'/>
+      <bank id='75' level='2' type='both' size='2' unit='MiB' cpus='43,171'/>
+      <bank id='76' level='2' type='both' size='2' unit='MiB' cpus='44,172'/>
+      <bank id='77' level='2' type='both' size='2' unit='MiB' cpus='45,173'/>
+      <bank id='78' level='2' type='both' size='2' unit='MiB' cpus='46,174'/>
+      <bank id='79' level='2' type='both' size='2' unit='MiB' cpus='47,175'/>
+      <bank id='80' level='2' type='both' size='2' unit='MiB' cpus='48,176'/>
+      <bank id='81' level='2' type='both' size='2' unit='MiB' cpus='49,177'/>
+      <bank id='82' level='2' type='both' size='2' unit='MiB' cpus='50,178'/>
+      <bank id='83' level='2' type='both' size='2' unit='MiB' cpus='51,179'/>
+      <bank id='84' level='2' type='both' size='2' unit='MiB' cpus='52,180'/>
+      <bank id='85' level='2' type='both' size='2' unit='MiB' cpus='53,181'/>
+      <bank id='86' level='2' type='both' size='2' unit='MiB' cpus='54,182'/>
+      <bank id='87' level='2' type='both' size='2' unit='MiB' cpus='55,183'/>
+      <bank id='88' level='2' type='both' size='2' unit='MiB' cpus='56,184'/>
+      <bank id='89' level='2' type='both' size='2' unit='MiB' cpus='57,185'/>
+      <bank id='90' level='2' type='both' size='2' unit='MiB' cpus='58,186'/>
+      <bank id='91' level='2' type='both' size='2' unit='MiB' cpus='59,187'/>
+      <bank id='92' level='2' type='both' size='2' unit='MiB' cpus='60,188'/>
+      <bank id='93' level='2' type='both' size='2' unit='MiB' cpus='61,189'/>
+      <bank id='94' level='2' type='both' size='2' unit='MiB' cpus='62,190'/>
+      <bank id='95' level='2' type='both' size='2' unit='MiB' cpus='63,191'/>
+      <bank id='128' level='2' type='both' size='2' unit='MiB' cpus='64,192'/>
+      <bank id='129' level='2' type='both' size='2' unit='MiB' cpus='65,193'/>
+      <bank id='130' level='2' type='both' size='2' unit='MiB' cpus='66,194'/>
+      <bank id='131' level='2' type='both' size='2' unit='MiB' cpus='67,195'/>
+      <bank id='132' level='2' type='both' size='2' unit='MiB' cpus='68,196'/>
+      <bank id='133' level='2' type='both' size='2' unit='MiB' cpus='69,197'/>
+      <bank id='134' level='2' type='both' size='2' unit='MiB' cpus='70,198'/>
+      <bank id='135' level='2' type='both' size='2' unit='MiB' cpus='71,199'/>
+      <bank id='136' level='2' type='both' size='2' unit='MiB' cpus='72,200'/>
+      <bank id='137' level='2' type='both' size='2' unit='MiB' cpus='73,201'/>
+      <bank id='138' level='2' type='both' size='2' unit='MiB' cpus='74,202'/>
+      <bank id='139' level='2' type='both' size='2' unit='MiB' cpus='75,203'/>
+      <bank id='140' level='2' type='both' size='2' unit='MiB' cpus='76,204'/>
+      <bank id='141' level='2' type='both' size='2' unit='MiB' cpus='77,205'/>
+      <bank id='142' level='2' type='both' size='2' unit='MiB' cpus='78,206'/>
+      <bank id='143' level='2' type='both' size='2' unit='MiB' cpus='79,207'/>
+      <bank id='144' level='2' type='both' size='2' unit='MiB' cpus='80,208'/>
+      <bank id='145' level='2' type='both' size='2' unit='MiB' cpus='81,209'/>
+      <bank id='146' level='2' type='both' size='2' unit='MiB' cpus='82,210'/>
+      <bank id='147' level='2' type='both' size='2' unit='MiB' cpus='83,211'/>
+      <bank id='148' level='2' type='both' size='2' unit='MiB' cpus='84,212'/>
+      <bank id='149' level='2' type='both' size='2' unit='MiB' cpus='85,213'/>
+      <bank id='150' level='2' type='both' size='2' unit='MiB' cpus='86,214'/>
+      <bank id='151' level='2' type='both' size='2' unit='MiB' cpus='87,215'/>
+      <bank id='152' level='2' type='both' size='2' unit='MiB' cpus='88,216'/>
+      <bank id='153' level='2' type='both' size='2' unit='MiB' cpus='89,217'/>
+      <bank id='154' level='2' type='both' size='2' unit='MiB' cpus='90,218'/>
+      <bank id='155' level='2' type='both' size='2' unit='MiB' cpus='91,219'/>
+      <bank id='156' level='2' type='both' size='2' unit='MiB' cpus='92,220'/>
+      <bank id='157' level='2' type='both' size='2' unit='MiB' cpus='93,221'/>
+      <bank id='158' level='2' type='both' size='2' unit='MiB' cpus='94,222'/>
+      <bank id='159' level='2' type='both' size='2' unit='MiB' cpus='95,223'/>
+      <bank id='192' level='2' type='both' size='2' unit='MiB' cpus='96,224'/>
+      <bank id='193' level='2' type='both' size='2' unit='MiB' cpus='97,225'/>
+      <bank id='194' level='2' type='both' size='2' unit='MiB' cpus='98,226'/>
+      <bank id='195' level='2' type='both' size='2' unit='MiB' cpus='99,227'/>
+      <bank id='196' level='2' type='both' size='2' unit='MiB' cpus='100,228'/>
+      <bank id='197' level='2' type='both' size='2' unit='MiB' cpus='101,229'/>
+      <bank id='198' level='2' type='both' size='2' unit='MiB' cpus='102,230'/>
+      <bank id='199' level='2' type='both' size='2' unit='MiB' cpus='103,231'/>
+      <bank id='200' level='2' type='both' size='2' unit='MiB' cpus='104,232'/>
+      <bank id='201' level='2' type='both' size='2' unit='MiB' cpus='105,233'/>
+      <bank id='202' level='2' type='both' size='2' unit='MiB' cpus='106,234'/>
+      <bank id='203' level='2' type='both' size='2' unit='MiB' cpus='107,235'/>
+      <bank id='204' level='2' type='both' size='2' unit='MiB' cpus='108,236'/>
+      <bank id='205' level='2' type='both' size='2' unit='MiB' cpus='109,237'/>
+      <bank id='206' level='2' type='both' size='2' unit='MiB' cpus='110,238'/>
+      <bank id='207' level='2' type='both' size='2' unit='MiB' cpus='111,239'/>
+      <bank id='208' level='2' type='both' size='2' unit='MiB' cpus='112,240'/>
+      <bank id='209' level='2' type='both' size='2' unit='MiB' cpus='113,241'/>
+      <bank id='210' level='2' type='both' size='2' unit='MiB' cpus='114,242'/>
+      <bank id='211' level='2' type='both' size='2' unit='MiB' cpus='115,243'/>
+      <bank id='212' level='2' type='both' size='2' unit='MiB' cpus='116,244'/>
+      <bank id='213' level='2' type='both' size='2' unit='MiB' cpus='117,245'/>
+      <bank id='214' level='2' type='both' size='2' unit='MiB' cpus='118,246'/>
+      <bank id='215' level='2' type='both' size='2' unit='MiB' cpus='119,247'/>
+      <bank id='216' level='2' type='both' size='2' unit='MiB' cpus='120,248'/>
+      <bank id='217' level='2' type='both' size='2' unit='MiB' cpus='121,249'/>
+      <bank id='218' level='2' type='both' size='2' unit='MiB' cpus='122,250'/>
+      <bank id='219' level='2' type='both' size='2' unit='MiB' cpus='123,251'/>
+      <bank id='220' level='2' type='both' size='2' unit='MiB' cpus='124,252'/>
+      <bank id='221' level='2' type='both' size='2' unit='MiB' cpus='125,253'/>
+      <bank id='222' level='2' type='both' size='2' unit='MiB' cpus='126,254'/>
+      <bank id='223' level='2' type='both' size='2' unit='MiB' cpus='127,255'/>
+      <bank id='0' level='3' type='both' size='60' unit='MiB' cpus='0-31,128-159'/>
+      <bank id='1' level='3' type='both' size='60' unit='MiB' cpus='32-63,160-191'/>
+      <bank id='2' level='3' type='both' size='60' unit='MiB' cpus='64-95,192-223'/>
+      <bank id='3' level='3' type='both' size='60' unit='MiB' cpus='96-127,224-255'/>
+    </cache>
+  </host>
+  <guest>
+    <os_type>hvm</os_type>
+    <arch name='x86_64'>
+      <wordsize>64</wordsize>
+      <domain type='kvm'/>
+    </arch>
+  </guest>
+</capabilities>

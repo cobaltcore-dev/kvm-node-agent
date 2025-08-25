@@ -25,6 +25,9 @@ var _ Interface = &InterfaceMock{}
 //			ConnectFunc: func() error {
 //				panic("mock out the Connect method")
 //			},
+//			GetCapabilitiesFunc: func() (kvmv1alpha1.CapabilitiesStatus, error) {
+//				panic("mock out the GetCapabilities method")
+//			},
 //			GetDomainsActiveFunc: func() ([]libvirt.Domain, error) {
 //				panic("mock out the GetDomainsActive method")
 //			},
@@ -53,6 +56,9 @@ type InterfaceMock struct {
 	// ConnectFunc mocks the Connect method.
 	ConnectFunc func() error
 
+	// GetCapabilitiesFunc mocks the GetCapabilities method.
+	GetCapabilitiesFunc func() (kvmv1alpha1.CapabilitiesStatus, error)
+
 	// GetDomainsActiveFunc mocks the GetDomainsActive method.
 	GetDomainsActiveFunc func() ([]libvirt.Domain, error)
 
@@ -76,6 +82,9 @@ type InterfaceMock struct {
 		// Connect holds details about calls to the Connect method.
 		Connect []struct {
 		}
+		// GetCapabilities holds details about calls to the GetCapabilities method.
+		GetCapabilities []struct {
+		}
 		// GetDomainsActive holds details about calls to the GetDomainsActive method.
 		GetDomainsActive []struct {
 		}
@@ -94,6 +103,7 @@ type InterfaceMock struct {
 	}
 	lockClose            sync.RWMutex
 	lockConnect          sync.RWMutex
+	lockGetCapabilities  sync.RWMutex
 	lockGetDomainsActive sync.RWMutex
 	lockGetInstances     sync.RWMutex
 	lockGetNumInstances  sync.RWMutex
@@ -152,6 +162,33 @@ func (mock *InterfaceMock) ConnectCalls() []struct {
 	mock.lockConnect.RLock()
 	calls = mock.calls.Connect
 	mock.lockConnect.RUnlock()
+	return calls
+}
+
+// GetCapabilities calls GetCapabilitiesFunc.
+func (mock *InterfaceMock) GetCapabilities() (kvmv1alpha1.CapabilitiesStatus, error) {
+	if mock.GetCapabilitiesFunc == nil {
+		panic("InterfaceMock.GetCapabilitiesFunc: method is nil but Interface.GetCapabilities was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetCapabilities.Lock()
+	mock.calls.GetCapabilities = append(mock.calls.GetCapabilities, callInfo)
+	mock.lockGetCapabilities.Unlock()
+	return mock.GetCapabilitiesFunc()
+}
+
+// GetCapabilitiesCalls gets all the calls that were made to GetCapabilities.
+// Check the length with:
+//
+//	len(mockedInterface.GetCapabilitiesCalls())
+func (mock *InterfaceMock) GetCapabilitiesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetCapabilities.RLock()
+	calls = mock.calls.GetCapabilities
+	mock.lockGetCapabilities.RUnlock()
 	return calls
 }
 
