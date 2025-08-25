@@ -132,19 +132,24 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		// Update hypervisor instances
 		hypervisor.Status.NumInstances = r.Libvirt.GetNumInstances()
 		hypervisor.Status.Instances, _ = r.Libvirt.GetInstances()
-	}
 
-	// Update capabilities status.
-	var err error
-	hypervisor.Status.Capabilities, err = r.Libvirt.GetCapabilities()
-	if err != nil {
-		log.Error(err, "failed to get capabilities")
-		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-			Type:    CapabilitiesClientType,
-			Status:  metav1.ConditionFalse,
-			Message: err.Error(),
-			Reason:  "CapabilitiesClientGetFailed",
-		})
+		// Update capabilities status.
+		if capabilities, err := r.Libvirt.GetCapabilities(); err == nil {
+			hypervisor.Status.Capabilities = capabilities
+			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+				Type:   CapabilitiesClientType,
+				Status: metav1.ConditionTrue,
+				Reason: "CapabilitiesClientGetSucceeded",
+			})
+		} else {
+			log.Error(err, "failed to get capabilities")
+			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+				Type:    CapabilitiesClientType,
+				Status:  metav1.ConditionFalse,
+				Message: err.Error(),
+				Reason:  "CapabilitiesClientGetFailed",
+			})
+		}
 	}
 
 	// ====================================================================================================
