@@ -168,6 +168,12 @@ type HypervisorStatus struct {
 	// Represent the num of instances
 	NumInstances int `json:"numInstances"`
 
+	// HypervisorID is the unique identifier of the hypervisor in OpenStack.
+	HypervisorID string `json:"hypervisorId,omitempty"`
+
+	// ServiceID is the unique identifier of the compute service in OpenStack.
+	ServiceID string `json:"serviceId,omitempty"`
+
 	// Represents the Hypervisor node conditions.
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 

@@ -207,6 +207,10 @@ spec:
                   - type
                   type: object
                 type: array
+              hypervisorId:
+                description: HypervisorID is the unique identifier of the hypervisor
+                  in OpenStack.
+                type: string
               instances:
                 description: Represents the Hypervisor hosted Virtual Machines
                 items:
@@ -275,6 +279,10 @@ spec:
                     description: Represents the Operating System version.
                     type: string
                 type: object
+              serviceId:
+                description: ServiceID is the unique identifier of the compute service
+                  in OpenStack.
+                type: string
               specHash:
                 type: string
               updateStatus:
