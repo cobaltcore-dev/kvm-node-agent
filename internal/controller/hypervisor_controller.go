@@ -94,50 +94,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// ====================================================================================================
-	// Libvirt
-	// ====================================================================================================
-
-	// Try (re)connect to Libvirt, update status
-	if err := r.Libvirt.Connect(); err != nil {
-		log.Error(err, "unable to connect to Libvirt system bus")
-		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-			Type:    LibVirtType,
-			Status:  metav1.ConditionFalse,
-			Message: err.Error(),
-			Reason:  "ConnectFailed",
-		})
-	} else {
-		hypervisor.Status.LibVirtVersion = r.Libvirt.GetVersion()
-		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-			Type:   LibVirtType,
-			Status: metav1.ConditionTrue,
-			Reason: "Connected",
-		})
-
-		// Update hypervisor instances
-		hypervisor.Status.NumInstances = r.Libvirt.GetNumInstances()
-		hypervisor.Status.Instances, _ = r.Libvirt.GetInstances()
-
-		// Update capabilities status.
-		if capabilities, err := r.Libvirt.GetCapabilities(); err == nil {
-			hypervisor.Status.Capabilities = capabilities
-			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-				Type:   CapabilitiesClientType,
-				Status: metav1.ConditionTrue,
-				Reason: "CapabilitiesClientGetSucceeded",
-			})
-		} else {
-			log.Error(err, "failed to get capabilities")
-			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-				Type:    CapabilitiesClientType,
-				Status:  metav1.ConditionFalse,
-				Message: err.Error(),
-				Reason:  "CapabilitiesClientGetFailed",
-			})
-		}
-	}
-
-	// ====================================================================================================
 	// Systemd
 	// ====================================================================================================
 
@@ -187,6 +143,51 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			hypervisor.Status.OperatingSystem.FirmwareVersion = r.osDescriptor.FirmwareVersion
 			hypervisor.Status.OperatingSystem.FirmwareVendor = r.osDescriptor.FirmwareVendor
 			hypervisor.Status.OperatingSystem.FirmwareDate = metav1.NewTime(time.UnixMicro(r.osDescriptor.FirmwareDate))
+		}
+	}
+
+	// ====================================================================================================
+	// Libvirt
+	// ====================================================================================================
+
+	// Try (re)connect to Libvirt, update status
+	if err := r.Libvirt.Connect(); err != nil || meta.IsStatusConditionFalse(hypervisor.Status.Conditions,
+		"libvirtd.service") {
+		log.Error(err, "unable to connect to Libvirt system bus")
+		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+			Type:    LibVirtType,
+			Status:  metav1.ConditionFalse,
+			Message: fmt.Sprintf("unable to connect to libvirtd: %v", err),
+			Reason:  "ConnectFailed",
+		})
+	} else {
+		hypervisor.Status.LibVirtVersion = r.Libvirt.GetVersion()
+		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+			Type:   LibVirtType,
+			Status: metav1.ConditionTrue,
+			Reason: "Connected",
+		})
+
+		// Update hypervisor instances
+		hypervisor.Status.NumInstances = r.Libvirt.GetNumInstances()
+		hypervisor.Status.Instances, _ = r.Libvirt.GetInstances()
+
+		// Update capabilities status.
+		if capabilities, err := r.Libvirt.GetCapabilities(); err == nil {
+			hypervisor.Status.Capabilities = capabilities
+			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+				Type:   CapabilitiesClientType,
+				Status: metav1.ConditionTrue,
+				Reason: "CapabilitiesClientGetSucceeded",
+			})
+		} else {
+			log.Error(err, "failed to get capabilities")
+			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+				Type:    CapabilitiesClientType,
+				Status:  metav1.ConditionFalse,
+				Message: err.Error(),
+				Reason:  "CapabilitiesClientGetFailed",
+			})
 		}
 	}
 

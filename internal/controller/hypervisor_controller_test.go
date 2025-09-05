@@ -149,17 +149,17 @@ var _ = Describe("Hypervisor Controller", func() {
 
 			Expect(hypervisor.Status.Conditions).To(HaveLen(3))
 
-			Expect(hypervisor.Status.Conditions[0].Type).To(Equal("LibVirtConnection"))
+			Expect(hypervisor.Status.Conditions[0].Type).To(Equal("test-unit"))
 			Expect(hypervisor.Status.Conditions[0].Status).To(Equal(metav1.ConditionTrue))
-			Expect(hypervisor.Status.Conditions[0].Reason).To(Equal("Connected"))
+			Expect(hypervisor.Status.Conditions[0].Reason).To(Equal("Running"))
 
-			Expect(hypervisor.Status.Conditions[1].Type).To(Equal("CapabilitiesClientConnection"))
+			Expect(hypervisor.Status.Conditions[1].Type).To(Equal("LibVirtConnection"))
 			Expect(hypervisor.Status.Conditions[1].Status).To(Equal(metav1.ConditionTrue))
-			Expect(hypervisor.Status.Conditions[1].Reason).To(Equal("CapabilitiesClientGetSucceeded"))
+			Expect(hypervisor.Status.Conditions[1].Reason).To(Equal("Connected"))
 
-			Expect(hypervisor.Status.Conditions[2].Type).To(Equal("test-unit"))
+			Expect(hypervisor.Status.Conditions[2].Type).To(Equal("CapabilitiesClientConnection"))
 			Expect(hypervisor.Status.Conditions[2].Status).To(Equal(metav1.ConditionTrue))
-			Expect(hypervisor.Status.Conditions[2].Reason).To(Equal("Running"))
+			Expect(hypervisor.Status.Conditions[2].Reason).To(Equal("CapabilitiesClientGetSucceeded"))
 
 			Expect(hypervisor.Status.Capabilities.HostCpuArch).To(Equal("x86_64"))
 			Expect(hypervisor.Status.Capabilities.HostCpus.AsDec().UnscaledBig()).
