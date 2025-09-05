@@ -40,6 +40,18 @@ spec:
       name: Kernel
       priority: 2
       type: string
+    - jsonPath: .status.conditions[?(@.type=="Onboarding")].reason
+      name: Onboarding
+      priority: 3
+      type: string
+    - jsonPath: .status.serviceId
+      name: Service ID
+      priority: 3
+      type: string
+    - jsonPath: .status.hypervisorId
+      name: Hypervisor ID
+      priority: 3
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
