@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
@@ -145,7 +144,6 @@ func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("secret").
 		Watches(&v1.Secret{}, evHandler).
-		WithEventFilter(predicate.Funcs{}).
 		Complete(r)
 }
 
