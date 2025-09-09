@@ -290,12 +290,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
-	log := logger.Log.WithName("HypervisorReconciler")
-
-	// Initialize Libvirt connection
-	if err := r.Libvirt.Connect(); err != nil {
-		log.Error(err, "unable to connect to Libvirt system bus, reconnecting on reconciliation")
-	}
 
 	var err error
 	if r.osDescriptor, err = r.Systemd.Describe(ctx); err != nil {

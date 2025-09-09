@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"github.com/digitalocean/go-libvirt"
@@ -51,7 +52,12 @@ func NewLibVirt(k client.Client) *LibVirt {
 	}
 	log.Log.Info("Using libvirt unix domain socket", "socket", socketPath)
 	return &LibVirt{
-		libvirt.NewWithDialer(dialers.NewLocal(dialers.WithSocket(socketPath))),
+		libvirt.NewWithDialer(
+			dialers.NewLocal(
+				dialers.WithSocket(socketPath),
+				dialers.WithLocalTimeout(15*time.Second),
+			),
+		),
 		k,
 		make(map[string]context.CancelFunc),
 		sync.Mutex{},
