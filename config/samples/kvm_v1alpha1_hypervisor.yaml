@@ -1,4 +1,4 @@
-apiVersion: kvm.cloud.sap/v1alpha1
+apiVersion: kvm.cloud.sap/v1
 kind: Hypervisor
 metadata:
   labels:

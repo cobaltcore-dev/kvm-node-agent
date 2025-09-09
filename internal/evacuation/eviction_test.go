@@ -20,6 +20,7 @@ package evacuation
 import (
 	"context"
 
+	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -29,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
-	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 )
 
@@ -47,18 +47,18 @@ var _ = Describe("Evacuation Callback", func() {
 				Name:      resourceName,
 				Namespace: resourceNamespace, // TODO(user):Modify as needed
 			}
-			hypervisor := &kvmv1alpha1.Hypervisor{}
+			hypervisor := &kvmv1.Hypervisor{}
 
 			By("creating the custom resource for the Kind Hypervisor")
 			err := k8sClient.Get(ctx, typeNamespacedName, hypervisor)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &kvmv1alpha1.Hypervisor{
+				resource := &kvmv1.Hypervisor{
 					TypeMeta: metav1.TypeMeta{},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: resourceNamespace,
 					},
-					Status: kvmv1alpha1.HypervisorStatus{
+					Status: kvmv1.HypervisorStatus{
 						NumInstances: 1,
 					},
 				}

@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 )
 
@@ -209,7 +209,7 @@ func (l *LibVirt) startMigrationWatch(ctx context.Context, domain libvirt.Domain
 	log := logger.FromContext(ctx, "server", GetOpenstackUUID(domain))
 
 	// ensure migration object exists
-	migr := kvmv1alpha1.Migration{
+	migr := v1alpha1.Migration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      GetOpenstackUUID(domain),
 			Namespace: sys.Namespace,
@@ -235,7 +235,7 @@ func (l *LibVirt) startMigrationWatch(ctx context.Context, domain libvirt.Domain
 		Name:      GetOpenstackUUID(domain),
 		Namespace: sys.Namespace,
 	}
-	var original kvmv1alpha1.Migration
+	var original v1alpha1.Migration
 	if err := l.client.Get(ctx, object, &original); err != nil {
 		return fmt.Errorf("failed to get migration status: %w", err)
 	}
@@ -267,7 +267,7 @@ func (l *LibVirt) patchMigration(ctx context.Context, domain libvirt.Domain, com
 		Namespace: sys.Namespace,
 	}
 
-	var original kvmv1alpha1.Migration
+	var original v1alpha1.Migration
 	if err := l.client.Get(ctx, object, &original); err != nil {
 		return fmt.Errorf("failed to get migration status: %w", err)
 	}
@@ -326,7 +326,7 @@ func (l *LibVirt) watchMigrationLoop(ctx context.Context, cancel context.CancelF
 	}
 }
 
-func (l *LibVirt) populateDomainJobInfo(domain libvirt.Domain, migration *kvmv1alpha1.Migration, completed bool) error {
+func (l *LibVirt) populateDomainJobInfo(domain libvirt.Domain, migration *v1alpha1.Migration, completed bool) error {
 	var err error
 	var flags libvirt.DomainGetJobStatsFlags
 

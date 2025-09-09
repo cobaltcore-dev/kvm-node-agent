@@ -31,10 +31,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
+	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 )
 
 var _ = Describe("Hypervisor Controller", func() {
@@ -47,13 +47,13 @@ var _ = Describe("Hypervisor Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		hypervisor := &kvmv1alpha1.Hypervisor{}
+		hypervisor := &kvmv1.Hypervisor{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind Hypervisor")
 			err := k8sClient.Get(ctx, typeNamespacedName, hypervisor)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &kvmv1alpha1.Hypervisor{
+				resource := &kvmv1.Hypervisor{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -69,7 +69,7 @@ var _ = Describe("Hypervisor Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &kvmv1alpha1.Hypervisor{}
+			resource := &kvmv1.Hypervisor{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -91,8 +91,8 @@ var _ = Describe("Hypervisor Controller", func() {
 					GetDomainsActiveFunc: func() ([]golibvirt.Domain, error) {
 						return []golibvirt.Domain{}, nil
 					},
-					GetInstancesFunc: func() ([]kvmv1alpha1.Instance, error) {
-						return []kvmv1alpha1.Instance{
+					GetInstancesFunc: func() ([]kvmv1.Instance, error) {
+						return []kvmv1.Instance{
 							{
 								ID:     "25e2ea06-f6be-4bac-856d-8c2d0bdbcdee",
 								Name:   "test-instance",
@@ -109,8 +109,8 @@ var _ = Describe("Hypervisor Controller", func() {
 					GetNumInstancesFunc: func() int {
 						return 1
 					},
-					GetCapabilitiesFunc: func() (kvmv1alpha1.CapabilitiesStatus, error) {
-						return kvmv1alpha1.CapabilitiesStatus{
+					GetCapabilitiesFunc: func() (kvmv1.CapabilitiesStatus, error) {
+						return kvmv1.CapabilitiesStatus{
 							HostCpuArch: "x86_64",
 							HostCpus:    *resource.NewQuantity(4, resource.DecimalSI),
 							HostMemory:  *resource.NewQuantity(8192, resource.DecimalSI),

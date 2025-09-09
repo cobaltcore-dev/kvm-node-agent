@@ -15,8 +15,8 @@ resources:
   domain: cloud.sap
   group: kvm
   kind: Hypervisor
-  path: github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1
-  version: v1alpha1
+  path: github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1
+  version: v1
 - controller: true
   domain: cloud.sap
   kind: Node
@@ -27,8 +27,8 @@ resources:
   domain: cloud.sap
   group: kvm
   kind: Migration
-  path: github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1
-  version: v1alpha1
+  path: github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1
+  version: v1
 - controller: true
   domain: cloud.sap
   kind: Secret

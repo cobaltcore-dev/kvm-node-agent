@@ -20,10 +20,10 @@ package emulator
 import (
 	"context"
 
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"github.com/coreos/go-systemd/v22/dbus"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
 )
 
@@ -45,7 +45,7 @@ func NewSystemdEmulator(ctx context.Context) *systemd.InterfaceMock {
 			log.Info("GetUnitByNameFunc called")
 			return nil, nil
 		},
-		ReconcileSysUpdateFunc: func(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error) {
+		ReconcileSysUpdateFunc: func(ctx context.Context, hv *v1.Hypervisor) (bool, error) {
 			log.Info("GetUnitByNameFunc called")
 			return true, nil
 		},

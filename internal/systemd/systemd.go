@@ -26,11 +26,10 @@ import (
 	"strconv"
 	"syscall"
 
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	systemd "github.com/coreos/go-systemd/v22/dbus"
 	"github.com/godbus/dbus/v5"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 )
 
 const (
@@ -250,7 +249,7 @@ func (s *SystemdConn) ReloadUnit(ctx context.Context, unit string) (int, error) 
 var ErrFailed = errors.New("update has failed")
 
 // ReconcileSysUpdate orchestrates a systemd-sysupdate via the systemd-sysupdate@.service unit.
-func (s *SystemdConn) ReconcileSysUpdate(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error) {
+func (s *SystemdConn) ReconcileSysUpdate(ctx context.Context, hv *v1.Hypervisor) (bool, error) {
 	version := hv.Spec.OperatingSystemVersion
 	log := logger.FromContext(ctx, "systemd", "reconcileSysUpdate", "version", version)
 

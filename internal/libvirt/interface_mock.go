@@ -4,7 +4,7 @@
 package libvirt
 
 import (
-	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"github.com/digitalocean/go-libvirt"
 	"sync"
 )
@@ -25,13 +25,13 @@ var _ Interface = &InterfaceMock{}
 //			ConnectFunc: func() error {
 //				panic("mock out the Connect method")
 //			},
-//			GetCapabilitiesFunc: func() (kvmv1alpha1.CapabilitiesStatus, error) {
+//			GetCapabilitiesFunc: func() (v1.CapabilitiesStatus, error) {
 //				panic("mock out the GetCapabilities method")
 //			},
 //			GetDomainsActiveFunc: func() ([]libvirt.Domain, error) {
 //				panic("mock out the GetDomainsActive method")
 //			},
-//			GetInstancesFunc: func() ([]kvmv1alpha1.Instance, error) {
+//			GetInstancesFunc: func() ([]v1.Instance, error) {
 //				panic("mock out the GetInstances method")
 //			},
 //			GetNumInstancesFunc: func() int {
@@ -57,13 +57,13 @@ type InterfaceMock struct {
 	ConnectFunc func() error
 
 	// GetCapabilitiesFunc mocks the GetCapabilities method.
-	GetCapabilitiesFunc func() (kvmv1alpha1.CapabilitiesStatus, error)
+	GetCapabilitiesFunc func() (v1.CapabilitiesStatus, error)
 
 	// GetDomainsActiveFunc mocks the GetDomainsActive method.
 	GetDomainsActiveFunc func() ([]libvirt.Domain, error)
 
 	// GetInstancesFunc mocks the GetInstances method.
-	GetInstancesFunc func() ([]kvmv1alpha1.Instance, error)
+	GetInstancesFunc func() ([]v1.Instance, error)
 
 	// GetNumInstancesFunc mocks the GetNumInstances method.
 	GetNumInstancesFunc func() int
@@ -166,7 +166,7 @@ func (mock *InterfaceMock) ConnectCalls() []struct {
 }
 
 // GetCapabilities calls GetCapabilitiesFunc.
-func (mock *InterfaceMock) GetCapabilities() (kvmv1alpha1.CapabilitiesStatus, error) {
+func (mock *InterfaceMock) GetCapabilities() (v1.CapabilitiesStatus, error) {
 	if mock.GetCapabilitiesFunc == nil {
 		panic("InterfaceMock.GetCapabilitiesFunc: method is nil but Interface.GetCapabilities was just called")
 	}
@@ -220,7 +220,7 @@ func (mock *InterfaceMock) GetDomainsActiveCalls() []struct {
 }
 
 // GetInstances calls GetInstancesFunc.
-func (mock *InterfaceMock) GetInstances() ([]kvmv1alpha1.Instance, error) {
+func (mock *InterfaceMock) GetInstances() ([]v1.Instance, error) {
 	if mock.GetInstancesFunc == nil {
 		panic("InterfaceMock.GetInstancesFunc: method is nil but Interface.GetInstances was just called")
 	}

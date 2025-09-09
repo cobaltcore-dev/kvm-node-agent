@@ -22,9 +22,8 @@ package systemd
 import (
 	"context"
 
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"github.com/coreos/go-systemd/v22/dbus"
-
-	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 )
 
 type Descriptor struct {
@@ -77,7 +76,7 @@ type Interface interface {
 	ReloadUnit(ctx context.Context, unit string) (int, error)
 
 	// ReconcileSysUpdate reconciles orchestrates a systemd-sysupdate via the systemd-sysupdate@.service unit.
-	ReconcileSysUpdate(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error)
+	ReconcileSysUpdate(ctx context.Context, hv *v1.Hypervisor) (bool, error)
 
 	// EnableShutdownInhibit enables the shutdown inhibition
 	EnableShutdownInhibit(ctx context.Context, cb func(ctx2 context.Context) error) error

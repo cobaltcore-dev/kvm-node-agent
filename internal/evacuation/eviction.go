@@ -22,12 +22,12 @@ import (
 	"fmt"
 	"time"
 
+	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 )
 
@@ -43,7 +43,7 @@ func (e *EvictionController) EvictCurrentHost(ctx context.Context) error {
 	log := logger.FromContext(ctx)
 
 	// Check for running VMs before creating the eviction custom resource
-	var hypervisor kvmv1alpha1.Hypervisor
+	var hypervisor kvmv1.Hypervisor
 	if err := e.Get(ctx, client.ObjectKey{Namespace: sys.Namespace, Name: sys.Hostname}, &hypervisor); err != nil {
 		return fmt.Errorf("could not get hypervisor: %w", err)
 	}

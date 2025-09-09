@@ -20,11 +20,10 @@ package emulator
 import (
 	"context"
 
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
+	golibvirt "github.com/digitalocean/go-libvirt"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	golibvirt "github.com/digitalocean/go-libvirt"
-
-	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
 )
@@ -44,7 +43,7 @@ func NewLibVirtEmulator(ctx context.Context) *libvirt.InterfaceMock {
 			log.Info("GetDomainsActiveFunc Func called")
 			return []golibvirt.Domain{}, nil
 		},
-		GetInstancesFunc: func() ([]v1alpha1.Instance, error) {
+		GetInstancesFunc: func() ([]v1.Instance, error) {
 			log.Info("GetInstancesFunc Func called")
 			return nil, nil
 		},
@@ -56,7 +55,7 @@ func NewLibVirtEmulator(ctx context.Context) *libvirt.InterfaceMock {
 			log.Info("IsConnectedFunc Func called")
 			return true
 		},
-		GetCapabilitiesFunc: func() (v1alpha1.CapabilitiesStatus, error) {
+		GetCapabilitiesFunc: func() (v1.CapabilitiesStatus, error) {
 			return capabilities.NewClientEmulator().Get(nil)
 		},
 	}

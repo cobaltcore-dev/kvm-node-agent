@@ -21,7 +21,7 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	libvirt "github.com/digitalocean/go-libvirt"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -30,7 +30,7 @@ import (
 // Client that returns the capabilities of the host we are mounted on.
 type Client interface {
 	// Return the capabilities status of the host we are mounted on.
-	Get(virt *libvirt.Libvirt) (v1alpha1.CapabilitiesStatus, error)
+	Get(virt *libvirt.Libvirt) (v1.CapabilitiesStatus, error)
 }
 
 // Implementation of the CapabilitiesClient interface.
@@ -42,16 +42,16 @@ func NewClient() Client {
 }
 
 // Return the capabilities of the host we are mounted on.
-func (m *client) Get(virt *libvirt.Libvirt) (v1alpha1.CapabilitiesStatus, error) {
+func (m *client) Get(virt *libvirt.Libvirt) (v1.CapabilitiesStatus, error) {
 	capabilitiesXMLBytes, err := virt.Capabilities()
 	if err != nil {
 		log.Log.Error(err, "failed to get libvirt capabilities")
-		return v1alpha1.CapabilitiesStatus{}, err
+		return v1.CapabilitiesStatus{}, err
 	}
 	var capabilities Capabilities
 	if err := xml.Unmarshal(capabilitiesXMLBytes, &capabilities); err != nil {
 		log.Log.Error(err, "failed to unmarshal libvirt capabilities")
-		return v1alpha1.CapabilitiesStatus{}, err
+		return v1.CapabilitiesStatus{}, err
 	}
 	return convert(capabilities)
 }
@@ -65,17 +65,17 @@ func NewClientEmulator() Client {
 }
 
 // Get the capabilities of the host we are mounted on.
-func (c *clientEmulator) Get(virt *libvirt.Libvirt) (v1alpha1.CapabilitiesStatus, error) {
+func (c *clientEmulator) Get(virt *libvirt.Libvirt) (v1.CapabilitiesStatus, error) {
 	var capabilities Capabilities
 	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
 		log.Log.Error(err, "failed to unmarshal example capabilities")
-		return v1alpha1.CapabilitiesStatus{}, err
+		return v1.CapabilitiesStatus{}, err
 	}
 	return convert(capabilities)
 }
 
 // Convert the libvirt capabilities to the API format.
-func convert(in Capabilities) (out v1alpha1.CapabilitiesStatus, err error) {
+func convert(in Capabilities) (out v1.CapabilitiesStatus, err error) {
 	out.HostCpuArch = in.Host.CPU.Arch
 	// Loop over all numa cells to get the total memory + vcpus.
 	totalMemory := resource.NewQuantity(0, resource.BinarySI)
@@ -83,12 +83,12 @@ func convert(in Capabilities) (out v1alpha1.CapabilitiesStatus, err error) {
 	for _, cell := range in.Host.Topology.CellSpec.Cells {
 		mem, err := cell.Memory.AsQuantity()
 		if err != nil {
-			return v1alpha1.CapabilitiesStatus{}, err
+			return v1.CapabilitiesStatus{}, err
 		}
 		totalMemory.Add(mem)
 		cpu := resource.NewQuantity(cell.CPUs.Num, resource.DecimalSI)
 		if cpu == nil {
-			return v1alpha1.CapabilitiesStatus{},
+			return v1.CapabilitiesStatus{},
 				fmt.Errorf("invalid CPU count for cell %d", cell.ID)
 		}
 		totalCpus.Add(*cpu)

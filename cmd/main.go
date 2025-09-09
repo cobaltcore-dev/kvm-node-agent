@@ -51,7 +51,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
+
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
@@ -64,7 +65,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(kvmv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(kvmv1.AddToScheme(scheme))
 	utilruntime.Must(certmanagerv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
@@ -160,7 +161,7 @@ func main() {
 				&corev1.Node{}: {
 					Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", sys.Hostname)),
 				},
-				&kvmv1alpha1.Hypervisor{}: {
+				&kvmv1.Hypervisor{}: {
 					Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", sys.Hostname)),
 				},
 				&corev1.Secret{}: {

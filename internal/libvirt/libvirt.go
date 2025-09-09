@@ -23,12 +23,12 @@ import (
 	"os"
 	"sync"
 
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"github.com/digitalocean/go-libvirt"
 	"github.com/digitalocean/go-libvirt/socket/dialers"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
 )
 
@@ -101,13 +101,13 @@ func (l *LibVirt) Close() error {
 	return l.virt.Disconnect()
 }
 
-func (l *LibVirt) GetInstances() ([]v1alpha1.Instance, error) {
-	var instances []v1alpha1.Instance
+func (l *LibVirt) GetInstances() ([]v1.Instance, error) {
+	var instances []v1.Instance
 
 	flags := []libvirt.ConnectListAllDomainsFlags{libvirt.ConnectListDomainsActive, libvirt.ConnectListDomainsInactive}
 	for _, flag := range flags {
 		for _, domain := range l.domains[flag] {
-			instances = append(instances, v1alpha1.Instance{
+			instances = append(instances, v1.Instance{
 				ID:     GetOpenstackUUID(domain),
 				Name:   domain.Name,
 				Active: flag == libvirt.ConnectListDomainsActive,
@@ -130,6 +130,6 @@ func (l *LibVirt) GetNumInstances() int {
 }
 
 // Get the capabilities of the libvirt daemon.
-func (l *LibVirt) GetCapabilities() (v1alpha1.CapabilitiesStatus, error) {
+func (l *LibVirt) GetCapabilities() (v1.CapabilitiesStatus, error) {
 	return l.capabilitiesClient.Get(l.virt)
 }

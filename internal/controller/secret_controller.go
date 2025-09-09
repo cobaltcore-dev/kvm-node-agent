@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +36,6 @@ import (
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
@@ -67,7 +67,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Fetch the Hypervisor instance
-	hv := &v1alpha1.Hypervisor{}
+	hv := &kvmv1.Hypervisor{}
 	if err = r.Get(ctx, types.NamespacedName{Name: sys.Hostname}, hv); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -150,7 +150,7 @@ func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *SecretReconciler) setTLSStatusCondition(ctx context.Context, status metav1.ConditionStatus,
 	reason, message string) error {
 	log := logger.FromContext(ctx)
-	hv := &v1alpha1.Hypervisor{}
+	hv := &kvmv1.Hypervisor{}
 
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		if err := r.Get(ctx, types.NamespacedName{Name: sys.Hostname}, hv); err != nil {

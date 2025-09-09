@@ -5,7 +5,7 @@ package systemd
 
 import (
 	"context"
-	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	systemd "github.com/coreos/go-systemd/v22/dbus"
 	"sync"
 )
@@ -41,7 +41,7 @@ var _ Interface = &InterfaceMock{}
 //			ListUnitsByNamesFunc: func(ctx context.Context, units []string) ([]systemd.UnitStatus, error) {
 //				panic("mock out the ListUnitsByNames method")
 //			},
-//			ReconcileSysUpdateFunc: func(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error) {
+//			ReconcileSysUpdateFunc: func(ctx context.Context, hv *v1.Hypervisor) (bool, error) {
 //				panic("mock out the ReconcileSysUpdate method")
 //			},
 //			ReloadUnitFunc: func(ctx context.Context, unit string) (int, error) {
@@ -79,7 +79,7 @@ type InterfaceMock struct {
 	ListUnitsByNamesFunc func(ctx context.Context, units []string) ([]systemd.UnitStatus, error)
 
 	// ReconcileSysUpdateFunc mocks the ReconcileSysUpdate method.
-	ReconcileSysUpdateFunc func(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error)
+	ReconcileSysUpdateFunc func(ctx context.Context, hv *v1.Hypervisor) (bool, error)
 
 	// ReloadUnitFunc mocks the ReloadUnit method.
 	ReloadUnitFunc func(ctx context.Context, unit string) (int, error)
@@ -129,7 +129,7 @@ type InterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Hv is the hv argument value.
-			Hv *v1alpha1.Hypervisor
+			Hv *v1.Hypervisor
 		}
 		// ReloadUnit holds details about calls to the ReloadUnit method.
 		ReloadUnit []struct {
@@ -380,13 +380,13 @@ func (mock *InterfaceMock) ListUnitsByNamesCalls() []struct {
 }
 
 // ReconcileSysUpdate calls ReconcileSysUpdateFunc.
-func (mock *InterfaceMock) ReconcileSysUpdate(ctx context.Context, hv *v1alpha1.Hypervisor) (bool, error) {
+func (mock *InterfaceMock) ReconcileSysUpdate(ctx context.Context, hv *v1.Hypervisor) (bool, error) {
 	if mock.ReconcileSysUpdateFunc == nil {
 		panic("InterfaceMock.ReconcileSysUpdateFunc: method is nil but Interface.ReconcileSysUpdate was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
-		Hv  *v1alpha1.Hypervisor
+		Hv  *v1.Hypervisor
 	}{
 		Ctx: ctx,
 		Hv:  hv,
@@ -403,11 +403,11 @@ func (mock *InterfaceMock) ReconcileSysUpdate(ctx context.Context, hv *v1alpha1.
 //	len(mockedInterface.ReconcileSysUpdateCalls())
 func (mock *InterfaceMock) ReconcileSysUpdateCalls() []struct {
 	Ctx context.Context
-	Hv  *v1alpha1.Hypervisor
+	Hv  *v1.Hypervisor
 } {
 	var calls []struct {
 		Ctx context.Context
-		Hv  *v1alpha1.Hypervisor
+		Hv  *v1.Hypervisor
 	}
 	mock.lockReconcileSysUpdate.RLock()
 	calls = mock.calls.ReconcileSysUpdate

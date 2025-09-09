@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
 
-	kvmv1alpha1 "github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/evacuation"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
@@ -73,7 +73,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	log.Info("Reconcile", "name", req.Name, "namespace", req.Namespace)
 
-	var hypervisor kvmv1alpha1.Hypervisor
+	var hypervisor kvmv1.Hypervisor
 	if err := r.Get(ctx, req.NamespacedName, &hypervisor); err != nil {
 		// ignore not found errors, could be deleted
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -292,6 +292,6 @@ func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&kvmv1alpha1.Hypervisor{}).
+		For(&kvmv1.Hypervisor{}).
 		Complete(r)
 }

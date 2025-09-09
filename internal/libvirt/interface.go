@@ -20,9 +20,8 @@ limitations under the License.
 package libvirt
 
 import (
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"github.com/digitalocean/go-libvirt"
-
-	"github.com/cobaltcore-dev/kvm-node-agent/api/v1alpha1"
 )
 
 type Interface interface {
@@ -33,7 +32,7 @@ type Interface interface {
 	Close() error
 
 	// GetInstances returns a list of instances.
-	GetInstances() ([]v1alpha1.Instance, error)
+	GetInstances() ([]v1.Instance, error)
 
 	// GetDomainsActive returns all active domains.
 	GetDomainsActive() ([]libvirt.Domain, error)
@@ -48,5 +47,5 @@ type Interface interface {
 	GetNumInstances() int
 
 	// Get the capabilities of the libvirt daemon.
-	GetCapabilities() (v1alpha1.CapabilitiesStatus, error)
+	GetCapabilities() (v1.CapabilitiesStatus, error)
 }
