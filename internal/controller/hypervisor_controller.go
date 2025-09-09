@@ -94,10 +94,12 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		var unitReasonsMap = map[string]string{
 			"active":   "Running",
 			"inactive": "Stopped",
+			"failed":   "Failed",
 		}
 		var unitStatusesMap = map[string]metav1.ConditionStatus{
 			"active":   metav1.ConditionTrue,
 			"inactive": metav1.ConditionFalse,
+			"failed":   metav1.ConditionFalse,
 		}
 
 		for _, unit := range units {
@@ -292,7 +294,7 @@ func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	// Initialize Libvirt connection
 	if err := r.Libvirt.Connect(); err != nil {
-		log.Error(err, "unable to connect to Libvirt system bus, reconnecting on reconcillation")
+		log.Error(err, "unable to connect to Libvirt system bus, reconnecting on reconciliation")
 	}
 
 	var err error
