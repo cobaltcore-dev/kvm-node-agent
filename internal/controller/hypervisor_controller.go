@@ -79,20 +79,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if hypervisor.Spec.EvacuateOnReboot != r.evacuateOnReboot {
-		if hypervisor.Spec.EvacuateOnReboot {
-			e := &evacuation.EvictionController{Client: r.Client}
-			if err := r.Systemd.EnableShutdownInhibit(ctx, e.EvictCurrentHost); err != nil {
-				return ctrl.Result{}, err
-			}
-		} else {
-			if err := r.Systemd.DisableShutdownInhibit(); err != nil {
-				return ctrl.Result{}, err
-			}
-		}
-		r.evacuateOnReboot = hypervisor.Spec.EvacuateOnReboot
-	}
-
 	// ====================================================================================================
 	// Systemd
 	// ====================================================================================================
@@ -144,6 +130,20 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			hypervisor.Status.OperatingSystem.FirmwareVendor = r.osDescriptor.FirmwareVendor
 			hypervisor.Status.OperatingSystem.FirmwareDate = metav1.NewTime(time.UnixMicro(r.osDescriptor.FirmwareDate))
 		}
+
+		if hypervisor.Spec.EvacuateOnReboot != r.evacuateOnReboot {
+			if hypervisor.Spec.EvacuateOnReboot {
+				e := &evacuation.EvictionController{Client: r.Client}
+				if err := r.Systemd.EnableShutdownInhibit(ctx, e.EvictCurrentHost); err != nil {
+					return ctrl.Result{}, err
+				}
+			} else {
+				if err := r.Systemd.DisableShutdownInhibit(); err != nil {
+					return ctrl.Result{}, err
+				}
+			}
+			r.evacuateOnReboot = hypervisor.Spec.EvacuateOnReboot
+		}
 	}
 
 	// ====================================================================================================
@@ -151,8 +151,17 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// ====================================================================================================
 
 	// Try (re)connect to Libvirt, update status
-	if err := r.Libvirt.Connect(); err != nil || meta.IsStatusConditionFalse(hypervisor.Status.Conditions,
-		"libvirtd.service") {
+	if meta.IsStatusConditionFalse(hypervisor.Status.Conditions, "libvirtd.service") {
+		// libvirtd service is not running, skip libvirt connection, systemd socket activation could
+		// be blocking the libvirt connection. Could reconnect with next reconcile loop.
+		log.Info("libvirtd.service is not running, skipping libvirt connection")
+		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+			Type:    LibVirtType,
+			Status:  metav1.ConditionFalse,
+			Message: "libvirtd service is not running",
+			Reason:  "LibVirtServiceNotRunning",
+		})
+	} else if err := r.Libvirt.Connect(); err != nil {
 		log.Error(err, "unable to connect to Libvirt system bus")
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 			Type:    LibVirtType,
