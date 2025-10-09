@@ -47,6 +47,9 @@ spec:
     - jsonPath: .status.operatingSystem.prettyVersion
       name: Version
       type: string
+    - jsonPath: .status.internalIp
+      name: IP
+      type: string
     - jsonPath: .status.numInstances
       name: Instances
       type: integer
@@ -272,6 +275,9 @@ spec:
                   - name
                   type: object
                 type: array
+              internalIp:
+                description: InternalIP is the internal IP address of the hypervisor.
+                type: string
               libVirtVersion:
                 default: unknown
                 description: Represents the LibVirt version.
