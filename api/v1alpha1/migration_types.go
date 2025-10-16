@@ -33,7 +33,7 @@ type MigrationStatus struct {
 	Origin               string      `json:"origin,omitempty"`
 	Destination          string      `json:"destination,omitempty"`
 	Type                 string      `json:"type,omitempty"`
-	Started              metav1.Time `json:"started,omitempty"`
+	Started              metav1.Time `json:"started"`
 	ErrMsg               string      `json:"errMsg,omitempty"`
 	AutoConvergeThrottle string      `json:"autoConvergeThrottle,omitempty"`
 	DiskBps              string      `json:"diskBps,omitempty"`
@@ -79,10 +79,10 @@ type MigrationStatus struct {
 // Migration is the Schema for the migrations API.
 type Migration struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   MigrationSpec   `json:"spec,omitempty"`
-	Status MigrationStatus `json:"status,omitempty"`
+	Spec   MigrationSpec   `json:"spec"`
+	Status MigrationStatus `json:"status"`
 }
 
 // +kubebuilder:object:root=true
@@ -90,7 +90,7 @@ type Migration struct {
 // MigrationList contains a list of Migration.
 type MigrationList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 	Items           []Migration `json:"items"`
 }
 

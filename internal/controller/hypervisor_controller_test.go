@@ -20,21 +20,20 @@ package controller
 import (
 	"context"
 
+	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"github.com/coreos/go-systemd/v22/dbus"
 	golibvirt "github.com/digitalocean/go-libvirt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
-	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 )
 
 var _ = Describe("Hypervisor Controller", func() {

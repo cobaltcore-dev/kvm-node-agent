@@ -1,18 +1,76 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended",
+    "default:pinDigestsDisabled",
+    "mergeConfidence:all-badges",
+    "docker:disable"
   ],
   "assignees": [
-    "notandy"
+    "notandy",
+    "fwiesel",
+    "mchristianl",
+    "toanju"
+  ],
+  "commitMessageAction": "Renovate: Update",
+  "constraints": {
+    "go": "1.25"
+  },
+  "dependencyDashboardOSVVulnerabilitySummary": "all",
+  "osvVulnerabilityAlerts": true,
+  "postUpdateOptions": [
+    "gomodTidy",
+    "gomodUpdateImportPaths"
   ],
   "packageRules": [
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": true
+      "matchPackageNames": [
+        "/.*/"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "External dependencies"
+    },
+    {
+      "matchPackageNames": [
+        "/^github\\.com\\/sapcc\\/.*/"
+      ],
+      "automerge": true,
+      "groupName": "github.com/sapcc"
+    },
+    {
+      "matchPackageNames": [
+        "go",
+        "golang",
+        "actions/go-versions"
+      ],
+      "groupName": "golang",
+      "separateMinorPatch": true
+    },
+    {
+      "matchPackageNames": [
+        "go",
+        "golang",
+        "actions/go-versions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchPackageNames": [
+        "/^k8s.io\\//"
+      ],
+      "allowedVersions": "0.28.x"
     }
   ],
-  "postUpdateOptions": [
-    "gomodTidy"
-  ]
+  "prHourlyLimit": 0,
+  "schedule": [
+    "before 8am on Friday"
+  ],
+  "semanticCommits": "disabled"
 }

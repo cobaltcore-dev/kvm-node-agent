@@ -87,12 +87,12 @@ func (l *LibVirt) runMigrationListener(ctx context.Context) {
 			e := event.(*libvirt.DomainEventCallbackMigrationIterationMsg)
 			domain := e.Dom
 			uuid := GetOpenstackUUID(domain)
-			log := log.WithValues("server", uuid)
-			log.Info("migration iteration", "iteration", e.Iteration)
+			serverLog := log.WithValues("server", uuid)
+			serverLog.Info("migration iteration", "iteration", e.Iteration)
 
 			// migration started
 			if err = l.startMigrationWatch(ctx, domain); err != nil {
-				log.Error(err, "failed to starting migration watch")
+				serverLog.Error(err, "failed to starting migration watch")
 			}
 
 		case event := <-jobCompletedEvents:
@@ -103,24 +103,24 @@ func (l *LibVirt) runMigrationListener(ctx context.Context) {
 		case event := <-lifecycleEvents:
 			e := event.(*libvirt.DomainEventCallbackLifecycleMsg)
 			domain := e.Msg.Dom
-			log := log.WithValues("server", GetOpenstackUUID(domain))
+			serverLog := log.WithValues("server", GetOpenstackUUID(domain))
 
 			switch e.Msg.Event {
 			case int32(libvirt.DomainEventDefined):
 				switch e.Msg.Detail {
 				case int32(libvirt.DomainEventDefinedAdded):
-					log.Info("domain added")
+					serverLog.Info("domain added")
 					// add domain to the list of inactive domains
 					l.domains[libvirt.ConnectListDomainsInactive] = append(l.domains[libvirt.ConnectListDomainsInactive], domain)
 				case int32(libvirt.DomainEventDefinedUpdated):
-					log.Info("domain updated")
+					serverLog.Info("domain updated")
 				case int32(libvirt.DomainEventDefinedRenamed):
-					log.Info("domain renamed")
+					serverLog.Info("domain renamed")
 				case int32(libvirt.DomainEventDefinedFromSnapshot):
-					log.Info("domain defined from snapshot")
+					serverLog.Info("domain defined from snapshot")
 				}
 			case int32(libvirt.DomainEventUndefined):
-				log.Info("domain undefined")
+				serverLog.Info("domain undefined")
 				// remove domain from the list of inactive domains
 				for i, d := range l.domains[libvirt.ConnectListDomainsInactive] {
 					if d.Name == domain.Name {
@@ -135,26 +135,26 @@ func (l *LibVirt) runMigrationListener(ctx context.Context) {
 				l.domains[libvirt.ConnectListDomainsActive] = append(l.domains[libvirt.ConnectListDomainsActive], domain)
 				switch e.Msg.Detail {
 				case int32(libvirt.DomainEventStartedBooted):
-					log.Info("domain booted")
+					serverLog.Info("domain booted")
 				case int32(libvirt.DomainEventStartedMigrated):
-					log.Info("incoming migration started")
+					serverLog.Info("incoming migration started")
 				case int32(libvirt.DomainEventStartedRestored):
-					log.Info("domain restored")
+					serverLog.Info("domain restored")
 				case int32(libvirt.DomainEventStartedFromSnapshot):
-					log.Info("domain started from snapshot")
+					serverLog.Info("domain started from snapshot")
 				case int32(libvirt.DomainEventStartedWakeup):
-					log.Info("domain woken up")
+					serverLog.Info("domain woken up")
 				}
 			case int32(libvirt.DomainEventSuspended):
-				log.Info("domain suspended")
+				serverLog.Info("domain suspended")
 			case int32(libvirt.DomainEventResumed):
-				log.Info("domain resumed")
+				serverLog.Info("domain resumed")
 				// incoming migration completed, finalize migration status
 				if err = l.patchMigration(ctx, domain, true); client.IgnoreNotFound(err) != nil {
-					log.Error(err, "failed to update migration status")
+					serverLog.Error(err, "failed to update migration status")
 				}
 			case int32(libvirt.DomainEventStopped):
-				log.Info("domain stopped")
+				serverLog.Info("domain stopped")
 
 				// remove domain from the list of active domains
 				for i, d := range l.domains[libvirt.ConnectListDomainsActive] {
@@ -167,17 +167,19 @@ func (l *LibVirt) runMigrationListener(ctx context.Context) {
 				}
 				l.stopMigrationWatch(ctx, domain)
 			case int32(libvirt.DomainEventShutdown):
-				log.Info("domain shutdown")
+				serverLog.Info("domain shutdown")
 				l.stopMigrationWatch(ctx, domain)
 			case int32(libvirt.DomainEventPmsuspended):
-				log.Info("domain PM suspended")
+				serverLog.Info("domain PM suspended")
 			case int32(libvirt.DomainEventCrashed):
-				log.Info("domain crashed")
+				serverLog.Info("domain crashed")
 			}
 
 		case <-ctx.Done():
 			log.Info("shutting down migration listener")
-			_ = l.virt.ConnectRegisterCloseCallback()
+			if err = l.virt.ConnectRegisterCloseCallback(); err != nil {
+				log.Error(err, "failed to unregister close callback")
+			}
 
 			// read from events to drain the channel
 			if _, ok := <-lifecycleEvents; !ok {
@@ -190,7 +192,7 @@ func (l *LibVirt) runMigrationListener(ctx context.Context) {
 				log.Info("job completed events drained")
 			}
 
-		case <-l.virt.Disconnected(): //nolint:typecheck
+		case <-l.virt.Disconnected():
 			log.Info("libvirt disconnected, shutting down migration listener")
 
 			// stopping all migration watches
@@ -383,13 +385,13 @@ func (l *LibVirt) populateDomainJobInfo(domain libvirt.Domain, migration *v1alph
 				migration.Status.Operation = "snapshot_delete"
 			}
 		case "time_elapsed":
-			migration.Status.TimeElapsed = time.Duration(param.Value.I.(uint64) * 1000 * 1000).String()
+			migration.Status.TimeElapsed = time.Duration(param.Value.I.(int64) * 1000 * 1000).String()
 		case "time_remaining":
 			migration.Status.TimeRemaining = time.Duration(param.Value.I.(uint32) * 1000 * 1000).String()
 		case "downtime":
-			migration.Status.Downtime = time.Duration(param.Value.I.(uint64) * 1000 * 1000).String()
+			migration.Status.Downtime = time.Duration(param.Value.I.(int64) * 1000 * 1000).String()
 		case "setup_time":
-			migration.Status.SetupTime = time.Duration(param.Value.I.(uint64) * 1000 * 1000).String()
+			migration.Status.SetupTime = time.Duration(param.Value.I.(int64) * 1000 * 1000).String()
 		case "data_total":
 			migration.Status.DataTotal = ByteCountIEC(param.Value.I.(uint64))
 		case "data_processed":
@@ -433,7 +435,6 @@ func (l *LibVirt) populateDomainJobInfo(domain libvirt.Domain, migration *v1alph
 		case "errmsg":
 			migration.Status.ErrMsg = param.Value.I.(string)
 		}
-
 	}
 	return err
 }

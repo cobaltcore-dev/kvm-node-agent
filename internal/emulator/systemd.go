@@ -34,7 +34,7 @@ func NewSystemdEmulator(ctx context.Context) *systemd.InterfaceMock {
 			log.Info("CloseFunc called")
 		},
 		GetUnitByNameFunc: func(ctx context.Context, unit string) (dbus.UnitStatus, error) {
-			log.Info("GetUnitByNameFunc called with with unit = " + unit)
+			log.Info("GetUnitByNameFunc called with unit = " + unit)
 			return dbus.UnitStatus{}, nil
 		},
 		IsConnectedFunc: func() bool {
