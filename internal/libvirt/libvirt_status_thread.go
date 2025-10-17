@@ -50,7 +50,9 @@ func (l *LibVirt) runStatusThread(ctx context.Context) {
 	log.Info("starting status thread")
 
 	// run immediately, and every minute after
-	_ = l.updateDomains()
+	if err := l.updateDomains(); err != nil {
+		log.Error(err, "failed to update domains")
+	}
 
 	for {
 		select {

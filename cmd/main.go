@@ -37,6 +37,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/sapcc/go-api-declarations/bininfo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -86,11 +87,17 @@ func main() {
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	versionFlag := flag.Bool("version", false, "Print application version")
 	opts := zap.Options{
 		Development: true,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Printf("%s version %s (%s)\n", bininfo.Component(), bininfo.Version(), bininfo.BuildDate())
+		os.Exit(0)
+	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
@@ -159,13 +166,13 @@ func main() {
 		Cache: cache.Options{
 			ByObject: map[client.Object]cache.ByObject{
 				&corev1.Node{}: {
-					Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", sys.Hostname)),
+					Field: fields.ParseSelectorOrDie("metadata.name=" + sys.Hostname),
 				},
 				&kvmv1.Hypervisor{}: {
-					Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", sys.Hostname)),
+					Field: fields.ParseSelectorOrDie("metadata.name=" + sys.Hostname),
 				},
 				&corev1.Secret{}: {
-					Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", secretName)),
+					Field: fields.ParseSelectorOrDie("metadata.name=" + secretName),
 				},
 			},
 		},

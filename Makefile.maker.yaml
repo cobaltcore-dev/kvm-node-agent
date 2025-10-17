@@ -1,0 +1,77 @@
+# Configuration file for <https://github.com/sapcc/go-makefile-maker>
+
+binaries:
+  - name:        manager
+    fromPackage: ./cmd
+    installTo:   bin/
+
+controllerGen:
+  enabled: true
+  crdOutputPath: config/crd/bases
+  objectHeaderFile: hack/boilerplate.go.txt
+  rbacRoleName: manager-role
+
+coverageTest:
+  only: '/internal'
+
+dockerfile:
+  enabled: true
+  runAsRoot: true
+  extraDirectives:
+    - "# Hardcoded to kvm-node-agent user/group on host"
+    - USER 42438:42438
+
+golang:
+  autoupdateableDeps: ^github.com/(?:sapcc|sap-cloud-infrastructure)/
+  setGoModVersion: true
+
+golangciLint:
+  createConfig: true
+
+githubWorkflow:
+  ci:
+    enabled: true
+  global:
+    defaultBranch: main # only defined here so that the "Run go-makefile-maker" Action knows it
+  securityChecks:
+    enabled: true
+    queries: security-extended
+
+metadata:
+  url: https://github.com/cobaltcore-dev/kvm-node-agent
+
+renovate:
+  enabled: true
+  assignees:
+    - notandy
+    - fwiesel
+    - mchristianl
+    - toanju
+
+reuse:
+  annotations:
+    - paths:
+        - PROJECT
+        - config/**
+        - charts/**
+        - internal/**/*_mock.go
+        - build/**
+      SPDX-FileCopyrightText: 'SAP SE or an SAP affiliate company and cobaltcore-dev contributors'
+      SPDX-License-Identifier: Apache-2.0
+
+verbatim: |
+  # Generate mock files for all interfaces
+  INTERFACES = $(patsubst %.go,%_mock.go,$(wildcard internal/**/interface.go))
+  mocks: $(INTERFACES) ## Generate mocks for interfaces.
+  .PHONY: FORCE
+  FORCE:
+  %_mock.go: %.go FORCE ## Generate interface mocks with https://github.com/matryer/moq
+      moq -rm -out $@ $(dir $@) Interface
+
+  .PHONY: install-crds
+  install-crds: generate ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+      kubectl kustomize config/crd | kubectl apply -f -
+
+  .PHONY: helmify
+  helmify:
+      kubectl kustomize config/default | helmify -crd-dir charts/kvm-node-agent

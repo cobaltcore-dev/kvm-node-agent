@@ -74,8 +74,8 @@ var _ = Describe("Evacuation Callback", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			u := &unstructured.Unstructured{}
-			u.SetUnstructuredContent(map[string]interface{}{
-				"spec": map[string]interface{}{
+			u.SetUnstructuredContent(map[string]any{
+				"spec": map[string]any{
 					"hypervisor": sys.Hostname,
 					"reason":     "kvm-node-agent: emergency evacuation due to host reboot",
 				},

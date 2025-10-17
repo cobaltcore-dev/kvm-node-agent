@@ -36,10 +36,8 @@ import (
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 )
 
-func GetSecretAndCertName(host string) (string, string) {
-	certName := fmt.Sprintf("libvirt-%s", host)
-	secretName := fmt.Sprintf("tls-%s", certName)
-	return secretName, certName
+func GetSecretAndCertName(host string) (secretName, certName string) {
+	return "tls-" + certName, "libvirt-" + host
 }
 
 var (

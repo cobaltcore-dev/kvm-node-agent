@@ -116,7 +116,7 @@ func NewSystemd(ctx context.Context) (*SystemdConn, error) {
 // and registers a shutdown callback
 func (s *SystemdConn) EnableShutdownInhibit(ctx context.Context, cb func(context.Context) error) error {
 	if s.fd != -1 {
-		return fmt.Errorf("shutdown inhibition already enabled")
+		return errors.New("shutdown inhibition already enabled")
 	}
 
 	log := logger.Log.WithName("systemd")
@@ -238,7 +238,6 @@ func (s *SystemdConn) GetUnitByName(ctx context.Context, unit string) (systemd.U
 }
 
 func (s *SystemdConn) StartUnit(ctx context.Context, unit string) (int, error) {
-
 	return s.conn.StartUnitContext(ctx, unit, "replace", nil)
 }
 
@@ -255,7 +254,7 @@ func (s *SystemdConn) ReconcileSysUpdate(ctx context.Context, hv *v1.Hypervisor)
 
 	// Needs to be connected to systemd
 	if !s.IsConnected() {
-		return false, fmt.Errorf("not connected to systemd")
+		return false, errors.New("not connected to systemd")
 	}
 
 	unit := fmt.Sprintf("systemd-sysupdate@%s.service", version)

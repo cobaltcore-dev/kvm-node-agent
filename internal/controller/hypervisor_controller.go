@@ -181,7 +181,9 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 		// Update hypervisor instances
 		hypervisor.Status.NumInstances = r.Libvirt.GetNumInstances()
-		hypervisor.Status.Instances, _ = r.Libvirt.GetInstances()
+		if hypervisor.Status.Instances, err = r.Libvirt.GetInstances(); err != nil {
+			log.Error(err, "failed to get instances")
+		}
 
 		// Update capabilities status.
 		if capabilities, err := r.Libvirt.GetCapabilities(); err == nil {
@@ -208,7 +210,6 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		hypervisor.Spec.OperatingSystemVersion != hypervisor.Status.OperatingSystem.Version &&
 		// only update if the version is different to the installed version
 		hypervisor.Spec.OperatingSystemVersion != hypervisor.Status.Update.Installed {
-
 		if hypervisor.Status.Update.Retry == 0 {
 			// we reached the retry limit, unset the version to stop the update
 			// failed message of past retries is still available in the conditions

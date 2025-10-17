@@ -81,21 +81,27 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	_ = r.setTLSStatusCondition(ctx, metav1.ConditionFalse,
-		"Installing", "Installing TLS certificate from Secret")
+	if err = r.setTLSStatusCondition(ctx, metav1.ConditionFalse,
+		"Installing", "Installing TLS certificate from Secret"); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	if err = certificates.UpdateTLSCertificate(ctx, secret.Data); err != nil {
 		// update conditions
-		_ = r.setTLSStatusCondition(ctx, metav1.ConditionFalse,
-			"FailedToUpdateTLSCertificate", fmt.Sprintf("Failed to update TLS certificate: %v", err))
+		if err := r.setTLSStatusCondition(ctx, metav1.ConditionFalse,
+			"FailedToUpdateTLSCertificate", fmt.Sprintf("Failed to update TLS certificate: %v", err)); err != nil {
+			return ctrl.Result{}, err
+		}
 		return ctrl.Result{}, err
 	}
 
 	// Reload the libvirtd service
 	if _, err = r.Systemd.StartUnit(ctx, "virt-admin-server-update-tls.service"); err != nil {
-		_ = r.setTLSStatusCondition(ctx, metav1.ConditionFalse,
+		if err := r.setTLSStatusCondition(ctx, metav1.ConditionFalse,
 			"FailedToStartUpdateTLSService",
-			fmt.Sprintf("Failed to start virt-admin-server-update-tls service: %v", err))
+			fmt.Sprintf("Failed to start virt-admin-server-update-tls service: %v", err)); err != nil {
+			return ctrl.Result{}, err
+		}
 		log.Error(err, "failed to start virt-admin-server-update-tls service")
 		// Start the libvirtd service
 		if _, err = r.Systemd.StartUnit(ctx, "libvirtd.service"); err != nil {
@@ -112,10 +118,8 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 	r.lastResourceVersion = secret.ResourceVersion
 
-	_ = r.setTLSStatusCondition(ctx, metav1.ConditionTrue, "Ready",
+	return ctrl.Result{}, r.setTLSStatusCondition(ctx, metav1.ConditionTrue, "Ready",
 		"TLS certificate is ready and updated")
-
-	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -149,6 +153,7 @@ func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *SecretReconciler) setTLSStatusCondition(ctx context.Context, status metav1.ConditionStatus,
 	reason, message string) error {
+
 	log := logger.FromContext(ctx)
 	hv := &kvmv1.Hypervisor{}
 

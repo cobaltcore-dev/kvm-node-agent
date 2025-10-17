@@ -54,8 +54,8 @@ func (e *EvictionController) EvictCurrentHost(ctx context.Context) error {
 	}
 
 	u := &unstructured.Unstructured{}
-	u.SetUnstructuredContent(map[string]interface{}{
-		"spec": map[string]interface{}{
+	u.SetUnstructuredContent(map[string]any{
+		"spec": map[string]any{
 			"hypervisor": sys.Hostname,
 			"reason":     "kvm-node-agent: emergency evacuation due to host reboot",
 		},

@@ -1,6 +1,25 @@
-# SPDX-FileCopyrightText: Copyright 2024 SAP SE or an SAP affiliate company and cobaltcore-dev contributors
-#
+# SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
 # SPDX-License-Identifier: Apache-2.0
-# More info: https://docs.docker.com/engine/reference/builder/#dockerignore-file
-# Ignore build and test binaries.
-bin/
+
+.DS_Store
+/*.env*
+/.dockerignore
+# TODO: uncomment when applications no longer use git to get version information
+#.git/
+/.github/
+/.gitignore
+/.golangci.yaml
+/.goreleaser.yml
+/.vscode/
+/CONTRIBUTING.md
+/Dockerfile
+/LICENSE*
+/Makefile.maker.yaml
+/README.md
+/build/
+/docs/
+/go.work
+/go.work.sum
+/report.html
+/shell.nix
+/testing/
