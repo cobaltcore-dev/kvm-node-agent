@@ -46,8 +46,8 @@ install-crds: generate ## Install CRDs into the K8s cluster specified in ~/.kube
 	kubectl kustomize config/crd | kubectl apply -f -
 
 .PHONY: helmify
-helm: manifests kustomize helmify
-	$(KUSTOMIZE) build config/default | $(HELMIFY) -crd-dir charts/kvm-node-agent
+helmify:
+	kubectl kustomize config/default | helmify -crd-dir charts/kvm-node-agent
 
 install-goimports: FORCE
 	@if ! hash goimports 2>/dev/null; then printf "\e[1;36m>> Installing goimports (this may take a while)...\e[0m\n"; go install golang.org/x/tools/cmd/goimports@latest; fi
@@ -127,6 +127,7 @@ generate: install-controller-gen
 	@printf "\e[1;36m>> controller-gen\e[0m\n"
 	@controller-gen crd rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	@controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	@controller-gen applyconfiguration paths="./..."
 
 run-golangci-lint: FORCE install-golangci-lint
 	@printf "\e[1;36m>> golangci-lint\e[0m\n"
