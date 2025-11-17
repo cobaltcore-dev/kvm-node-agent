@@ -36,6 +36,15 @@ githubWorkflow:
   securityChecks:
     enabled: true
     queries: security-extended
+  pushContainerToGhcr:
+    enabled: true
+    platforms: "linux/amd64,linux/arm64"
+    tagStrategy:
+      - edge
+      - latest
+      - semver
+  license:
+    enabled: true
 
 metadata:
   url: https://github.com/cobaltcore-dev/kvm-node-agent

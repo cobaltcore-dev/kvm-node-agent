@@ -105,14 +105,14 @@ spec:
         volumeMounts:
         - mountPath: /host
           name: host
+      nodeSelector: {{- toYaml .Values.controllerManager.nodeSelector | nindent 8 }}
       securityContext: {{- toYaml .Values.controllerManager.podSecurityContext | nindent
         8 }}
-      serviceAccountName: {{ include "kvm-node-agent.fullname" . }}-controller-manager
+      serviceAccountName: {{ include "kvm-node-agent.serviceAccountName" . }}
       terminationGracePeriodSeconds: 10
-      tolerations:
-      - effect: NoSchedule
-        key: node.gardener.cloud/critical-components-not-ready
-        operator: Exists
+      tolerations: {{- toYaml .Values.controllerManager.tolerations | nindent 8 }}
+      topologySpreadConstraints: {{- toYaml .Values.controllerManager.topologySpreadConstraints
+        | nindent 8 }}
       volumes:
       - hostPath:
           path: /run/libvirt
