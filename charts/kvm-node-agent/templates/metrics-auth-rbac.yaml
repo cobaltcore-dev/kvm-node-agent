@@ -30,5 +30,5 @@ roleRef:
   name: '{{ include "kvm-node-agent.fullname" . }}-metrics-auth-role'
 subjects:
 - kind: ServiceAccount
-  name: '{{ include "kvm-node-agent.fullname" . }}-controller-manager'
+  name: '{{ include "kvm-node-agent.serviceAccountName" . }}'
   namespace: '{{ .Release.Namespace }}'

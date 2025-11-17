@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company
+# SPDX-License-Identifier: Apache-2.0
+
+name: Publish Helm Chart GHCR
+"on":
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+  workflow_dispatch: {}
+
+
+jobs:
+  publish-chart:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Required to push to GHCR
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+
+      - name: Package Helm chart
+        run: |
+          helm package ./charts/kvm-node-agent
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
+
+      - name: Push Helm chart to GHCR
+        run: |
+          CHART_NAME=kvm-node-agent
+          CHART_VERSION=$(grep "version:" ./charts/${CHART_NAME}/Chart.yaml | awk '{print $2}')
+          helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://ghcr.io/${{ github.repository_owner }}"

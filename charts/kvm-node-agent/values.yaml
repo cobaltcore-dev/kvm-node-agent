@@ -27,11 +27,15 @@ controllerManager:
       requests:
         cpu: 10m
         memory: 64Mi
+  nodeSelector: {}
   podSecurityContext:
     supplementalGroups:
     - 108
-  serviceAccount:
-    annotations: {}
+  tolerations:
+  - effect: NoSchedule
+    key: node.gardener.cloud/critical-components-not-ready
+    operator: Exists
+  topologySpreadConstraints: []
 kubernetesClusterDomain: cluster.local
 metricsService:
   ports:
@@ -40,3 +44,8 @@ metricsService:
     protocol: TCP
     targetPort: 8443
   type: ClusterIP
+serviceAccount:
+  annotations: {}
+  automount: true
+  create: true
+  name: ""

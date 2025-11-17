@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
+# SPDX-License-Identifier: Apache-2.0
+
+name: Cleanup GHCR Images
+"on":
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  packages: write
+jobs:
+  cleanup:
+    name: Cleanup old container images in GHCR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete untagged GHCR images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'kvm-node-agent'
+          package-type: 'container'
+          min-versions-to-keep: 1
+          delete-only-untagged-versions: 'true'
