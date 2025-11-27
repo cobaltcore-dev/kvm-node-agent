@@ -13,7 +13,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/onsi/ginkgo/v2 v2.26.0
 	github.com/onsi/gomega v1.38.2
-	github.com/sapcc/go-api-declarations v1.17.4
+	github.com/sapcc/go-api-declarations v1.18.0
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
