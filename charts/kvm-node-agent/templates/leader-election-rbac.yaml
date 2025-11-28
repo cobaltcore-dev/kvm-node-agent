@@ -49,5 +49,5 @@ roleRef:
   name: '{{ include "kvm-node-agent.fullname" . }}-leader-election-role'
 subjects:
 - kind: ServiceAccount
-  name: '{{ include "kvm-node-agent.fullname" . }}-controller-manager'
+  name: '{{ include "kvm-node-agent.serviceAccountName" . }}'
   namespace: '{{ .Release.Namespace }}'
