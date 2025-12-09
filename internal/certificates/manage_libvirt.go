@@ -37,7 +37,7 @@ import (
 )
 
 func GetSecretAndCertName(host string) (secretName, certName string) {
-	return "tls-" + certName, "libvirt-" + host
+	return "tls-libvirt-" + host, "libvirt-" + host
 }
 
 var (
@@ -125,16 +125,16 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 }
 
 var secretToFileMap = map[string][]string{
-	"ca.crt":  {"CA/cacert.pem", "qemu/ca-cert.pem"},
-	"tls.crt": {"libvirt/servercert.pem", "qemu/server-cert.pem"},
-	"tls.key": {"libvirt/private/serverkey.pem", "qemu/server-key.pem"},
+	"ca.crt":  {"CA/cacert.pem", "qemu/ca-cert.pem", "ch/ca-cert.pem"},
+	"tls.crt": {"libvirt/servercert.pem", "qemu/server-cert.pem", "ch/server-cert.pem"},
+	"tls.key": {"libvirt/private/serverkey.pem", "qemu/server-key.pem", "ch/server-key.pem"},
 }
 
 var symLinkMap = map[string][]string{
 	"servercert.pem":  {"libvirt/clientcert.pem"},
 	"serverkey.pem":   {"libvirt/private/clientkey.pem"},
-	"server-cert.pem": {"qemu/client-cert.pem"},
-	"server-key.pem":  {"qemu/client-key.pem"},
+	"server-cert.pem": {"qemu/client-cert.pem", "ch/client-cert.pem"},
+	"server-key.pem":  {"qemu/client-key.pem", "ch/client-key.pem"},
 }
 
 func UpdateTLSCertificate(ctx context.Context, data map[string][]byte) error {
