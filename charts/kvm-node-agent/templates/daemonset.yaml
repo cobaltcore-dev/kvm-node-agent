@@ -27,8 +27,6 @@ spec:
                 operator: Exists
       containers:
       - args: {{- toYaml .Values.controllerManager.manager.args | nindent 8 }}
-        command:
-        - /manager
         env:
         - name: HOSTNAME
           valueFrom:
@@ -86,13 +84,17 @@ spec:
           name: pki-libvirt
         - mountPath: /pki/qemu
           name: pki-qemu
+        - mountPath: /pki/ch
+          name: pki-ch
       initContainers:
       - command:
         - sh
         - -c
-        - cd /host/etc/pki && for i in CA libvirt qemu; do if [ -L ${i} ]; then rm ${i};
-          fi; done && mkdir -p CA libvirt qemu && chown 42438:42438 CA libvirt qemu && chmod
-          0755 CA libvirt qemu
+        - cd /host && for i in etc/pki/CA etc/pki/libvirt etc/pki/qemu var/lib/libvirt/ch/pki;
+          do if [ -L ${i} ]; then rm ${i}; fi; done && mkdir -p etc/pki/CA etc/pki/libvirt
+          etc/pki/qemu var/lib/libvirt/ch/pki && chown 42438:42438 etc/pki/CA etc/pki/libvirt
+          etc/pki/qemu var/lib/libvirt/ch/pki && chmod 0755 etc/pki/CA etc/pki/libvirt etc/pki/qemu
+          var/lib/libvirt/ch/pki
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
@@ -138,6 +140,10 @@ spec:
           path: /etc/pki/qemu
           type: DirectoryOrCreate
         name: pki-qemu
+      - hostPath:
+          path: /var/lib/libvirt/ch/pki
+          type: DirectoryOrCreate
+        name: pki-ch
       - hostPath:
           path: /
         name: host

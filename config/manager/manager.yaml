@@ -61,14 +61,12 @@ spec:
         securityContext:
           runAsUser: 0
         image: busybox:1.28
-        command: ['sh', '-c', 'cd /host/etc/pki && for i in CA libvirt qemu; do if [ -L ${i} ]; then rm ${i}; fi; done && mkdir -p CA libvirt qemu && chown 42438:42438 CA libvirt qemu && chmod 0755 CA libvirt qemu']
+        command: ['sh', '-c', 'cd /host && for i in etc/pki/CA etc/pki/libvirt etc/pki/qemu var/lib/libvirt/ch/pki; do if [ -L ${i} ]; then rm ${i}; fi; done && mkdir -p etc/pki/CA etc/pki/libvirt etc/pki/qemu var/lib/libvirt/ch/pki && chown 42438:42438 etc/pki/CA etc/pki/libvirt etc/pki/qemu var/lib/libvirt/ch/pki && chmod 0755 etc/pki/CA etc/pki/libvirt etc/pki/qemu var/lib/libvirt/ch/pki']
         volumeMounts:
         - mountPath: /host
           name: host
       containers:
-      - command:
-        - /manager
-        args:
+      - args:
           - --health-probe-bind-address=:8081
         env:
         - name: HOSTNAME
@@ -129,6 +127,8 @@ spec:
           name: pki-libvirt
         - mountPath: /pki/qemu
           name: pki-qemu
+        - mountPath: /pki/ch
+          name: pki-ch
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
@@ -155,6 +155,10 @@ spec:
       - name: pki-qemu
         hostPath:
           path: /etc/pki/qemu
+          type: DirectoryOrCreate
+      - name: pki-ch
+        hostPath:
+          path: /var/lib/libvirt/ch/pki
           type: DirectoryOrCreate
       - name: host
         hostPath:
