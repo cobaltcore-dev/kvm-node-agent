@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: Copyright 2024 SAP SE or an SAP affiliate company and co
 
 SPDX-License-Identifier: Apache-2.0
 -->
-# kvm-node-agent
+# kvm-node-agent [![REUSE status](https://api.reuse.software/badge/github.com/cobaltcore-dev/kvm-node-agent)](https://api.reuse.software/info/github.com/cobaltcore-dev/kvm-node-agent) [![Checks](https://github.com/cobaltcore-dev/kvm-node-agent/actions/workflows/checks.yaml/badge.svg)](https://github.com/cobaltcore-dev/kvm-node-agent/actions/workflows/checks.yaml)
 
 KVM Node agent for controlling Hypervisor objects via Kubernetes API.
 
@@ -19,64 +19,31 @@ The KVM node agent is a kubernetes operator that runs on every KVM node provides
 - kubectl version v1.11.3+.
 - Access to a Kubernetes v1.11.3+ cluster.
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+### Building
 
-```sh
-make docker-build docker-push IMG=<some-registry>/kvm-node-agent:tag
+To build the KVM node agent binary, run:
+
+```bash
+make build-all
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
+The compiled binary will be available at `build/manager`.
 
-#### Installation via *kustomize*
+To install the binary to your system:
 
-**Install the CRDs into the cluster:**
-
-```sh
+```bash
 make install
 ```
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+### Installing CRDs
 
-```sh
-make deploy IMG=<some-registry>/kvm-node-agent:tag
+To install the Custom Resource Definitions (CRDs) into your Kubernetes cluster:
+
+```bash
+make install-crds
 ```
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
-
-#### Installation via *Helm*
-
-Install CRDs and Controller
-
-```sh
-helm upgrade --install kvm-node-agent charts/kvm-node-agent
-```
-
-### To Uninstall
-
-
-#### via *kustomize*
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-#### via *Helm*
-
-```sh
-helm delete kvm-node-agent
-```
+This command generates the necessary CRD manifests and applies them to the cluster specified in your `~/.kube/config`. The CRDs define the `Hypervisor` and `Migration` custom resources that the KVM node agent uses to manage KVM instances.
 
 ## Support, Feedback, Contributing
 
