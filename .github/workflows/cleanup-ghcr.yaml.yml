@@ -18,7 +18,7 @@ jobs:
       - name: Delete untagged GHCR images
         uses: actions/delete-package-versions@v5
         with:
-          package-name: 'openstack-hypervisor-operator'
+          package-name: 'kvm-node-agent'
           package-type: 'container'
           min-versions-to-keep: 1
           delete-only-untagged-versions: 'true'

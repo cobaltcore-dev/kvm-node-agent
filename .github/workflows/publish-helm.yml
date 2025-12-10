@@ -45,4 +45,4 @@ jobs:
         run: |
           CHART_NAME=kvm-node-agent
           CHART_VERSION=$(grep "version:" ./charts/${CHART_NAME}/Chart.yaml | awk '{print $2}')
-          helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://ghcr.io/${{ github.repository_owner }}/${CHART_NAME}/charts"
+          helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://ghcr.io/${{ github.repository_owner }}/charts"
