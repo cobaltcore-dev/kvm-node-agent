@@ -18,7 +18,7 @@ controllerManager:
       issuerName: kvm-node-agent-ca-issuer
       pkiPath: /pki
     image:
-      repository: keppel.eu-de-1.cloud.sap/ccloud/kvm-node-agent
+      repository: ghcr.io/cobaltcore-dev/kvm-node-agent
       tag: latest
     resources:
       limits:
