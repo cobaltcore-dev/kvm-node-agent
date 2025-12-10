@@ -30,12 +30,6 @@ func TestNewClient(t *testing.T) {
 	if client == nil {
 		t.Fatal("NewClient() returned nil")
 	}
-
-	// Verify it returns a client implementation
-	// We can't check the concrete type since it's unexported, but we can verify it implements the interface
-	if client == nil {
-		t.Error("NewClient() returned nil")
-	}
 }
 
 func TestNewClientWithCustomSocket(t *testing.T) {
@@ -47,22 +41,12 @@ func TestNewClientWithCustomSocket(t *testing.T) {
 	if client == nil {
 		t.Fatal("NewClient() returned nil with custom socket")
 	}
-
-	// Verify it returns a valid client implementation
-	if client == nil {
-		t.Error("NewClient() returned nil with custom socket")
-	}
 }
 
 func TestNewClientEmulator(t *testing.T) {
 	client := NewClientEmulator()
 	if client == nil {
 		t.Fatal("NewClientEmulator() returned nil")
-	}
-
-	// Verify it returns a valid client implementation
-	if client == nil {
-		t.Error("NewClientEmulator() returned nil")
 	}
 }
 
