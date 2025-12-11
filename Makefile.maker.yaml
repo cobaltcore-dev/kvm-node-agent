@@ -31,6 +31,8 @@ golangciLint:
 githubWorkflow:
   ci:
     enabled: true
+    runOn:
+      - large_runner_4core_16gb
   global:
     defaultBranch: main # only defined here so that the "Run go-makefile-maker" Action knows it
   securityChecks:
@@ -40,9 +42,9 @@ githubWorkflow:
     enabled: true
     platforms: "linux/amd64"
     tagStrategy:
-      - edge
       - latest
       - semver
+      - edge
   license:
     enabled: true
 

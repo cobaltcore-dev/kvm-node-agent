@@ -24,7 +24,7 @@ permissions:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: large_runner_4core_16gb
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -40,7 +40,7 @@ jobs:
     if: github.event_name == 'pull_request'
     needs:
       - test
-    runs-on: ubuntu-latest
+    runs-on: large_runner_4core_16gb
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -57,7 +57,7 @@ jobs:
     name: Test
     needs:
       - build
-    runs-on: ubuntu-latest
+    runs-on: large_runner_4core_16gb
     steps:
       - name: Check out code
         uses: actions/checkout@v6

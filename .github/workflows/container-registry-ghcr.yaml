@@ -18,7 +18,7 @@ permissions:
 jobs:
   build-and-push-image:
     name: Push container to ghcr.io
-    runs-on: ubuntu-latest
+    runs-on: large_runner_4core_16gb
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -37,7 +37,7 @@ jobs:
             # https://github.com/docker/metadata-action#typeedge
             type=edge
             # https://github.com/docker/metadata-action#latest-tag
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest
             # https://github.com/docker/metadata-action#typesemver
             type=semver,pattern={{raw}}
             type=semver,pattern=v{{major}}.{{minor}}
