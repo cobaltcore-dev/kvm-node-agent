@@ -40,9 +40,9 @@ githubWorkflow:
     enabled: true
     platforms: "linux/amd64"
     tagStrategy:
-      - edge
       - latest
       - semver
+      - edge
   license:
     enabled: true
 
