@@ -79,6 +79,8 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	base := hypervisor.DeepCopy()
+
 	// ====================================================================================================
 	// Systemd
 	// ====================================================================================================
@@ -216,12 +218,13 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 			// reset retry count
 			hypervisor.Status.Update.Retry = 3
-			if err := r.Status().Update(ctx, &hypervisor); err != nil {
+			if err := r.Status().Patch(ctx, &hypervisor, client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{})); err != nil {
 				log.Error(err, "unable to update hypervisor status spec")
 				return ctrl.Result{}, err
 			}
 			hypervisor.Spec.OperatingSystemVersion = ""
-			if err := r.Update(ctx, &hypervisor); err != nil {
+
+			if err := r.Status().Patch(ctx, &hypervisor, client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{})); err != nil {
 				log.Error(err, "unable to update hypervisor spec")
 				return ctrl.Result{}, err
 			}
@@ -281,7 +284,7 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 
-	if err := r.Status().Update(ctx, &hypervisor); err != nil {
+	if err := r.Status().Patch(ctx, &hypervisor, client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{})); err != nil {
 		log.Error(err, "unable to update hypervisor status")
 		return ctrl.Result{}, err
 	}
