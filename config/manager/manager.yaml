@@ -118,9 +118,6 @@ spec:
         - mountPath: /var/run/dbus/system_bus_socket
           name: systemd-sock
           readOnly: true
-        - mountPath: /etc/os-release
-          name: os-release
-          readOnly: true
         - mountPath: /pki/CA
           name: pki-ca
         - mountPath: /pki/libvirt
@@ -140,10 +137,6 @@ spec:
         hostPath:
           path: /run/dbus/system_bus_socket
           type: Socket
-      - name: os-release
-        hostPath:
-          path: /etc/os-release
-          type: File
       - name: pki-ca
         hostPath:
           path: /etc/pki/CA
