@@ -163,6 +163,7 @@ func (r *SecretReconciler) setTLSStatusCondition(ctx context.Context, status met
 			return err
 		}
 
+		base := hv.DeepCopy()
 		meta.SetStatusCondition(&hv.Status.Conditions, metav1.Condition{
 			Type:    "TLSCertificateInstalled",
 			Status:  status,
@@ -170,6 +171,6 @@ func (r *SecretReconciler) setTLSStatusCondition(ctx context.Context, status met
 			Message: message,
 		})
 
-		return r.Status().Update(ctx, hv)
+		return r.Status().Patch(ctx, hv, client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{}))
 	})
 }
