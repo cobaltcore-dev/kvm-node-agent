@@ -6,18 +6,18 @@ module github.com/cobaltcore-dev/kvm-node-agent
 go 1.25.0
 
 require (
-	github.com/cert-manager/cert-manager v1.19.0
-	github.com/cobaltcore-dev/openstack-hypervisor-operator v0.0.0-20251009140008-35477c943b12
+	github.com/cert-manager/cert-manager v1.19.1
+	github.com/cobaltcore-dev/openstack-hypervisor-operator v0.0.0-20251211190118-ddfb1ea3841c
 	github.com/coreos/go-systemd/v22 v22.6.0
 	github.com/digitalocean/go-libvirt v0.0.0-20250923171224-1d0cf4034554
 	github.com/godbus/dbus/v5 v5.1.0
-	github.com/onsi/ginkgo/v2 v2.26.0
+	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
 	github.com/sapcc/go-api-declarations v1.18.0
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
-	sigs.k8s.io/controller-runtime v0.22.2
+	sigs.k8s.io/controller-runtime v0.22.4
 )
 
 require (
@@ -83,9 +83,8 @@ require (
 	go.opentelemetry.io/otel/sdk v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.0 // indirect
-	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
+	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
@@ -116,6 +115,6 @@ require (
 	sigs.k8s.io/gateway-api v1.4.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.1 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
