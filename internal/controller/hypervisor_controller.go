@@ -122,6 +122,8 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 					hypervisor.Status.OperatingSystem.PrettyVersion = strings.Split(line, "=")[1]
 				case "GARDENLINUX_VERSION":
 					hypervisor.Status.OperatingSystem.Version = strings.Split(line, "=")[1]
+				case "GARDENLINUX_COMMIT_ID_LONG":
+					hypervisor.Status.OperatingSystem.CommitID = strings.Split(line, "=")[1]
 				}
 			}
 			hypervisor.Status.OperatingSystem.KernelVersion = r.osDescriptor.KernelVersion
