@@ -134,6 +134,15 @@ var _ = Describe("Hypervisor Controller", func() {
 						return nil, nil
 					},
 				},
+				osDescriptor: &systemd.Descriptor{
+					OperatingSystemReleaseData: []string{
+						"PRETTY_NAME=\"Garden Linux 1877.8\"",
+						"GARDENLINUX_VERSION=1877.8",
+						"GARDENLINUX_COMMIT_ID_LONG=abcdef1234567890",
+						"GARDENLINUX_FEATURES=_rescue,log,sap",
+						"VARIANT_ID=metal-sci_usi-amd64",
+					},
+				},
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
@@ -165,6 +174,11 @@ var _ = Describe("Hypervisor Controller", func() {
 				To(Equal(resource.NewQuantity(4, resource.DecimalSI).AsDec().UnscaledBig()))
 			Expect(hypervisor.Status.Capabilities.HostMemory.AsDec().UnscaledBig()).
 				To(Equal(resource.NewQuantity(8192, resource.DecimalSI).AsDec().UnscaledBig()))
+			Expect(hypervisor.Status.OperatingSystem.PrettyVersion).To(Equal("\"Garden Linux 1877.8\""))
+			Expect(hypervisor.Status.OperatingSystem.Version).To(Equal("1877.8"))
+			Expect(hypervisor.Status.OperatingSystem.GardenLinuxCommitID).To(Equal("abcdef1234567890"))
+			Expect(hypervisor.Status.OperatingSystem.GardenLinuxFeatures).To(Equal([]string{"_rescue", "log", "sap"}))
+			Expect(hypervisor.Status.OperatingSystem.VariantID).To(Equal("metal-sci_usi-amd64"))
 		})
 	})
 })

@@ -323,6 +323,17 @@ spec:
                   version:
                     description: Represents the Operating System version.
                     type: string
+                  gardenLinuxCommitID:
+                    description: GardenLinuxCommitID
+                    type: string
+                  gardenLinuxFeatures:
+                    description: GardenLinuxFeatures
+                    items:
+                      type: string
+                    type: array
+                  variantID:
+                    description: VariantID
+                    type: string
                 type: object
               serviceId:
                 description: ServiceID is the unique identifier of the compute service
