@@ -23,6 +23,7 @@ import (
 	"time"
 
 	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,6 +69,15 @@ func (e *EvictionController) EvictCurrentHost(ctx context.Context) error {
 	u.SetName(sys.Hostname)
 	// todo: namespace? cluster-wide?
 	u.SetNamespace(sys.Namespace)
+
+	// Almost like v1.NewControllerRef(), except we do not set the controller
+	gvk := hypervisor.GroupVersionKind()
+	u.SetOwnerReferences([]v1.OwnerReference{{
+		APIVersion: gvk.GroupVersion().String(),
+		Kind:       gvk.Kind,
+		Name:       hypervisor.Name,
+		UID:        hypervisor.UID,
+	}})
 
 	// ... create the eviction custom resource
 	if err := e.Create(ctx, u); client.IgnoreAlreadyExists(err) != nil {
