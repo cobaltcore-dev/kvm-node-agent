@@ -117,11 +117,19 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 		if r.osDescriptor != nil && hypervisor.Status.OperatingSystem.Version == "" {
 			for _, line := range r.osDescriptor.OperatingSystemReleaseData {
-				switch strings.Split(line, "=")[0] {
+				// split line in two strings at the first =
+				splitLine := strings.SplitN(line, "=", 2)
+				switch splitLine[0] {
 				case "PRETTY_NAME":
-					hypervisor.Status.OperatingSystem.PrettyVersion = strings.Split(line, "=")[1]
+					hypervisor.Status.OperatingSystem.PrettyVersion = splitLine[1]
 				case "GARDENLINUX_VERSION":
-					hypervisor.Status.OperatingSystem.Version = strings.Split(line, "=")[1]
+					hypervisor.Status.OperatingSystem.Version = splitLine[1]
+				case "GARDENLINUX_COMMIT_ID_LONG":
+					hypervisor.Status.OperatingSystem.GardenLinuxCommitID = splitLine[1]
+				case "GARDENLINUX_FEATURES":
+					hypervisor.Status.OperatingSystem.GardenLinuxFeatures = strings.Split(splitLine[1], ",")
+				case "VARIANT_ID":
+					hypervisor.Status.OperatingSystem.VariantID = splitLine[1]
 				}
 			}
 			hypervisor.Status.OperatingSystem.KernelVersion = r.osDescriptor.KernelVersion

@@ -1,8 +1,9 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: hypervisors.kvm.cloud.sap
 spec:
   group: kvm.cloud.sap
@@ -33,6 +34,9 @@ spec:
       type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].reason
       name: State
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Tainted")].message
+      name: Taint
       type: string
     - jsonPath: .spec.lifecycleEnabled
       name: Lifecycle
@@ -138,6 +142,16 @@ spec:
                 description: LifecycleEnabled enables the lifecycle management of
                   the hypervisor via hypervisor-operator.
                 type: boolean
+              maintenance:
+                description: Maintenance indicates whether the hypervisor is in maintenance
+                  mode.
+                enum:
+                - ""
+                - manual
+                - auto
+                - ha
+                - termination
+                type: string
               reboot:
                 default: false
                 description: Reboot request an reboot after successful installation
@@ -251,6 +265,10 @@ spec:
                   - type
                   type: object
                 type: array
+              evicted:
+                description: Evicted indicates whether the hypervisor is evicted.
+                  (no instances left with active maintenance mode)
+                type: boolean
               hypervisorId:
                 description: HypervisorID is the unique identifier of the hypervisor
                   in OpenStack.
@@ -298,6 +316,14 @@ spec:
                   firmwareVersion:
                     description: FirmwareVersion
                     type: string
+                  gardenLinuxCommitID:
+                    description: Represents the Garden Linux build commit id
+                    type: string
+                  gardenLinuxFeatures:
+                    description: Represents the Garden Linux Feature Set
+                    items:
+                      type: string
+                    type: array
                   hardwareModel:
                     description: HardwareModel
                     type: string
@@ -318,6 +344,10 @@ spec:
                     type: string
                   prettyVersion:
                     description: PrettyVersion
+                    type: string
+                  variantID:
+                    description: Identifying a specific variant or edition of the
+                      operating system
                     type: string
                   version:
                     description: Represents the Operating System version.
@@ -362,4 +392,3 @@ spec:
     storage: true
     subresources:
       status: {}
-
