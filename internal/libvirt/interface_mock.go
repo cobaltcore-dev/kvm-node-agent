@@ -4,9 +4,9 @@
 package libvirt
 
 import (
-	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
-	"github.com/digitalocean/go-libvirt"
 	"sync"
+
+	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 )
 
 // Ensure, that InterfaceMock does implement Interface.
@@ -25,23 +25,8 @@ var _ Interface = &InterfaceMock{}
 //			ConnectFunc: func() error {
 //				panic("mock out the Connect method")
 //			},
-//			GetCapabilitiesFunc: func() (v1.CapabilitiesStatus, error) {
-//				panic("mock out the GetCapabilities method")
-//			},
-//			GetDomainsActiveFunc: func() ([]libvirt.Domain, error) {
-//				panic("mock out the GetDomainsActive method")
-//			},
-//			GetInstancesFunc: func() ([]v1.Instance, error) {
-//				panic("mock out the GetInstances method")
-//			},
-//			GetNumInstancesFunc: func() int {
-//				panic("mock out the GetNumInstances method")
-//			},
-//			GetVersionFunc: func() string {
-//				panic("mock out the GetVersion method")
-//			},
-//			IsConnectedFunc: func() bool {
-//				panic("mock out the IsConnected method")
+//			ProcessFunc: func(hv v1.Hypervisor) (v1.Hypervisor, error) {
+//				panic("mock out the Process method")
 //			},
 //		}
 //
@@ -56,23 +41,8 @@ type InterfaceMock struct {
 	// ConnectFunc mocks the Connect method.
 	ConnectFunc func() error
 
-	// GetCapabilitiesFunc mocks the GetCapabilities method.
-	GetCapabilitiesFunc func() (v1.CapabilitiesStatus, error)
-
-	// GetDomainsActiveFunc mocks the GetDomainsActive method.
-	GetDomainsActiveFunc func() ([]libvirt.Domain, error)
-
-	// GetInstancesFunc mocks the GetInstances method.
-	GetInstancesFunc func() ([]v1.Instance, error)
-
-	// GetNumInstancesFunc mocks the GetNumInstances method.
-	GetNumInstancesFunc func() int
-
-	// GetVersionFunc mocks the GetVersion method.
-	GetVersionFunc func() string
-
-	// IsConnectedFunc mocks the IsConnected method.
-	IsConnectedFunc func() bool
+	// ProcessFunc mocks the Process method.
+	ProcessFunc func(hv v1.Hypervisor) (v1.Hypervisor, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -82,33 +52,14 @@ type InterfaceMock struct {
 		// Connect holds details about calls to the Connect method.
 		Connect []struct {
 		}
-		// GetCapabilities holds details about calls to the GetCapabilities method.
-		GetCapabilities []struct {
-		}
-		// GetDomainsActive holds details about calls to the GetDomainsActive method.
-		GetDomainsActive []struct {
-		}
-		// GetInstances holds details about calls to the GetInstances method.
-		GetInstances []struct {
-		}
-		// GetNumInstances holds details about calls to the GetNumInstances method.
-		GetNumInstances []struct {
-		}
-		// GetVersion holds details about calls to the GetVersion method.
-		GetVersion []struct {
-		}
-		// IsConnected holds details about calls to the IsConnected method.
-		IsConnected []struct {
+		// Process holds details about calls to the Process method.
+		Process []struct {
+			Hv v1.Hypervisor
 		}
 	}
-	lockClose            sync.RWMutex
-	lockConnect          sync.RWMutex
-	lockGetCapabilities  sync.RWMutex
-	lockGetDomainsActive sync.RWMutex
-	lockGetInstances     sync.RWMutex
-	lockGetNumInstances  sync.RWMutex
-	lockGetVersion       sync.RWMutex
-	lockIsConnected      sync.RWMutex
+	lockClose   sync.RWMutex
+	lockConnect sync.RWMutex
+	lockProcess sync.RWMutex
 }
 
 // Close calls CloseFunc.
@@ -165,164 +116,34 @@ func (mock *InterfaceMock) ConnectCalls() []struct {
 	return calls
 }
 
-// GetCapabilities calls GetCapabilitiesFunc.
-func (mock *InterfaceMock) GetCapabilities() (v1.CapabilitiesStatus, error) {
-	if mock.GetCapabilitiesFunc == nil {
-		panic("InterfaceMock.GetCapabilitiesFunc: method is nil but Interface.GetCapabilities was just called")
+// Process calls ProcessFunc.
+func (mock *InterfaceMock) Process(hv v1.Hypervisor) (v1.Hypervisor, error) {
+	if mock.ProcessFunc == nil {
+		panic("InterfaceMock.ProcessFunc: method is nil but Interface.Process was just called")
 	}
 	callInfo := struct {
-	}{}
-	mock.lockGetCapabilities.Lock()
-	mock.calls.GetCapabilities = append(mock.calls.GetCapabilities, callInfo)
-	mock.lockGetCapabilities.Unlock()
-	return mock.GetCapabilitiesFunc()
+		Hv v1.Hypervisor
+	}{
+		Hv: hv,
+	}
+	mock.lockProcess.Lock()
+	mock.calls.Process = append(mock.calls.Process, callInfo)
+	mock.lockProcess.Unlock()
+	return mock.ProcessFunc(hv)
 }
 
-// GetCapabilitiesCalls gets all the calls that were made to GetCapabilities.
+// ProcessCalls gets all the calls that were made to Process.
 // Check the length with:
 //
-//	len(mockedInterface.GetCapabilitiesCalls())
-func (mock *InterfaceMock) GetCapabilitiesCalls() []struct {
+//	len(mockedInterface.ProcessCalls())
+func (mock *InterfaceMock) ProcessCalls() []struct {
+	Hv v1.Hypervisor
 } {
 	var calls []struct {
+		Hv v1.Hypervisor
 	}
-	mock.lockGetCapabilities.RLock()
-	calls = mock.calls.GetCapabilities
-	mock.lockGetCapabilities.RUnlock()
-	return calls
-}
-
-// GetDomainsActive calls GetDomainsActiveFunc.
-func (mock *InterfaceMock) GetDomainsActive() ([]libvirt.Domain, error) {
-	if mock.GetDomainsActiveFunc == nil {
-		panic("InterfaceMock.GetDomainsActiveFunc: method is nil but Interface.GetDomainsActive was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockGetDomainsActive.Lock()
-	mock.calls.GetDomainsActive = append(mock.calls.GetDomainsActive, callInfo)
-	mock.lockGetDomainsActive.Unlock()
-	return mock.GetDomainsActiveFunc()
-}
-
-// GetDomainsActiveCalls gets all the calls that were made to GetDomainsActive.
-// Check the length with:
-//
-//	len(mockedInterface.GetDomainsActiveCalls())
-func (mock *InterfaceMock) GetDomainsActiveCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetDomainsActive.RLock()
-	calls = mock.calls.GetDomainsActive
-	mock.lockGetDomainsActive.RUnlock()
-	return calls
-}
-
-// GetInstances calls GetInstancesFunc.
-func (mock *InterfaceMock) GetInstances() ([]v1.Instance, error) {
-	if mock.GetInstancesFunc == nil {
-		panic("InterfaceMock.GetInstancesFunc: method is nil but Interface.GetInstances was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockGetInstances.Lock()
-	mock.calls.GetInstances = append(mock.calls.GetInstances, callInfo)
-	mock.lockGetInstances.Unlock()
-	return mock.GetInstancesFunc()
-}
-
-// GetInstancesCalls gets all the calls that were made to GetInstances.
-// Check the length with:
-//
-//	len(mockedInterface.GetInstancesCalls())
-func (mock *InterfaceMock) GetInstancesCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetInstances.RLock()
-	calls = mock.calls.GetInstances
-	mock.lockGetInstances.RUnlock()
-	return calls
-}
-
-// GetNumInstances calls GetNumInstancesFunc.
-func (mock *InterfaceMock) GetNumInstances() int {
-	if mock.GetNumInstancesFunc == nil {
-		panic("InterfaceMock.GetNumInstancesFunc: method is nil but Interface.GetNumInstances was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockGetNumInstances.Lock()
-	mock.calls.GetNumInstances = append(mock.calls.GetNumInstances, callInfo)
-	mock.lockGetNumInstances.Unlock()
-	return mock.GetNumInstancesFunc()
-}
-
-// GetNumInstancesCalls gets all the calls that were made to GetNumInstances.
-// Check the length with:
-//
-//	len(mockedInterface.GetNumInstancesCalls())
-func (mock *InterfaceMock) GetNumInstancesCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetNumInstances.RLock()
-	calls = mock.calls.GetNumInstances
-	mock.lockGetNumInstances.RUnlock()
-	return calls
-}
-
-// GetVersion calls GetVersionFunc.
-func (mock *InterfaceMock) GetVersion() string {
-	if mock.GetVersionFunc == nil {
-		panic("InterfaceMock.GetVersionFunc: method is nil but Interface.GetVersion was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockGetVersion.Lock()
-	mock.calls.GetVersion = append(mock.calls.GetVersion, callInfo)
-	mock.lockGetVersion.Unlock()
-	return mock.GetVersionFunc()
-}
-
-// GetVersionCalls gets all the calls that were made to GetVersion.
-// Check the length with:
-//
-//	len(mockedInterface.GetVersionCalls())
-func (mock *InterfaceMock) GetVersionCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetVersion.RLock()
-	calls = mock.calls.GetVersion
-	mock.lockGetVersion.RUnlock()
-	return calls
-}
-
-// IsConnected calls IsConnectedFunc.
-func (mock *InterfaceMock) IsConnected() bool {
-	if mock.IsConnectedFunc == nil {
-		panic("InterfaceMock.IsConnectedFunc: method is nil but Interface.IsConnected was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockIsConnected.Lock()
-	mock.calls.IsConnected = append(mock.calls.IsConnected, callInfo)
-	mock.lockIsConnected.Unlock()
-	return mock.IsConnectedFunc()
-}
-
-// IsConnectedCalls gets all the calls that were made to IsConnected.
-// Check the length with:
-//
-//	len(mockedInterface.IsConnectedCalls())
-func (mock *InterfaceMock) IsConnectedCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockIsConnected.RLock()
-	calls = mock.calls.IsConnected
-	mock.lockIsConnected.RUnlock()
+	mock.lockProcess.RLock()
+	calls = mock.calls.Process
+	mock.lockProcess.RUnlock()
 	return calls
 }

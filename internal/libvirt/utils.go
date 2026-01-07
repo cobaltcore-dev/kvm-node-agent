@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/digitalocean/go-libvirt"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type UUID [16]byte
@@ -56,4 +57,25 @@ func ByteCountIEC(b uint64) string {
 	}
 	return fmt.Sprintf("%.1f %ciB",
 		float64(b)/float64(div), "KMGTPE"[exp])
+}
+
+// Get the cell memory as resource.Quantity.
+func MemoryToResource(value int64, unit string) (resource.Quantity, error) {
+	var quantity *resource.Quantity
+	// Check the unit
+	switch unit {
+	case "KiB":
+		quantity = resource.NewQuantity(value*1024, resource.BinarySI)
+	case "MiB":
+		quantity = resource.NewQuantity(value*1024*1024, resource.BinarySI)
+	case "GiB":
+		quantity = resource.NewQuantity(value*1024*1024*1024, resource.BinarySI)
+	case "TiB":
+		quantity = resource.NewQuantity(value*1024*1024*1024*1024, resource.BinarySI)
+	}
+	if quantity == nil {
+		return resource.Quantity{}, fmt.Errorf("unknown memory unit %s", unit)
+	}
+	// Set the value
+	return *quantity, nil
 }

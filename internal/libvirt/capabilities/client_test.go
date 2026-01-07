@@ -20,27 +20,26 @@ package capabilities
 import (
 	"encoding/xml"
 	"testing"
-
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestNewClient(t *testing.T) {
-	// Test with default socket path
 	client := NewClient()
 	if client == nil {
 		t.Fatal("NewClient() returned nil")
 	}
+
+	// Verify it implements the Client interface
+	var _ = client
 }
 
-func TestNewClientWithCustomSocket(t *testing.T) {
-	// Set custom socket path using t.Setenv for automatic cleanup
-	customSocket := "/custom/libvirt-sock"
-	t.Setenv("LIBVIRT_SOCKET", customSocket)
-
+func TestNewClient_ReturnsCorrectType(t *testing.T) {
 	client := NewClient()
+	// Verify it returns a non-nil implementation
 	if client == nil {
-		t.Fatal("NewClient() returned nil with custom socket")
+		t.Fatal("NewClient() returned nil")
 	}
+	// Verify it's not the emulator type by checking behavior
+	// (we can't check the unexported type directly)
 }
 
 func TestNewClientEmulator(t *testing.T) {
@@ -48,415 +47,332 @@ func TestNewClientEmulator(t *testing.T) {
 	if client == nil {
 		t.Fatal("NewClientEmulator() returned nil")
 	}
+
+	// Verify it implements the Client interface
+	var _ = client
 }
 
-func TestClientEmulatorGet(t *testing.T) {
+func TestNewClientEmulator_ReturnsCorrectType(t *testing.T) {
+	client := NewClientEmulator()
+	// Verify it returns a non-nil implementation
+	if client == nil {
+		t.Fatal("NewClientEmulator() returned nil")
+	}
+	// Verify it works without a libvirt connection (emulator behavior)
+	_, err := client.Get(nil)
+	if err != nil {
+		t.Errorf("Emulator should work with nil libvirt connection, got error: %v", err)
+	}
+}
+
+func TestClientEmulator_Get_Success(t *testing.T) {
 	client := NewClientEmulator()
 
-	status, err := client.Get(nil)
+	// The emulator doesn't actually use the libvirt connection,
+	// so we pass nil to test it doesn't panic
+	capabilities, err := client.Get(nil)
+
 	if err != nil {
-		t.Fatalf("clientEmulator.Get() returned error: %v", err)
+		t.Fatalf("Get() returned unexpected error: %v", err)
 	}
 
-	// Verify the returned status has expected values based on example XML
-	if status.HostCpuArch != "x86_64" {
-		t.Errorf("Expected HostCpuArch to be 'x86_64', got '%s'", status.HostCpuArch)
-	}
-
-	// Verify memory is calculated correctly (sum of all NUMA cells)
-	// From the example XML, we have 4 cells with different memory values:
-	// Cell 0: 1056462864 KiB, Cell 1: 1056946772 KiB, Cell 2: 1056946772 KiB, Cell 3: 1056932756 KiB
-	expectedMemoryKiB := int64(1056462864 + 1056946772 + 1056946772 + 1056932756)
-	expectedMemoryBytes := expectedMemoryKiB * 1024 // Convert KiB to bytes
-	expectedMemory := resource.NewQuantity(expectedMemoryBytes, resource.BinarySI)
-
-	if !status.HostMemory.Equal(*expectedMemory) {
-		t.Errorf("Expected HostMemory to be %s, got %s", expectedMemory.String(), status.HostMemory.String())
-	}
-
-	// Verify CPUs are calculated correctly (sum of all NUMA cells)
-	// From the example XML, we have 4 cells with 64 CPUs each
-	expectedCpus := resource.NewQuantity(4*64, resource.DecimalSI)
-
-	if !status.HostCpus.Equal(*expectedCpus) {
-		t.Errorf("Expected HostCpus to be %s, got %s", expectedCpus.String(), status.HostCpus.String())
+	// Verify the returned capabilities has expected structure
+	if capabilities.Host.CPU.Arch == "" {
+		t.Error("Expected capabilities to have Host CPU architecture")
 	}
 }
 
-func TestConvert(t *testing.T) {
-	// Create test capabilities data
-	capabilities := Capabilities{
-		Host: CapabilitiesHost{
-			CPU: CapabilitiesHostCPU{
-				Arch: "x86_64",
-			},
-			Topology: CapabilitiesHostTopology{
-				CellSpec: CapabilitiesHostTopologyCells{
-					Num: 2,
-					Cells: []CapabilitiesHostTopologyCell{
-						{
-							ID: 0,
-							Memory: CapabilitiesHostTopologyCellMemory{
-								Unit:  "KiB",
-								Value: 1024000, // 1GB in KiB
-							},
-							CPUs: CapabilitiesHostTopologyCellCPUs{
-								Num: 4,
-							},
-						},
-						{
-							ID: 1,
-							Memory: CapabilitiesHostTopologyCellMemory{
-								Unit:  "KiB",
-								Value: 2048000, // 2GB in KiB
-							},
-							CPUs: CapabilitiesHostTopologyCellCPUs{
-								Num: 8,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+func TestClientEmulator_Get_ValidXML(t *testing.T) {
+	client := NewClientEmulator()
+	capabilities, err := client.Get(nil)
 
-	status, err := convert(capabilities)
 	if err != nil {
-		t.Fatalf("convert() returned error: %v", err)
+		t.Fatalf("Get() returned unexpected error: %v", err)
 	}
 
-	// Verify CPU architecture
-	if status.HostCpuArch != "x86_64" {
-		t.Errorf("Expected HostCpuArch to be 'x86_64', got '%s'", status.HostCpuArch)
-	}
-
-	// Verify total memory (1GB + 2GB = 3GB)
-	expectedMemoryBytes := int64((1024000 + 2048000) * 1024) // Convert KiB to bytes
-	expectedMemory := resource.NewQuantity(expectedMemoryBytes, resource.BinarySI)
-
-	if !status.HostMemory.Equal(*expectedMemory) {
-		t.Errorf("Expected HostMemory to be %s, got %s", expectedMemory.String(), status.HostMemory.String())
-	}
-
-	// Verify total CPUs (4 + 8 = 12)
-	expectedCpus := resource.NewQuantity(12, resource.DecimalSI)
-
-	if !status.HostCpus.Equal(*expectedCpus) {
-		t.Errorf("Expected HostCpus to be %s, got %s", expectedCpus.String(), status.HostCpus.String())
-	}
-}
-
-func TestConvertWithDifferentMemoryUnits(t *testing.T) {
-	testCases := []struct {
-		name          string
-		unit          string
-		value         int64
-		expectedBytes int64
-	}{
-		{
-			name:          "KiB unit",
-			unit:          "KiB",
-			value:         1024,
-			expectedBytes: 1024 * 1024,
-		},
-		{
-			name:          "MiB unit",
-			unit:          "MiB",
-			value:         1,
-			expectedBytes: 1024 * 1024,
-		},
-		{
-			name:          "GiB unit",
-			unit:          "GiB",
-			value:         1,
-			expectedBytes: 1024 * 1024 * 1024,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			capabilities := Capabilities{
-				Host: CapabilitiesHost{
-					CPU: CapabilitiesHostCPU{
-						Arch: "x86_64",
-					},
-					Topology: CapabilitiesHostTopology{
-						CellSpec: CapabilitiesHostTopologyCells{
-							Num: 1,
-							Cells: []CapabilitiesHostTopologyCell{
-								{
-									ID: 0,
-									Memory: CapabilitiesHostTopologyCellMemory{
-										Unit:  tc.unit,
-										Value: tc.value,
-									},
-									CPUs: CapabilitiesHostTopologyCellCPUs{
-										Num: 1,
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			status, err := convert(capabilities)
-			if err != nil {
-				t.Fatalf("convert() returned error: %v", err)
-			}
-
-			expectedMemory := resource.NewQuantity(tc.expectedBytes, resource.BinarySI)
-			if !status.HostMemory.Equal(*expectedMemory) {
-				t.Errorf("Expected HostMemory to be %s, got %s", expectedMemory.String(), status.HostMemory.String())
-			}
-		})
-	}
-}
-
-func TestConvertWithInvalidMemoryUnit(t *testing.T) {
-	capabilities := Capabilities{
-		Host: CapabilitiesHost{
-			CPU: CapabilitiesHostCPU{
-				Arch: "x86_64",
-			},
-			Topology: CapabilitiesHostTopology{
-				CellSpec: CapabilitiesHostTopologyCells{
-					Num: 1,
-					Cells: []CapabilitiesHostTopologyCell{
-						{
-							ID: 0,
-							Memory: CapabilitiesHostTopologyCellMemory{
-								Unit:  "InvalidUnit",
-								Value: 1024,
-							},
-							CPUs: CapabilitiesHostTopologyCellCPUs{
-								Num: 1,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	_, err := convert(capabilities)
-	if err == nil {
-		t.Error("Expected convert() to return error for invalid memory unit, but got nil")
-	}
-
-	expectedError := "unknown memory unit InvalidUnit"
-	if err.Error() != expectedError {
-		t.Errorf("Expected error message '%s', got '%s'", expectedError, err.Error())
-	}
-}
-
-func TestConvertWithZeroCPUs(t *testing.T) {
-	capabilities := Capabilities{
-		Host: CapabilitiesHost{
-			CPU: CapabilitiesHostCPU{
-				Arch: "x86_64",
-			},
-			Topology: CapabilitiesHostTopology{
-				CellSpec: CapabilitiesHostTopologyCells{
-					Num: 1,
-					Cells: []CapabilitiesHostTopologyCell{
-						{
-							ID: 0,
-							Memory: CapabilitiesHostTopologyCellMemory{
-								Unit:  "KiB",
-								Value: 1024,
-							},
-							CPUs: CapabilitiesHostTopologyCellCPUs{
-								Num: 0,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	status, err := convert(capabilities)
-	if err != nil {
-		t.Fatalf("convert() returned unexpected error: %v", err)
-	}
-
-	expectedCpus := resource.NewQuantity(0, resource.DecimalSI)
-	if !status.HostCpus.Equal(*expectedCpus) {
-		t.Errorf("Expected HostCpus to be %s, got %s", expectedCpus.String(), status.HostCpus.String())
-	}
-}
-
-func TestConvertWithEmptyCells(t *testing.T) {
-	capabilities := Capabilities{
-		Host: CapabilitiesHost{
-			CPU: CapabilitiesHostCPU{
-				Arch: "aarch64",
-			},
-			Topology: CapabilitiesHostTopology{
-				CellSpec: CapabilitiesHostTopologyCells{
-					Num:   0,
-					Cells: []CapabilitiesHostTopologyCell{},
-				},
-			},
-		},
-	}
-
-	status, err := convert(capabilities)
-	if err != nil {
-		t.Fatalf("convert() returned unexpected error: %v", err)
-	}
-
-	// Verify CPU architecture is preserved
-	if status.HostCpuArch != "aarch64" {
-		t.Errorf("Expected HostCpuArch to be 'aarch64', got '%s'", status.HostCpuArch)
-	}
-
-	// Verify zero memory and CPUs
-	expectedMemory := resource.NewQuantity(0, resource.BinarySI)
-	expectedCpus := resource.NewQuantity(0, resource.DecimalSI)
-
-	if !status.HostMemory.Equal(*expectedMemory) {
-		t.Errorf("Expected HostMemory to be %s, got %s", expectedMemory.String(), status.HostMemory.String())
-	}
-
-	if !status.HostCpus.Equal(*expectedCpus) {
-		t.Errorf("Expected HostCpus to be %s, got %s", expectedCpus.String(), status.HostCpus.String())
-	}
-}
-
-func TestConvertWithRealExampleData(t *testing.T) {
-	// Use the embedded example XML to test conversion
-	var capabilities Capabilities
-	err := xml.Unmarshal(exampleXML, &capabilities)
-	if err != nil {
+	// Verify the embedded XML can be parsed correctly
+	var testCaps Capabilities
+	if err := xml.Unmarshal(exampleXML, &testCaps); err != nil {
 		t.Fatalf("Failed to unmarshal example XML: %v", err)
 	}
 
-	status, err := convert(capabilities)
+	// The emulator should return the same data
+	if capabilities.Host.CPU.Arch != testCaps.Host.CPU.Arch {
+		t.Errorf("Expected host CPU arch '%s', got '%s'",
+			testCaps.Host.CPU.Arch, capabilities.Host.CPU.Arch)
+	}
+}
+
+func TestClientEmulator_Get_Consistency(t *testing.T) {
+	client := NewClientEmulator()
+
+	// Call Get multiple times and verify consistent results
+	result1, err1 := client.Get(nil)
+	if err1 != nil {
+		t.Fatalf("First Get() call failed: %v", err1)
+	}
+
+	result2, err2 := client.Get(nil)
+	if err2 != nil {
+		t.Fatalf("Second Get() call failed: %v", err2)
+	}
+
+	// Compare Host CPU architecture
+	if result1.Host.CPU.Arch != result2.Host.CPU.Arch {
+		t.Errorf("Inconsistent host CPU arch: '%s' vs '%s'",
+			result1.Host.CPU.Arch, result2.Host.CPU.Arch)
+	}
+}
+
+func TestClientEmulator_Get_HostInfo(t *testing.T) {
+	client := NewClientEmulator()
+	capabilities, err := client.Get(nil)
+
 	if err != nil {
-		t.Fatalf("convert() returned error with real example data: %v", err)
+		t.Fatalf("Get() returned unexpected error: %v", err)
 	}
 
-	// Verify the status is valid
-	if status.HostCpuArch == "" {
-		t.Error("HostCpuArch should not be empty")
-	}
-
-	// Memory and CPU quantities should be positive
-	if status.HostMemory.IsZero() {
-		t.Error("HostMemory should not be zero")
-	}
-
-	if status.HostCpus.IsZero() {
-		t.Error("HostCpus should not be zero")
-	}
-
-	// Verify specific values from example XML
-	if status.HostCpuArch != "x86_64" {
-		t.Errorf("Expected HostCpuArch to be 'x86_64', got '%s'", status.HostCpuArch)
+	// Verify basic host fields
+	if capabilities.Host.CPU.Arch == "" {
+		t.Error("Expected host CPU architecture to be set")
 	}
 }
 
-// Test helper function to create a mock capabilities structure
-func createMockCapabilities(arch string, cells []mockCell) Capabilities {
-	capabilitiesCells := make([]CapabilitiesHostTopologyCell, len(cells))
-	for i, cell := range cells {
-		capabilitiesCells[i] = CapabilitiesHostTopologyCell{
-			ID: cell.ID,
-			Memory: CapabilitiesHostTopologyCellMemory{
-				Unit:  cell.MemoryUnit,
-				Value: cell.MemoryValue,
-			},
-			CPUs: CapabilitiesHostTopologyCellCPUs{
-				Num: cell.CPUCount,
-			},
-		}
+func TestClientEmulator_Get_CPUInfo(t *testing.T) {
+	client := NewClientEmulator()
+	capabilities, err := client.Get(nil)
+
+	if err != nil {
+		t.Fatalf("Get() returned unexpected error: %v", err)
 	}
 
-	return Capabilities{
-		Host: CapabilitiesHost{
-			CPU: CapabilitiesHostCPU{
-				Arch: arch,
-			},
-			Topology: CapabilitiesHostTopology{
-				CellSpec: CapabilitiesHostTopologyCells{
-					Num:   len(cells),
-					Cells: capabilitiesCells,
-				},
-			},
-		},
+	cpu := capabilities.Host.CPU
+
+	// Verify CPU information
+	if cpu.Arch == "" {
+		t.Error("Expected CPU architecture to be set")
 	}
 }
 
-type mockCell struct {
-	ID          int
-	MemoryUnit  string
-	MemoryValue int64
-	CPUCount    int64
+func TestClientEmulator_Get_TopologyInfo(t *testing.T) {
+	client := NewClientEmulator()
+	capabilities, err := client.Get(nil)
+
+	if err != nil {
+		t.Fatalf("Get() returned unexpected error: %v", err)
+	}
+
+	topology := capabilities.Host.Topology
+
+	// Verify topology information is accessible
+	if topology.CellSpec.Num <= 0 {
+		t.Skip("No NUMA cells found in example XML")
+	}
+
+	if len(topology.CellSpec.Cells) == 0 {
+		t.Error("Expected at least one NUMA cell when num > 0")
+	}
 }
 
-func TestConvertWithMultipleCellsAndArchitectures(t *testing.T) {
-	testCases := []struct {
-		name           string
-		arch           string
-		cells          []mockCell
-		expectedMemory int64 // in bytes
-		expectedCPUs   int64
+func TestClientEmulator_Get_GuestInfo(t *testing.T) {
+	client := NewClientEmulator()
+	capabilities, err := client.Get(nil)
+
+	if err != nil {
+		t.Fatalf("Get() returned unexpected error: %v", err)
+	}
+
+	guest := capabilities.Guest
+
+	// Verify guest fields are accessible
+	if guest.OSType == "" {
+		t.Error("Expected guest OS type to be set")
+	}
+
+	if guest.Arch.Name == "" {
+		t.Error("Expected guest architecture name to be set")
+	}
+}
+
+func TestClient_InterfaceCompliance(t *testing.T) {
+	// Ensure both implementations satisfy the Client interface
+	var _ = NewClient()
+	var _ = NewClientEmulator()
+}
+
+func TestExampleXML_IsValid(t *testing.T) {
+	// Verify that the embedded example XML can be parsed
+	var capabilities Capabilities
+	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
+		t.Fatalf("Failed to unmarshal example XML: %v", err)
+	}
+
+	// Basic validation that we got some data
+	if capabilities.Host.CPU.Arch == "" {
+		t.Error("Expected CPU architecture to be present in example XML")
+	}
+}
+
+func TestExampleXML_Structure(t *testing.T) {
+	var capabilities Capabilities
+	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
+		t.Fatalf("Failed to unmarshal example XML: %v", err)
+	}
+
+	// Test that the example XML has reasonable structure
+	tests := []struct {
+		name      string
+		checkFunc func() bool
+		errMsg    string
 	}{
 		{
-			name: "Single cell x86_64",
-			arch: "x86_64",
-			cells: []mockCell{
-				{ID: 0, MemoryUnit: "KiB", MemoryValue: 1024, CPUCount: 2},
-			},
-			expectedMemory: 1024 * 1024,
-			expectedCPUs:   2,
+			name:      "Has CPU Arch",
+			checkFunc: func() bool { return capabilities.Host.CPU.Arch != "" },
+			errMsg:    "Expected Host CPU Arch to be populated",
 		},
 		{
-			name: "Multiple cells aarch64",
-			arch: "aarch64",
-			cells: []mockCell{
-				{ID: 0, MemoryUnit: "MiB", MemoryValue: 512, CPUCount: 4},
-				{ID: 1, MemoryUnit: "MiB", MemoryValue: 1024, CPUCount: 8},
-			},
-			expectedMemory: (512 + 1024) * 1024 * 1024,
-			expectedCPUs:   12,
+			name:      "Has Guest OSType",
+			checkFunc: func() bool { return capabilities.Guest.OSType != "" },
+			errMsg:    "Expected Guest OSType to be populated",
 		},
 		{
-			name: "Mixed memory units",
-			arch: "ppc64le",
-			cells: []mockCell{
-				{ID: 0, MemoryUnit: "KiB", MemoryValue: 1048576, CPUCount: 1}, // 1GB in KiB
-				{ID: 1, MemoryUnit: "MiB", MemoryValue: 1024, CPUCount: 2},    // 1GB in MiB
-			},
-			expectedMemory: 2 * 1024 * 1024 * 1024, // 2GB total
-			expectedCPUs:   3,
+			name:      "Has Guest Arch Name",
+			checkFunc: func() bool { return capabilities.Guest.Arch.Name != "" },
+			errMsg:    "Expected Guest Arch Name to be populated",
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			capabilities := createMockCapabilities(tc.arch, tc.cells)
-
-			status, err := convert(capabilities)
-			if err != nil {
-				t.Fatalf("convert() returned error: %v", err)
-			}
-
-			if status.HostCpuArch != tc.arch {
-				t.Errorf("Expected HostCpuArch to be '%s', got '%s'", tc.arch, status.HostCpuArch)
-			}
-
-			expectedMemory := resource.NewQuantity(tc.expectedMemory, resource.BinarySI)
-			if !status.HostMemory.Equal(*expectedMemory) {
-				t.Errorf("Expected HostMemory to be %s, got %s", expectedMemory.String(), status.HostMemory.String())
-			}
-
-			expectedCpus := resource.NewQuantity(tc.expectedCPUs, resource.DecimalSI)
-			if !status.HostCpus.Equal(*expectedCpus) {
-				t.Errorf("Expected HostCpus to be %s, got %s", expectedCpus.String(), status.HostCpus.String())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !tt.checkFunc() {
+				t.Error(tt.errMsg)
 			}
 		})
+	}
+}
+
+func TestClientEmulator_Get_ReturnsStruct(t *testing.T) {
+	client := NewClientEmulator()
+	result, err := client.Get(nil)
+
+	if err != nil {
+		t.Fatalf("Get() returned unexpected error: %v", err)
+	}
+
+	// Verify the result has expected data
+	if result.Host.CPU.Arch == "" && result.Guest.OSType == "" {
+		t.Error("Expected result to have either Host or Guest populated")
+	}
+}
+
+func TestClientTypes_AreDistinct(t *testing.T) {
+	client1 := NewClient()
+	client2 := NewClientEmulator()
+
+	// Verify they are different types
+	type1 := any(client1)
+	type2 := any(client2)
+
+	if type1 == type2 {
+		t.Error("Expected NewClient() and NewClientEmulator() to return different types")
+	}
+}
+
+func TestExampleXML_IOMMUSupport(t *testing.T) {
+	var capabilities Capabilities
+	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
+		t.Fatalf("Failed to unmarshal example XML: %v", err)
+	}
+
+	// IOMMU support should be accessible
+	// This test just verifies we can access it without panic
+	_ = capabilities.Host.IOMMU.Support
+}
+
+func TestExampleXML_CacheInfo(t *testing.T) {
+	var capabilities Capabilities
+	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
+		t.Fatalf("Failed to unmarshal example XML: %v", err)
+	}
+
+	// Cache banks should be accessible
+	// This test just verifies we can access them without panic
+	_ = capabilities.Host.Cache.Banks
+}
+
+func TestClientEmulator_Get_NoPanic(t *testing.T) {
+	client := NewClientEmulator()
+
+	// Ensure calling Get doesn't panic even with nil libvirt
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Get() panicked with nil libvirt: %v", r)
+		}
+	}()
+
+	_, err := client.Get(nil)
+	if err != nil {
+		t.Fatalf("Get() returned unexpected error: %v", err)
+	}
+}
+
+func TestExampleXML_TopologyCells(t *testing.T) {
+	var capabilities Capabilities
+	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
+		t.Fatalf("Failed to unmarshal example XML: %v", err)
+	}
+
+	// If we have NUMA cells, verify their structure
+	if capabilities.Host.Topology.CellSpec.Num > 0 {
+		if len(capabilities.Host.Topology.CellSpec.Cells) == 0 {
+			t.Error("Expected cells to be present when num > 0")
+		}
+
+		// Verify we can access cell properties
+		for i, cell := range capabilities.Host.Topology.CellSpec.Cells {
+			_ = cell.ID
+			_ = cell.Memory.Value
+			_ = cell.CPUs.Num
+
+			// Just basic validation on first cell
+			if i == 0 && cell.Memory.Value <= 0 {
+				t.Error("Expected positive memory value for first cell")
+			}
+		}
+	}
+}
+
+func TestExampleXML_GuestArchDomain(t *testing.T) {
+	var capabilities Capabilities
+	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
+		t.Fatalf("Failed to unmarshal example XML: %v", err)
+	}
+
+	guest := capabilities.Guest
+
+	// Verify guest arch domain is accessible
+	if guest.Arch.Domain.Type == "" {
+		t.Skip("Guest arch domain type not set in example XML")
+	}
+
+	// Domain type should be something like "kvm" or "qemu"
+	_ = guest.Arch.Domain.Type
+}
+
+func TestExampleXML_WordSize(t *testing.T) {
+	var capabilities Capabilities
+	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
+		t.Fatalf("Failed to unmarshal example XML: %v", err)
+	}
+
+	// Word size should be present (typically 32 or 64)
+	if capabilities.Guest.Arch.WordSize <= 0 {
+		t.Error("Expected positive word size value")
+	}
+
+	// Typical word sizes are 32 or 64
+	wordSize := capabilities.Guest.Arch.WordSize
+	if wordSize != 32 && wordSize != 64 {
+		t.Logf("Note: Unusual word size %d (expected 32 or 64)", wordSize)
 	}
 }

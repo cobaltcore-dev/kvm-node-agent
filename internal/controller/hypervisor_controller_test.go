@@ -22,7 +22,6 @@ import (
 
 	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"github.com/coreos/go-systemd/v22/dbus"
-	golibvirt "github.com/digitalocean/go-libvirt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -87,33 +86,27 @@ var _ = Describe("Hypervisor Controller", func() {
 					ConnectFunc: func() error {
 						return nil
 					},
-					GetDomainsActiveFunc: func() ([]golibvirt.Domain, error) {
-						return []golibvirt.Domain{}, nil
-					},
-					GetInstancesFunc: func() ([]kvmv1.Instance, error) {
-						return []kvmv1.Instance{
+					ProcessFunc: func(hv kvmv1.Hypervisor) (kvmv1.Hypervisor, error) {
+						hv.Status.Instances = []kvmv1.Instance{
 							{
 								ID:     "25e2ea06-f6be-4bac-856d-8c2d0bdbcdee",
 								Name:   "test-instance",
 								Active: false,
 							},
-						}, nil
-					},
-					IsConnectedFunc: func() bool {
-						return true
-					},
-					GetVersionFunc: func() string {
-						return "10.9.0"
-					},
-					GetNumInstancesFunc: func() int {
-						return 1
-					},
-					GetCapabilitiesFunc: func() (kvmv1.CapabilitiesStatus, error) {
-						return kvmv1.CapabilitiesStatus{
+						}
+						hv.Status.LibVirtVersion = "10.9.0"
+						hv.Status.NumInstances = 1
+						hv.Status.Capabilities = kvmv1.Capabilities{
 							HostCpuArch: "x86_64",
 							HostCpus:    *resource.NewQuantity(4, resource.DecimalSI),
 							HostMemory:  *resource.NewQuantity(8192, resource.DecimalSI),
-						}, nil
+						}
+						hv.Status.DomainCapabilities = kvmv1.DomainCapabilities{
+							Arch:              "x86_64",
+							HypervisorType:    "kvm",
+							SupportedCpuModes: []string{"mode/example", "mode/example/1"},
+						}
+						return hv, nil
 					},
 				},
 				Systemd: &systemd.InterfaceMock{
@@ -155,7 +148,7 @@ var _ = Describe("Hypervisor Controller", func() {
 			Expect(hypervisor.Status.Instances).To(HaveLen(1))
 			Expect(hypervisor.Status.Instances[0].ID).To(Equal("25e2ea06-f6be-4bac-856d-8c2d0bdbcdee"))
 
-			Expect(hypervisor.Status.Conditions).To(HaveLen(3))
+			Expect(hypervisor.Status.Conditions).To(HaveLen(2))
 
 			Expect(hypervisor.Status.Conditions[0].Type).To(Equal("test-unit"))
 			Expect(hypervisor.Status.Conditions[0].Status).To(Equal(metav1.ConditionTrue))
@@ -164,10 +157,6 @@ var _ = Describe("Hypervisor Controller", func() {
 			Expect(hypervisor.Status.Conditions[1].Type).To(Equal("LibVirtConnection"))
 			Expect(hypervisor.Status.Conditions[1].Status).To(Equal(metav1.ConditionTrue))
 			Expect(hypervisor.Status.Conditions[1].Reason).To(Equal("Connected"))
-
-			Expect(hypervisor.Status.Conditions[2].Type).To(Equal("CapabilitiesClientConnection"))
-			Expect(hypervisor.Status.Conditions[2].Status).To(Equal(metav1.ConditionTrue))
-			Expect(hypervisor.Status.Conditions[2].Reason).To(Equal("CapabilitiesClientGetSucceeded"))
 
 			Expect(hypervisor.Status.Capabilities.HostCpuArch).To(Equal("x86_64"))
 			Expect(hypervisor.Status.Capabilities.HostCpus.AsDec().UnscaledBig()).

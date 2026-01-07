@@ -110,6 +110,15 @@ spec:
                 items:
                   type: string
                 type: array
+              allowedProjects:
+                default: []
+                description: |-
+                  AllowedProjects defines which openstack projects are allowed to schedule
+                  instances on this hypervisor. The values of this list should be project
+                  uuids. If left empty, all projects are allowed.
+                items:
+                  type: string
+                type: array
               createCertManagerCertificate:
                 default: false
                 description: |-
@@ -167,6 +176,7 @@ spec:
                 type: string
             required:
             - aggregates
+            - allowedProjects
             - createCertManagerCertificate
             - customTraits
             - evacuateOnReboot
@@ -184,8 +194,17 @@ spec:
                 items:
                   type: string
                 type: array
+              allocation:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: Auto-discovered resource allocation of all hosted VMs.
+                type: object
               capabilities:
-                description: The capabilities of the hypervisors as reported by libvirt.
+                description: Auto-discovered capabilities as reported by libvirt.
                 properties:
                   cpuArch:
                     default: unknown
@@ -208,6 +227,47 @@ spec:
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                 type: object
+              capacity:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: Auto-discovered capacity of the hypervisor.
+                type: object
+              cells:
+                description: Auto-discovered cells on this hypervisor.
+                items:
+                  description: Cell represents a NUMA cell on the hypervisor.
+                  properties:
+                    allocation:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: Auto-discovered resource allocation of all hosted
+                        VMs in this cell.
+                      type: object
+                    capacity:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: Auto-discovered capacity of this cell.
+                      type: object
+                    cellID:
+                      description: Cell ID.
+                      format: int64
+                      type: integer
+                  required:
+                  - cellID
+                  type: object
+                type: array
               conditions:
                 description: Represents the Hypervisor node conditions.
                 items:
@@ -265,6 +325,72 @@ spec:
                   - type
                   type: object
                 type: array
+              domainCapabilities:
+                description: |-
+                  Auto-discovered domain capabilities relevant to check if a VM
+                  can be scheduled on the hypervisor.
+                properties:
+                  arch:
+                    default: unknown
+                    description: The available domain cpu architecture.
+                    type: string
+                  hypervisorType:
+                    default: unknown
+                    description: The supported type of virtualization for domains,
+                      such as "ch".
+                    type: string
+                  supportedCpuModes:
+                    default: []
+                    description: |-
+                      Supported cpu modes for domains.
+
+                      The format of this list is cpu mode, and if specified, a specific
+                      submode. For example, the take the following xml domain cpu definition:
+
+                      <mode name='host-passthrough' supported='yes'>
+                        <enum name='hostPassthroughMigratable'/>
+                      </mode>
+
+                      The corresponding entries in this list would be "host-passthrough" and
+                      "host-passthrough/migratable".
+                    items:
+                      type: string
+                    type: array
+                  supportedDevices:
+                    default: []
+                    description: |-
+                      Supported devices for domains.
+
+                      The format of this list is the device type, and if specified, a specific
+                      model. For example, the take the following xml domain device definition:
+
+                      <video supported='yes'>
+                        <enum name='modelType'>
+                          <value>nvidia</value>
+                        </enum>
+                      </video>
+
+                      The corresponding entries in this list would be "video" and "video/nvidia".
+                    items:
+                      type: string
+                    type: array
+                  supportedFeatures:
+                    default: []
+                    description: |-
+                      Supported features for domains, such as "sev" or "sgx".
+
+                      This is a flat list of supported features, meaning the following xml:
+
+                      <features>
+                        <sev supported='no'/>
+                        <sgx supported='no'/>
+                      </features>
+
+                      Would correspond to the entries "sev" and "sgx" in this list.
+                    items:
+                      type: string
+                    type: array
+                type: object
               evicted:
                 description: Evicted indicates whether the hypervisor is evicted.
                   (no instances left with active maintenance mode)

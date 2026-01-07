@@ -1,0 +1,95 @@
+<!-- Copyright 2025 SAP SE -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<domain type='kvm' id='654321'>
+  <name>instance-12345-abc</name>
+  <uuid>12345-abc</uuid>
+  <metadata>
+    <nova:instance xmlns:nova="http://openstack.org/xmlns/libvirt/nova/1.1">
+      <nova:package version="28.1.1"/>
+      <nova:name>example-12345-abc</nova:name>
+      <nova:creationTime>2025-12-18 00:49:23</nova:creationTime>
+      <nova:flavor name="g_k_c6_m24_v2">
+        <nova:memory>24560</nova:memory>
+        <nova:disk>0</nova:disk>
+        <nova:swap>0</nova:swap>
+        <nova:ephemeral>0</nova:ephemeral>
+        <nova:vcpus>6</nova:vcpus>
+      </nova:flavor>
+      <nova:owner>
+        <nova:user uuid="12345-abc">example-user</nova:user>
+        <nova:project uuid="12345-abc">example-project</nova:project>
+      </nova:owner>
+      <nova:root type="image" uuid="12345-abc"/>
+      <nova:ports>
+        <nova:port uuid="12345-abc">
+          <nova:ip type="fixed" address="0.0.0.0" ipVersion="4"/>
+        </nova:port>
+      </nova:ports>
+    </nova:instance>
+  </metadata>
+  <memory unit='KiB'>25149440</memory>
+  <currentMemory unit='KiB'>25149440</currentMemory>
+  <memoryBacking>
+    <hugepages>
+      <page size='2048' unit='KiB' nodeset='0'/>
+    </hugepages>
+  </memoryBacking>
+  <vcpu placement='static'>6</vcpu>
+  <cputune>
+    <vcpupin vcpu='0' cpuset='32-63,160-191'/>
+    <vcpupin vcpu='1' cpuset='32-63,160-191'/>
+    <vcpupin vcpu='2' cpuset='32-63,160-191'/>
+    <vcpupin vcpu='3' cpuset='32-63,160-191'/>
+    <vcpupin vcpu='4' cpuset='32-63,160-191'/>
+    <vcpupin vcpu='5' cpuset='32-63,160-191'/>
+    <emulatorpin cpuset='32-63,160-191'/>
+  </cputune>
+  <numatune>
+    <memory mode='strict' nodeset='1'/>
+    <memnode cellid='0' mode='strict' nodeset='1'/>
+  </numatune>
+  <resource>
+    <partition>/machine</partition>
+  </resource>
+  <os>
+    <type arch='x86_64'>hvm</type>
+    <kernel>/usr/share/cloud-hypervisor/CLOUDHV_EFI.fd</kernel>
+    <boot dev='hd'/>
+  </os>
+  <cpu mode='host-passthrough'>
+    <topology sockets='6' dies='1' clusters='1' cores='1' threads='1'/>
+    <numa>
+      <cell id='0' cpus='0-5' memory='25149440' unit='KiB' memAccess='shared'/>
+    </numa>
+  </cpu>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <emulator>/usr/bin/cloud-hypervisor</emulator>
+    <disk type='file' device='disk'>
+      <driver type='raw' cache='none' discard='unmap'/>
+      <source file='/var/lib/nova/instances/12345-abc/disk'/>
+      <target dev='vda' bus='virtio'/>
+      <alias name='virtio-disk0'/>
+    </disk>
+    <interface type='bridge'>
+      <mac address='ab:cd:ef:12:34:56'/>
+      <source bridge='abcdef'/>
+      <target dev='abcdef'/>
+      <model type='virtio'/>
+      <driver queues='1' packed='on'/>
+      <mtu size='8950'/>
+      <alias name='net_0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x0'/>
+    </interface>
+    <serial type='tcp'>
+      <source mode='bind' host='10.245.239.50' service='10000'/>
+      <protocol type='raw'/>
+      <log file='/var/lib/nova/instances/12345-abc/console.log' append='off'/>
+      <target port='0'/>
+    </serial>
+  </devices>
+</domain>
