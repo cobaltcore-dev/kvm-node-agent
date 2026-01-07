@@ -51,9 +51,8 @@ type HypervisorReconciler struct {
 }
 
 const (
-	OSUpdateType           = "OperatingSystemUpdate"
-	LibVirtType            = "LibVirtConnection"
-	CapabilitiesClientType = "CapabilitiesClientConnection"
+	OSUpdateType = "OperatingSystemUpdate"
+	LibVirtType  = "LibVirtConnection"
 )
 
 // +kubebuilder:rbac:groups=kvm.cloud.sap,resources=hypervisors,verbs=get;list;watch;update;patch;delete
@@ -182,35 +181,24 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			Reason:  "ConnectFailed",
 		})
 	} else {
-		hypervisor.Status.LibVirtVersion = r.Libvirt.GetVersion()
+		// We're connected.
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 			Type:   LibVirtType,
 			Status: metav1.ConditionTrue,
 			Reason: "Connected",
 		})
 
-		// Update hypervisor instances
-		hypervisor.Status.NumInstances = r.Libvirt.GetNumInstances()
-		if hypervisor.Status.Instances, err = r.Libvirt.GetInstances(); err != nil {
-			log.Error(err, "failed to get instances")
-		}
-
-		// Update capabilities status.
-		if capabilities, err := r.Libvirt.GetCapabilities(); err == nil {
-			hypervisor.Status.Capabilities = capabilities
+		var err error
+		hypervisor, err = r.Libvirt.Process(hypervisor)
+		if err != nil {
+			log.Error(err, "unable to process hypervisor via libvirt")
 			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-				Type:   CapabilitiesClientType,
-				Status: metav1.ConditionTrue,
-				Reason: "CapabilitiesClientGetSucceeded",
-			})
-		} else {
-			log.Error(err, "failed to get capabilities")
-			meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
-				Type:    CapabilitiesClientType,
+				Type:    LibVirtType,
 				Status:  metav1.ConditionFalse,
-				Message: err.Error(),
-				Reason:  "CapabilitiesClientGetFailed",
+				Message: fmt.Sprintf("unable to process hypervisor via libvirt: %v", err),
+				Reason:  "ProcessFailed",
 			})
+			return ctrl.Result{}, err
 		}
 	}
 

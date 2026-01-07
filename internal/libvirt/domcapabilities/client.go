@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package capabilities
+package domcapabilities
 
 import (
 	"encoding/xml"
@@ -24,49 +24,51 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// Client that returns the capabilities of the host we are mounted on.
+// Client that returns the domain capabilities of the host we are mounted on.
 type Client interface {
 	// Return the capabilities status of the host we are mounted on.
-	Get(virt *libvirt.Libvirt) (Capabilities, error)
+	Get(virt *libvirt.Libvirt) (DomainCapabilities, error)
 }
 
-// Implementation of the CapabilitiesClient interface.
+// Implementation of the Client interface.
 type client struct{}
 
-// Create a new capabilities client.
+// Create a new domain capabilities client.
 func NewClient() Client {
 	return &client{}
 }
 
-// Return the capabilities of the host we are mounted on.
-func (m *client) Get(virt *libvirt.Libvirt) (Capabilities, error) {
-	capabilitiesXMLBytes, err := virt.Capabilities()
+// Return the domain capabilities of the host we are mounted on.
+func (m *client) Get(virt *libvirt.Libvirt) (DomainCapabilities, error) {
+	// Same as running `virsh domcapabilities` without any arguments.
+	capabilitiesXMLStr, err := virt.
+		ConnectGetDomainCapabilities(nil, nil, nil, nil, 0)
 	if err != nil {
 		log.Log.Error(err, "failed to get libvirt capabilities")
-		return Capabilities{}, err
+		return DomainCapabilities{}, err
 	}
-	var capabilities Capabilities
-	if err := xml.Unmarshal(capabilitiesXMLBytes, &capabilities); err != nil {
+	var capabilities DomainCapabilities
+	if err := xml.Unmarshal([]byte(capabilitiesXMLStr), &capabilities); err != nil {
 		log.Log.Error(err, "failed to unmarshal libvirt capabilities")
-		return Capabilities{}, err
+		return DomainCapabilities{}, err
 	}
 	return capabilities, nil
 }
 
-// Emulated capabilities client returning an embedded capabilities xml.
+// Emulated domain capabilities client returning an embedded capabilities xml.
 type clientEmulator struct{}
 
-// Create a new emulated capabilities client.
+// Create a new emulated domain capabilities client.
 func NewClientEmulator() Client {
 	return &clientEmulator{}
 }
 
-// Get the capabilities of the host we are mounted on.
-func (c *clientEmulator) Get(virt *libvirt.Libvirt) (Capabilities, error) {
-	var capabilities Capabilities
+// Get the domain capabilities of the host we are mounted on.
+func (c *clientEmulator) Get(virt *libvirt.Libvirt) (DomainCapabilities, error) {
+	var capabilities DomainCapabilities
 	if err := xml.Unmarshal(exampleXML, &capabilities); err != nil {
 		log.Log.Error(err, "failed to unmarshal example capabilities")
-		return Capabilities{}, err
+		return DomainCapabilities{}, err
 	}
 	return capabilities, nil
 }

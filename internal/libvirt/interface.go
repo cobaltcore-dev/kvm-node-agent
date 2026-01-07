@@ -21,7 +21,6 @@ package libvirt
 
 import (
 	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
-	"github.com/digitalocean/go-libvirt"
 )
 
 type Interface interface {
@@ -31,21 +30,8 @@ type Interface interface {
 	// Close closes the connection to the libvirt daemon.
 	Close() error
 
-	// GetInstances returns a list of instances.
-	GetInstances() ([]v1.Instance, error)
-
-	// GetDomainsActive returns all active domains.
-	GetDomainsActive() ([]libvirt.Domain, error)
-
-	// IsConnected returns true if the connection to the libvirt daemon is open.
-	IsConnected() bool
-
-	// GetVersion returns the version of the libvirt daemon.
-	GetVersion() string
-
-	// GetNumInstances returns the number of instances.
-	GetNumInstances() int
-
-	// Get the capabilities of the libvirt daemon.
-	GetCapabilities() (v1.CapabilitiesStatus, error)
+	// Add information extracted from the libvirt socket to the hypervisor instance.
+	// If an error occurs, the instance is returned unmodified. The libvirt
+	// connection needs to be established before calling this function.
+	Process(hv v1.Hypervisor) (v1.Hypervisor, error)
 }

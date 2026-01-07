@@ -1,0 +1,33 @@
+<!-- Copyright 2025 SAP SE -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<domainCapabilities>
+  <domain>ch</domain>
+  <arch>x86_64</arch>
+  <os supported='yes'>
+    <loader supported='yes'>
+      <enum name='secure'>
+        <value>no</value>
+      </enum>
+    </loader>
+  </os>
+  <cpu>
+    <mode name='host-passthrough' supported='yes'>
+      <enum name='hostPassthroughMigratable'/>
+    </mode>
+    <mode name='maximum' supported='no'/>
+    <mode name='host-model' supported='no'/>
+    <mode name='custom' supported='no'/>
+  </cpu>
+  <devices>
+    <video supported='yes'>
+      <enum name='modelType'>
+        <value>none</value>
+      </enum>
+    </video>
+  </devices>
+  <features>
+    <sev supported='no'/>
+    <sgx supported='no'/>
+  </features>
+</domainCapabilities>

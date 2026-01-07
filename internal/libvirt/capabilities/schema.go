@@ -17,12 +17,6 @@ limitations under the License.
 
 package capabilities
 
-import (
-	"fmt"
-
-	"k8s.io/apimachinery/pkg/api/resource"
-)
-
 // Capabilities as returned from the libvirt driver capabilities api.
 //
 // The format is the same as returned when executing `virsh capabilities`. See:
@@ -59,7 +53,7 @@ type CapabilitiesHostTopologyCells struct {
 }
 
 type CapabilitiesHostTopologyCell struct {
-	ID        int                                   `xml:"id,attr"`
+	ID        uint64                                `xml:"id,attr"`
 	Memory    CapabilitiesHostTopologyCellMemory    `xml:"memory"`
 	Pages     []CapabilitiesHostTopologyCellPages   `xml:"pages"`
 	Distances CapabilitiesHostTopologyCellDistances `xml:"distances"`
@@ -69,27 +63,6 @@ type CapabilitiesHostTopologyCell struct {
 type CapabilitiesHostTopologyCellMemory struct {
 	Unit  string `xml:"unit,attr"`
 	Value int64  `xml:",chardata"`
-}
-
-// Get the cell memory as resource.Quantity.
-func (c CapabilitiesHostTopologyCellMemory) AsQuantity() (resource.Quantity, error) {
-	var quantity *resource.Quantity
-	// Check the unit
-	switch c.Unit {
-	case "KiB":
-		quantity = resource.NewQuantity(c.Value*1024, resource.BinarySI)
-	case "MiB":
-		quantity = resource.NewQuantity(c.Value*1024*1024, resource.BinarySI)
-	case "GiB":
-		quantity = resource.NewQuantity(c.Value*1024*1024*1024, resource.BinarySI)
-	case "TiB":
-		quantity = resource.NewQuantity(c.Value*1024*1024*1024*1024, resource.BinarySI)
-	}
-	if quantity == nil {
-		return resource.Quantity{}, fmt.Errorf("unknown memory unit %s", c.Unit)
-	}
-	// Set the value
-	return *quantity, nil
 }
 
 type CapabilitiesHostTopologyCellPages struct {
