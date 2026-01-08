@@ -19,15 +19,20 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	"github.com/coreos/go-systemd/v22/dbus"
+	golibvirt "github.com/digitalocean/go-libvirt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
@@ -36,6 +41,154 @@ import (
 )
 
 var _ = Describe("Hypervisor Controller", func() {
+	Context("When testing Start method", func() {
+		It("should successfully start and subscribe to libvirt events", func() {
+			ctx := context.Background()
+			eventCallbackCalled := false
+
+			controllerReconciler := &HypervisorReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+				Libvirt: &libvirt.InterfaceMock{
+					ConnectFunc: func() error {
+						return nil
+					},
+					WatchDomainChangesFunc: func(eventId golibvirt.DomainEventID, handlerId string, handler func(context.Context, any)) {
+						eventCallbackCalled = true
+						Expect(handlerId).To(Equal("reconcile-on-domain-lifecycle"))
+					},
+				},
+				reconcileCh: make(chan event.GenericEvent, 1),
+			}
+
+			err := controllerReconciler.Start(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(eventCallbackCalled).To(BeTrue())
+		})
+
+		It("should fail when libvirt connection fails", func() {
+			ctx := context.Background()
+
+			controllerReconciler := &HypervisorReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+				Libvirt: &libvirt.InterfaceMock{
+					ConnectFunc: func() error {
+						return errors.New("connection failed")
+					},
+				},
+				reconcileCh: make(chan event.GenericEvent, 1),
+			}
+
+			err := controllerReconciler.Start(ctx)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("connection failed"))
+		})
+	})
+
+	Context("When testing triggerReconcile method", func() {
+		It("should send an event to reconcile channel", func() {
+			const testHostname = "test-host"
+			const testNamespace = "test-namespace"
+
+			// Override hostname and namespace for this test
+			originalHostname := sys.Hostname
+			originalNamespace := sys.Namespace
+			sys.Hostname = testHostname
+			sys.Namespace = testNamespace
+			defer func() {
+				sys.Hostname = originalHostname
+				sys.Namespace = originalNamespace
+			}()
+
+			controllerReconciler := &HypervisorReconciler{
+				Client:      k8sClient,
+				Scheme:      k8sClient.Scheme(),
+				reconcileCh: make(chan event.GenericEvent, 1),
+			}
+
+			// Trigger reconcile in a goroutine to avoid blocking
+			go controllerReconciler.triggerReconcile()
+
+			// Wait for the event with a timeout
+			select {
+			case evt := <-controllerReconciler.reconcileCh:
+				Expect(evt.Object).NotTo(BeNil())
+				hv, ok := evt.Object.(*kvmv1.Hypervisor)
+				Expect(ok).To(BeTrue())
+				Expect(hv.Name).To(Equal(testHostname))
+				Expect(hv.Namespace).To(Equal(testNamespace))
+				Expect(hv.Kind).To(Equal("Hypervisor"))
+				Expect(hv.APIVersion).To(Equal("kvm.cloud.sap/v1"))
+			case <-time.After(2 * time.Second):
+				Fail("timeout waiting for reconcile event")
+			}
+		})
+	})
+
+	Context("When testing SetupWithManager method", func() {
+		It("should successfully setup controller with manager", func() {
+			// Create a test manager
+			mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+				Scheme: k8sClient.Scheme(),
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			controllerReconciler := &HypervisorReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+				Systemd: &systemd.InterfaceMock{
+					DescribeFunc: func(ctx context.Context) (*systemd.Descriptor, error) {
+						return &systemd.Descriptor{
+							OperatingSystemReleaseData: []string{
+								"PRETTY_NAME=\"Garden Linux 1877.8\"",
+								"GARDENLINUX_VERSION=1877.8",
+							},
+							KernelVersion:   "6.1.0",
+							KernelRelease:   "6.1.0-gardenlinux",
+							KernelName:      "Linux",
+							HardwareVendor:  "Test Vendor",
+							HardwareModel:   "Test Model",
+							HardwareSerial:  "TEST123",
+							FirmwareVersion: "1.0",
+							FirmwareVendor:  "Test BIOS",
+							FirmwareDate:    time.Now().UnixMicro(),
+						}, nil
+					},
+				},
+			}
+
+			err = controllerReconciler.SetupWithManager(mgr)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(controllerReconciler.reconcileCh).NotTo(BeNil())
+			Expect(controllerReconciler.osDescriptor).NotTo(BeNil())
+			Expect(controllerReconciler.osDescriptor.OperatingSystemReleaseData).To(HaveLen(2))
+		})
+
+		It("should fail when systemd Describe returns error", func() {
+			// Create a test manager
+			mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+				Scheme: k8sClient.Scheme(),
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			controllerReconciler := &HypervisorReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+				Systemd: &systemd.InterfaceMock{
+					DescribeFunc: func(ctx context.Context) (*systemd.Descriptor, error) {
+						return nil, errors.New("systemd describe failed")
+					},
+				},
+			}
+
+			err = controllerReconciler.SetupWithManager(mgr)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("unable to get Systemd hostname describe()"))
+			Expect(err.Error()).To(ContainSubstring("systemd describe failed"))
+		})
+	})
+
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -50,7 +203,7 @@ var _ = Describe("Hypervisor Controller", func() {
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind Hypervisor")
 			err := k8sClient.Get(ctx, typeNamespacedName, hypervisor)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				resource := &kvmv1.Hypervisor{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
