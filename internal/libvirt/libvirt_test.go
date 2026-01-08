@@ -18,7 +18,9 @@ limitations under the License.
 package libvirt
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
 	libvirt "github.com/digitalocean/go-libvirt"
@@ -843,4 +845,239 @@ type testError struct {
 
 func (e *testError) Error() string {
 	return e.msg
+}
+
+func TestWatchDomainChanges_RegistersHandler(t *testing.T) {
+	// Pre-create a channel to avoid calling libvirt.SubscribeEvents
+	eventCh := make(chan any, 1)
+
+	l := &LibVirt{
+		domEventChangeHandlers: make(map[libvirt.DomainEventID]map[string]func(context.Context, any)),
+		domEventChs: map[libvirt.DomainEventID]<-chan any{
+			libvirt.DomainEventIDLifecycle: eventCh,
+		},
+	}
+
+	eventID := libvirt.DomainEventIDLifecycle
+	handlerID := "test-handler"
+	handlerCalled := false
+
+	handler := func(ctx context.Context, payload any) {
+		handlerCalled = true
+	}
+
+	l.WatchDomainChanges(eventID, handlerID, handler)
+
+	// Verify handler was registered
+	handlers, exists := l.domEventChangeHandlers[eventID]
+	if !exists {
+		t.Fatal("Expected handler map to exist for event ID")
+	}
+
+	registeredHandler, exists := handlers[handlerID]
+	if !exists {
+		t.Fatal("Expected handler to be registered")
+	}
+
+	// Test that the handler can be called
+	registeredHandler(context.Background(), nil)
+	if !handlerCalled {
+		t.Error("Expected handler to be called")
+	}
+}
+
+func TestWatchDomainChanges_MultipleHandlersSameEvent(t *testing.T) {
+	// Pre-create a channel to avoid calling libvirt.SubscribeEvents
+	eventCh := make(chan any, 1)
+
+	l := &LibVirt{
+		domEventChangeHandlers: make(map[libvirt.DomainEventID]map[string]func(context.Context, any)),
+		domEventChs: map[libvirt.DomainEventID]<-chan any{
+			libvirt.DomainEventIDLifecycle: eventCh,
+		},
+	}
+
+	eventID := libvirt.DomainEventIDLifecycle
+	handler1Called := false
+	handler2Called := false
+
+	handler1 := func(ctx context.Context, payload any) {
+		handler1Called = true
+	}
+	handler2 := func(ctx context.Context, payload any) {
+		handler2Called = true
+	}
+
+	l.WatchDomainChanges(eventID, "handler-1", handler1)
+	l.WatchDomainChanges(eventID, "handler-2", handler2)
+
+	// Verify both handlers are registered
+	handlers, exists := l.domEventChangeHandlers[eventID]
+	if !exists {
+		t.Fatal("Expected handler map to exist for event ID")
+	}
+
+	if len(handlers) != 2 {
+		t.Errorf("Expected 2 handlers, got %d", len(handlers))
+	}
+
+	// Call both handlers
+	handlers["handler-1"](context.Background(), nil)
+	handlers["handler-2"](context.Background(), nil)
+
+	if !handler1Called {
+		t.Error("Expected handler 1 to be called")
+	}
+	if !handler2Called {
+		t.Error("Expected handler 2 to be called")
+	}
+}
+
+func TestWatchDomainChanges_DifferentEvents(t *testing.T) {
+	// Pre-create channels for both events to avoid calling libvirt.SubscribeEvents
+	eventCh1 := make(chan any, 1)
+	eventCh2 := make(chan any, 1)
+
+	l := &LibVirt{
+		domEventChangeHandlers: make(map[libvirt.DomainEventID]map[string]func(context.Context, any)),
+		domEventChs: map[libvirt.DomainEventID]<-chan any{
+			libvirt.DomainEventIDLifecycle:          eventCh1,
+			libvirt.DomainEventIDMigrationIteration: eventCh2,
+		},
+	}
+
+	event1 := libvirt.DomainEventIDLifecycle
+	event2 := libvirt.DomainEventIDMigrationIteration
+
+	handler1 := func(ctx context.Context, payload any) {
+		// Handler 1 implementation
+	}
+	handler2 := func(ctx context.Context, payload any) {
+		// Handler 2 implementation
+	}
+
+	l.WatchDomainChanges(event1, "handler-1", handler1)
+	l.WatchDomainChanges(event2, "handler-2", handler2)
+
+	// Verify handlers are registered under different event IDs
+	if len(l.domEventChangeHandlers) != 2 {
+		t.Errorf("Expected 2 event IDs registered, got %d", len(l.domEventChangeHandlers))
+	}
+
+	handlers1, exists := l.domEventChangeHandlers[event1]
+	if !exists || len(handlers1) != 1 {
+		t.Error("Expected handler 1 to be registered under event1")
+	}
+
+	handlers2, exists := l.domEventChangeHandlers[event2]
+	if !exists || len(handlers2) != 1 {
+		t.Error("Expected handler 2 to be registered under event2")
+	}
+}
+
+func TestWatchDomainChanges_OverwriteHandler(t *testing.T) {
+	// Pre-create a channel to avoid calling libvirt.SubscribeEvents
+	eventCh := make(chan any, 1)
+
+	l := &LibVirt{
+		domEventChangeHandlers: make(map[libvirt.DomainEventID]map[string]func(context.Context, any)),
+		domEventChs: map[libvirt.DomainEventID]<-chan any{
+			libvirt.DomainEventIDLifecycle: eventCh,
+		},
+	}
+
+	eventID := libvirt.DomainEventIDLifecycle
+	handlerID := "test-handler"
+	firstHandlerCalled := false
+	secondHandlerCalled := false
+
+	firstHandler := func(ctx context.Context, payload any) {
+		firstHandlerCalled = true
+	}
+	secondHandler := func(ctx context.Context, payload any) {
+		secondHandlerCalled = true
+	}
+
+	// Register first handler
+	l.WatchDomainChanges(eventID, handlerID, firstHandler)
+
+	// Register second handler with same ID (should overwrite)
+	l.WatchDomainChanges(eventID, handlerID, secondHandler)
+
+	handlers, exists := l.domEventChangeHandlers[eventID]
+	if !exists {
+		t.Fatal("Expected handler map to exist")
+	}
+
+	if len(handlers) != 1 {
+		t.Errorf("Expected 1 handler, got %d", len(handlers))
+	}
+
+	// Only the second handler should be called
+	handlers[handlerID](context.Background(), nil)
+
+	if firstHandlerCalled {
+		t.Error("First handler should not be called after being overwritten")
+	}
+	if !secondHandlerCalled {
+		t.Error("Second handler should be called")
+	}
+}
+
+func TestRunEventLoop_ProcessesEvents(t *testing.T) {
+	// Create a channel for events
+	eventCh := make(chan any, 1)
+
+	mockConn := &mockLibvirtConnection{}
+
+	l := &LibVirt{
+		virt: &mockConn.Libvirt,
+		domEventChs: map[libvirt.DomainEventID]<-chan any{
+			libvirt.DomainEventIDLifecycle: eventCh,
+		},
+		domEventChangeHandlers: make(map[libvirt.DomainEventID]map[string]func(context.Context, any)),
+	}
+
+	// Register a handler
+	handlerCalled := false
+	var receivedPayload any
+	handler := func(ctx context.Context, payload any) {
+		handlerCalled = true
+		receivedPayload = payload
+	}
+
+	l.WatchDomainChanges(libvirt.DomainEventIDLifecycle, "test-handler", handler)
+
+	// Create a context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	// Start the event loop in a goroutine
+	go l.runEventLoop(ctx)
+
+	// Send an event
+	testPayload := "test-event-payload"
+	eventCh <- testPayload
+
+	// Give some time for the event to be processed
+	time.Sleep(50 * time.Millisecond)
+
+	if !handlerCalled {
+		t.Error("Expected handler to be called")
+	}
+
+	if receivedPayload != testPayload {
+		t.Errorf("Expected payload %v, got %v", testPayload, receivedPayload)
+	}
+}
+
+// mockLibvirtConnection is a mock for the libvirt connection that implements
+// the Disconnected() method needed for testing
+type mockLibvirtConnection struct {
+	libvirt.Libvirt
+	disconnectedCh chan struct{}
+}
+
+func (m *mockLibvirtConnection) Disconnected() <-chan struct{} {
+	return m.disconnectedCh
 }
