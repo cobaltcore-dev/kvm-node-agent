@@ -61,7 +61,11 @@ type mockDomInfoClient struct {
 	err   error
 }
 
-func (m *mockDomInfoClient) Get(virt *libvirt.Libvirt) ([]dominfo.DomainInfo, error) {
+func (m *mockDomInfoClient) Get(
+	virt *libvirt.Libvirt,
+	flags ...libvirt.ConnectListAllDomainsFlags,
+) ([]dominfo.DomainInfo, error) {
+
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -104,105 +108,6 @@ func TestAddVersion_PreservesOtherFields(t *testing.T) {
 
 	if result.Status.NumInstances != 5 {
 		t.Errorf("Expected NumInstances to be preserved, got %d", result.Status.NumInstances)
-	}
-}
-
-func TestAddInstancesInfo_ActiveDomains(t *testing.T) {
-	l := &LibVirt{
-		domains: map[libvirt.ConnectListAllDomainsFlags][]libvirt.Domain{
-			libvirt.ConnectListDomainsActive: {
-				{Name: "instance-1", UUID: [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}},
-				{Name: "instance-2", UUID: [16]byte{2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}},
-			},
-			libvirt.ConnectListDomainsInactive: {},
-		},
-	}
-
-	hv := v1.Hypervisor{}
-	result, err := l.addInstancesInfo(hv)
-
-	if err != nil {
-		t.Fatalf("addInstancesInfo() returned unexpected error: %v", err)
-	}
-
-	if len(result.Status.Instances) != 2 {
-		t.Fatalf("Expected 2 instances, got %d", len(result.Status.Instances))
-	}
-
-	// Check that both instances are active
-	for _, instance := range result.Status.Instances {
-		if !instance.Active {
-			t.Errorf("Expected instance '%s' to be active", instance.Name)
-		}
-	}
-}
-
-func TestAddInstancesInfo_InactiveDomains(t *testing.T) {
-	l := &LibVirt{
-		domains: map[libvirt.ConnectListAllDomainsFlags][]libvirt.Domain{
-			libvirt.ConnectListDomainsActive: {},
-			libvirt.ConnectListDomainsInactive: {
-				{Name: "instance-3", UUID: [16]byte{3, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}},
-			},
-		},
-	}
-
-	hv := v1.Hypervisor{}
-	result, err := l.addInstancesInfo(hv)
-
-	if err != nil {
-		t.Fatalf("addInstancesInfo() returned unexpected error: %v", err)
-	}
-
-	if len(result.Status.Instances) != 1 {
-		t.Fatalf("Expected 1 instance, got %d", len(result.Status.Instances))
-	}
-
-	if result.Status.Instances[0].Active {
-		t.Error("Expected instance to be inactive")
-	}
-}
-
-func TestAddInstancesInfo_MixedDomains(t *testing.T) {
-	l := &LibVirt{
-		domains: map[libvirt.ConnectListAllDomainsFlags][]libvirt.Domain{
-			libvirt.ConnectListDomainsActive: {
-				{Name: "active-1"},
-				{Name: "active-2"},
-			},
-			libvirt.ConnectListDomainsInactive: {
-				{Name: "inactive-1"},
-			},
-		},
-	}
-
-	hv := v1.Hypervisor{}
-	result, err := l.addInstancesInfo(hv)
-
-	if err != nil {
-		t.Fatalf("addInstancesInfo() returned unexpected error: %v", err)
-	}
-
-	if len(result.Status.Instances) != 3 {
-		t.Fatalf("Expected 3 instances, got %d", len(result.Status.Instances))
-	}
-
-	// Count active and inactive
-	activeCount := 0
-	inactiveCount := 0
-	for _, instance := range result.Status.Instances {
-		if instance.Active {
-			activeCount++
-		} else {
-			inactiveCount++
-		}
-	}
-
-	if activeCount != 2 {
-		t.Errorf("Expected 2 active instances, got %d", activeCount)
-	}
-	if inactiveCount != 1 {
-		t.Errorf("Expected 1 inactive instance, got %d", inactiveCount)
 	}
 }
 
@@ -588,8 +493,6 @@ func TestProcess_Success(t *testing.T) {
 	}
 
 	l := &LibVirt{
-		version:                  "8.0.0",
-		domains:                  make(map[libvirt.ConnectListAllDomainsFlags][]libvirt.Domain),
 		capabilitiesClient:       &mockCapabilitiesClient{caps: caps},
 		domainCapabilitiesClient: &mockDomCapabilitiesClient{caps: domCaps},
 		domainInfoClient:         &mockDomInfoClient{infos: []dominfo.DomainInfo{}},
@@ -603,9 +506,6 @@ func TestProcess_Success(t *testing.T) {
 	}
 
 	// Verify all processors ran
-	if result.Status.LibVirtVersion != "8.0.0" {
-		t.Error("addVersion did not run")
-	}
 	if result.Status.Capabilities.HostCpuArch != "x86_64" {
 		t.Error("addCapabilities did not run")
 	}
@@ -620,7 +520,6 @@ func TestProcess_Success(t *testing.T) {
 func TestProcess_PreservesOriginalOnError(t *testing.T) {
 	l := &LibVirt{
 		version:                  "8.0.0",
-		domains:                  make(map[libvirt.ConnectListAllDomainsFlags][]libvirt.Domain),
 		capabilitiesClient:       &mockCapabilitiesClient{err: &testError{"capability error"}},
 		domainCapabilitiesClient: &mockDomCapabilitiesClient{},
 		domainInfoClient:         &mockDomInfoClient{},
@@ -643,6 +542,298 @@ func TestProcess_PreservesOriginalOnError(t *testing.T) {
 	if result.Status.LibVirtVersion != "8.0.0" {
 		t.Error("Expected version to be added before error")
 	}
+}
+
+func TestAddInstancesInfo_NoInstances(t *testing.T) {
+	l := &LibVirt{
+		domainInfoClient: &mockDomInfoClient{infos: []dominfo.DomainInfo{}},
+	}
+
+	hv := v1.Hypervisor{}
+	result, err := l.addInstancesInfo(hv)
+
+	if err != nil {
+		t.Fatalf("addInstancesInfo() returned unexpected error: %v", err)
+	}
+
+	if result.Status.NumInstances != 0 {
+		t.Errorf("Expected NumInstances 0, got %d", result.Status.NumInstances)
+	}
+
+	if len(result.Status.Instances) != 0 {
+		t.Errorf("Expected 0 instances, got %d", len(result.Status.Instances))
+	}
+}
+
+func TestAddInstancesInfo_ActiveInstances(t *testing.T) {
+	activeInfos := []dominfo.DomainInfo{
+		{
+			UUID: "instance-1",
+			Name: "test-vm-1",
+		},
+		{
+			UUID: "instance-2",
+			Name: "test-vm-2",
+		},
+	}
+
+	inactiveInfos := []dominfo.DomainInfo{}
+
+	// Create a mock client that returns different results based on the flag
+	mockClient := &mockDomInfoClientWithFlags{
+		activeInfos:   activeInfos,
+		inactiveInfos: inactiveInfos,
+	}
+
+	l := &LibVirt{
+		domainInfoClient: mockClient,
+	}
+
+	hv := v1.Hypervisor{}
+	result, err := l.addInstancesInfo(hv)
+
+	if err != nil {
+		t.Fatalf("addInstancesInfo() returned unexpected error: %v", err)
+	}
+
+	if result.Status.NumInstances != 2 {
+		t.Errorf("Expected NumInstances 2, got %d", result.Status.NumInstances)
+	}
+
+	if len(result.Status.Instances) != 2 {
+		t.Fatalf("Expected 2 instances, got %d", len(result.Status.Instances))
+	}
+
+	// Verify first instance
+	if result.Status.Instances[0].ID != "instance-1" {
+		t.Errorf("Expected instance ID 'instance-1', got '%s'", result.Status.Instances[0].ID)
+	}
+	if result.Status.Instances[0].Name != "test-vm-1" {
+		t.Errorf("Expected instance name 'test-vm-1', got '%s'", result.Status.Instances[0].Name)
+	}
+	if !result.Status.Instances[0].Active {
+		t.Error("Expected instance to be active")
+	}
+
+	// Verify second instance
+	if result.Status.Instances[1].ID != "instance-2" {
+		t.Errorf("Expected instance ID 'instance-2', got '%s'", result.Status.Instances[1].ID)
+	}
+	if result.Status.Instances[1].Name != "test-vm-2" {
+		t.Errorf("Expected instance name 'test-vm-2', got '%s'", result.Status.Instances[1].Name)
+	}
+	if !result.Status.Instances[1].Active {
+		t.Error("Expected instance to be active")
+	}
+}
+
+func TestAddInstancesInfo_InactiveInstances(t *testing.T) {
+	activeInfos := []dominfo.DomainInfo{}
+
+	inactiveInfos := []dominfo.DomainInfo{
+		{
+			UUID: "instance-3",
+			Name: "test-vm-3",
+		},
+	}
+
+	mockClient := &mockDomInfoClientWithFlags{
+		activeInfos:   activeInfos,
+		inactiveInfos: inactiveInfos,
+	}
+
+	l := &LibVirt{
+		domainInfoClient: mockClient,
+	}
+
+	hv := v1.Hypervisor{}
+	result, err := l.addInstancesInfo(hv)
+
+	if err != nil {
+		t.Fatalf("addInstancesInfo() returned unexpected error: %v", err)
+	}
+
+	if result.Status.NumInstances != 1 {
+		t.Errorf("Expected NumInstances 1, got %d", result.Status.NumInstances)
+	}
+
+	if len(result.Status.Instances) != 1 {
+		t.Fatalf("Expected 1 instance, got %d", len(result.Status.Instances))
+	}
+
+	if result.Status.Instances[0].ID != "instance-3" {
+		t.Errorf("Expected instance ID 'instance-3', got '%s'", result.Status.Instances[0].ID)
+	}
+	if result.Status.Instances[0].Name != "test-vm-3" {
+		t.Errorf("Expected instance name 'test-vm-3', got '%s'", result.Status.Instances[0].Name)
+	}
+	if result.Status.Instances[0].Active {
+		t.Error("Expected instance to be inactive")
+	}
+}
+
+func TestAddInstancesInfo_MixedInstances(t *testing.T) {
+	activeInfos := []dominfo.DomainInfo{
+		{
+			UUID: "active-1",
+			Name: "active-vm-1",
+		},
+		{
+			UUID: "active-2",
+			Name: "active-vm-2",
+		},
+	}
+
+	inactiveInfos := []dominfo.DomainInfo{
+		{
+			UUID: "inactive-1",
+			Name: "inactive-vm-1",
+		},
+	}
+
+	mockClient := &mockDomInfoClientWithFlags{
+		activeInfos:   activeInfos,
+		inactiveInfos: inactiveInfos,
+	}
+
+	l := &LibVirt{
+		domainInfoClient: mockClient,
+	}
+
+	hv := v1.Hypervisor{}
+	result, err := l.addInstancesInfo(hv)
+
+	if err != nil {
+		t.Fatalf("addInstancesInfo() returned unexpected error: %v", err)
+	}
+
+	if result.Status.NumInstances != 3 {
+		t.Errorf("Expected NumInstances 3, got %d", result.Status.NumInstances)
+	}
+
+	if len(result.Status.Instances) != 3 {
+		t.Fatalf("Expected 3 instances, got %d", len(result.Status.Instances))
+	}
+
+	// Count active and inactive instances
+	activeCount := 0
+	inactiveCount := 0
+	for _, instance := range result.Status.Instances {
+		if instance.Active {
+			activeCount++
+		} else {
+			inactiveCount++
+		}
+	}
+
+	if activeCount != 2 {
+		t.Errorf("Expected 2 active instances, got %d", activeCount)
+	}
+	if inactiveCount != 1 {
+		t.Errorf("Expected 1 inactive instance, got %d", inactiveCount)
+	}
+
+	// Verify the active instances come first
+	if !result.Status.Instances[0].Active || !result.Status.Instances[1].Active {
+		t.Error("Expected active instances to be listed first")
+	}
+	if result.Status.Instances[2].Active {
+		t.Error("Expected third instance to be inactive")
+	}
+}
+
+func TestAddInstancesInfo_PreservesOtherFields(t *testing.T) {
+	mockClient := &mockDomInfoClientWithFlags{
+		activeInfos:   []dominfo.DomainInfo{{ID: "test-1", Name: "vm-1"}},
+		inactiveInfos: []dominfo.DomainInfo{},
+	}
+
+	l := &LibVirt{
+		domainInfoClient: mockClient,
+	}
+
+	hv := v1.Hypervisor{
+		Status: v1.HypervisorStatus{
+			LibVirtVersion: "8.0.0",
+			Capabilities: v1.Capabilities{
+				HostCpuArch: "x86_64",
+			},
+		},
+	}
+
+	result, err := l.addInstancesInfo(hv)
+
+	if err != nil {
+		t.Fatalf("addInstancesInfo() returned unexpected error: %v", err)
+	}
+
+	// Verify other fields are preserved
+	if result.Status.LibVirtVersion != "8.0.0" {
+		t.Errorf("Expected LibVirtVersion to be preserved, got '%s'", result.Status.LibVirtVersion)
+	}
+	if result.Status.Capabilities.HostCpuArch != "x86_64" {
+		t.Errorf("Expected HostCpuArch to be preserved, got '%s'", result.Status.Capabilities.HostCpuArch)
+	}
+}
+
+func TestAddInstancesInfo_ErrorHandling(t *testing.T) {
+	mockClient := &mockDomInfoClient{
+		err: &testError{"failed to get domain info"},
+	}
+
+	l := &LibVirt{
+		domainInfoClient: mockClient,
+	}
+
+	originalHv := v1.Hypervisor{
+		Status: v1.HypervisorStatus{
+			NumInstances: 5,
+		},
+	}
+
+	result, err := l.addInstancesInfo(originalHv)
+
+	if err == nil {
+		t.Fatal("Expected error from addInstancesInfo(), got nil")
+	}
+
+	// Should return the original hypervisor on error
+	if result.Status.NumInstances != 5 {
+		t.Errorf("Expected original NumInstances to be preserved, got %d", result.Status.NumInstances)
+	}
+}
+
+// mockDomInfoClientWithFlags is a mock that returns different results based on flags
+type mockDomInfoClientWithFlags struct {
+	activeInfos   []dominfo.DomainInfo
+	inactiveInfos []dominfo.DomainInfo
+	err           error
+}
+
+func (m *mockDomInfoClientWithFlags) Get(
+	virt *libvirt.Libvirt,
+	flags ...libvirt.ConnectListAllDomainsFlags,
+) ([]dominfo.DomainInfo, error) {
+
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	// If no flags provided, return all
+	if len(flags) == 0 {
+		return append(m.activeInfos, m.inactiveInfos...), nil
+	}
+
+	// Check which flag was passed
+	flag := flags[0]
+	switch flag {
+	case libvirt.ConnectListDomainsActive:
+		return m.activeInfos, nil
+	case libvirt.ConnectListDomainsInactive:
+		return m.inactiveInfos, nil
+	}
+
+	return []dominfo.DomainInfo{}, nil
 }
 
 // testError is a simple error type for testing
