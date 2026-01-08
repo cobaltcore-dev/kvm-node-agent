@@ -347,3 +347,28 @@ func TestClientTypes_AreDistinct(t *testing.T) {
 		t.Error("Expected NewClient() and NewClientEmulator() to return different types")
 	}
 }
+
+func TestClientEmulator_Get_WithTwoFlags(t *testing.T) {
+	client := NewClientEmulator()
+
+	// Test that Get accepts multiple flags without error
+	// The emulator doesn't use libvirt, so we pass nil and arbitrary flags
+	domainInfos, err := client.Get(nil, 1, 2)
+
+	if err != nil {
+		t.Fatalf("Get() with 2 flags returned unexpected error: %v", err)
+	}
+
+	if len(domainInfos) == 0 {
+		t.Fatal("Expected at least one domain info from emulator")
+	}
+
+	// Verify the returned domain info has expected structure
+	if domainInfos[0].Name == "" {
+		t.Error("Expected domain to have a name")
+	}
+
+	if domainInfos[0].UUID == "" {
+		t.Error("Expected domain to have a UUID")
+	}
+}

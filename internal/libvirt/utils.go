@@ -21,7 +21,6 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/digitalocean/go-libvirt"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -39,10 +38,6 @@ func (uuid UUID) String() string {
 	tmp[23] = '-'
 	hex.Encode(tmp[:][24:], uuid[10:])
 	return string(tmp[:])
-}
-
-func GetOpenstackUUID(domain libvirt.Domain) string {
-	return UUID(domain.UUID).String()
 }
 
 func ByteCountIEC(b uint64) string {

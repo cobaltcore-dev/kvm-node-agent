@@ -27,7 +27,10 @@ import (
 // Client that returns information for all domains on our host.
 type Client interface {
 	// Return information for all domains on our host.
-	Get(virt *libvirt.Libvirt) ([]DomainInfo, error)
+	Get(
+		virt *libvirt.Libvirt,
+		flags ...libvirt.ConnectListAllDomainsFlags,
+	) ([]DomainInfo, error)
 }
 
 // Implementation of the Client interface.
@@ -39,9 +42,16 @@ func NewClient() Client {
 }
 
 // Return information for all domains on our host.
-func (m *client) Get(virt *libvirt.Libvirt) ([]DomainInfo, error) {
-	domains, _, err := virt.ConnectListAllDomains(1,
-		libvirt.ConnectListDomainsActive|libvirt.ConnectListDomainsInactive)
+func (m *client) Get(
+	virt *libvirt.Libvirt,
+	flags ...libvirt.ConnectListAllDomainsFlags,
+) ([]DomainInfo, error) {
+
+	flag := libvirt.ConnectListAllDomainsFlags(0)
+	for _, f := range flags {
+		flag |= f
+	}
+	domains, _, err := virt.ConnectListAllDomains(1, flag)
 	if err != nil {
 		log.Log.Error(err, "failed to list all domains")
 		return nil, err
@@ -72,7 +82,11 @@ func NewClientEmulator() Client {
 }
 
 // Get the domain infos of the host we are mounted on.
-func (c *clientEmulator) Get(virt *libvirt.Libvirt) ([]DomainInfo, error) {
+func (c *clientEmulator) Get(
+	virt *libvirt.Libvirt,
+	flags ...libvirt.ConnectListAllDomainsFlags,
+) ([]DomainInfo, error) {
+
 	var info DomainInfo
 	if err := xml.Unmarshal(exampleXML, &info); err != nil {
 		log.Log.Error(err, "failed to unmarshal example capabilities")
