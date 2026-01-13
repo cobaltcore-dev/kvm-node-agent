@@ -129,7 +129,7 @@ func (l *LibVirt) Connect() error {
 	)
 
 	// Start the event loop
-	go l.runEventLoop(context.Background())
+	go l.runEventLoop(context.Background(), l.virt)
 
 	return nil
 }
@@ -141,9 +141,13 @@ func (l *LibVirt) Close() error {
 	return l.virt.Disconnect()
 }
 
+// We use this interface in our event loop to detect when the libvirt
+// connection has been closed. As an interface, it is easy to mock for testing.
+type eventloopRunnable interface{ Disconnected() <-chan struct{} }
+
 // Run a loop which listens for new events on the subscribed libvirt event
 // channels and distributes them to the subscribed listeners.
-func (l *LibVirt) runEventLoop(ctx context.Context) {
+func (l *LibVirt) runEventLoop(ctx context.Context, i eventloopRunnable) {
 	log := logger.FromContext(ctx, "libvirt", "event-loop")
 	for {
 		// The reflect.Select function works the same way as a
@@ -161,14 +165,23 @@ func (l *LibVirt) runEventLoop(ctx context.Context) {
 		}
 		l.domEventChsLock.Unlock()
 
+		// Add a case to handle context cancellation.
 		cases = append(cases, reflect.SelectCase{
 			Dir:  reflect.SelectRecv,
 			Chan: reflect.ValueOf(ctx.Done()),
 		})
 		caseCtxDone := len(cases) - 1
 
+		// The libvirt connection should never disconnect. If it does,
+		// we can use the Disconnected channel to detect this.
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(i.Disconnected()),
+		})
+		caseLibvirtDisconnected := len(cases) - 1
+
 		chosen, value, ok := reflect.Select(cases)
-		if !ok {
+		if !ok || chosen == caseLibvirtDisconnected {
 			// This should never happen. If it does, give the
 			// service a chance to restart and reconnect.
 			panic("libvirt connection closed")
