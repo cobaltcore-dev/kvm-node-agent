@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -59,151 +58,82 @@ const (
 
 var errDomainNotFoud = errors.New("domain not found")
 
-func (l *LibVirt) runMigrationListener(ctx context.Context) {
-	log := logger.FromContext(ctx)
-	lifecycleEvents, err := l.virt.SubscribeEvents(ctx, libvirt.DomainEventIDLifecycle, libvirt.OptDomain{})
-	if err != nil {
-		log.Error(err, "failed to subscribe to libvirt events")
-		os.Exit(1)
+func GetOpenstackUUID(domain libvirt.Domain) string {
+	return UUID(domain.UUID).String()
+}
+
+func (l *LibVirt) onMigrationIteration(ctx context.Context, event any) {
+	log := logger.FromContext(ctx).WithName("libvirt-migration-listener")
+	e := event.(*libvirt.DomainEventCallbackMigrationIterationMsg)
+	domain := e.Dom
+	uuid := GetOpenstackUUID(domain)
+	serverLog := log.WithValues("server", uuid)
+	serverLog.Info("migration iteration", "iteration", e.Iteration)
+
+	// migration started
+	if err := l.startMigrationWatch(ctx, domain); err != nil {
+		serverLog.Error(err, "failed to starting migration watch")
 	}
+}
 
-	// Subscribe to migration events
-	migrationIterationEvents, err := l.virt.SubscribeEvents(ctx, libvirt.DomainEventIDMigrationIteration, libvirt.OptDomain{})
-	if err != nil {
-		log.Error(err, "failed to register for migration events")
-		os.Exit(1)
-	}
+func (l *LibVirt) onJobCompleted(ctx context.Context, event any) {
+	log := logger.FromContext(ctx).WithName("libvirt-migration-listener")
+	e := event.(*libvirt.DomainEventCallbackJobCompletedMsg)
+	uuid := GetOpenstackUUID(e.Dom)
+	log.Info("job completed", "server", uuid, "params", e.Params)
+}
 
-	jobCompletedEvents, err := l.virt.SubscribeEvents(ctx, libvirt.DomainEventIDJobCompleted, libvirt.OptDomain{})
-	if err != nil {
-		log.Error(err, "failed to register for job completed events")
-		os.Exit(1)
-	}
+func (l *LibVirt) onLifecycleEvent(ctx context.Context, event any) {
+	log := logger.FromContext(ctx).WithName("libvirt-migration-listener")
+	e := event.(*libvirt.DomainEventCallbackLifecycleMsg)
+	domain := e.Msg.Dom
+	serverLog := log.WithValues("server", GetOpenstackUUID(domain))
 
-	log.Info("started")
-	for {
-		select {
-		case event := <-migrationIterationEvents:
-			e := event.(*libvirt.DomainEventCallbackMigrationIterationMsg)
-			domain := e.Dom
-			uuid := GetOpenstackUUID(domain)
-			serverLog := log.WithValues("server", uuid)
-			serverLog.Info("migration iteration", "iteration", e.Iteration)
-
-			// migration started
-			if err = l.startMigrationWatch(ctx, domain); err != nil {
-				serverLog.Error(err, "failed to starting migration watch")
-			}
-
-		case event := <-jobCompletedEvents:
-			e := event.(*libvirt.DomainEventCallbackJobCompletedMsg)
-			uuid := GetOpenstackUUID(e.Dom)
-			log.Info("job completed", "server", uuid, "params", e.Params)
-
-		case event := <-lifecycleEvents:
-			e := event.(*libvirt.DomainEventCallbackLifecycleMsg)
-			domain := e.Msg.Dom
-			serverLog := log.WithValues("server", GetOpenstackUUID(domain))
-
-			switch e.Msg.Event {
-			case int32(libvirt.DomainEventDefined):
-				switch e.Msg.Detail {
-				case int32(libvirt.DomainEventDefinedAdded):
-					serverLog.Info("domain added")
-					// add domain to the list of inactive domains
-					l.domains[libvirt.ConnectListDomainsInactive] = append(l.domains[libvirt.ConnectListDomainsInactive], domain)
-				case int32(libvirt.DomainEventDefinedUpdated):
-					serverLog.Info("domain updated")
-				case int32(libvirt.DomainEventDefinedRenamed):
-					serverLog.Info("domain renamed")
-				case int32(libvirt.DomainEventDefinedFromSnapshot):
-					serverLog.Info("domain defined from snapshot")
-				}
-			case int32(libvirt.DomainEventUndefined):
-				serverLog.Info("domain undefined")
-				// remove domain from the list of inactive domains
-				for i, d := range l.domains[libvirt.ConnectListDomainsInactive] {
-					if d.Name == domain.Name {
-						l.domains[libvirt.ConnectListDomainsInactive] = append(
-							l.domains[libvirt.ConnectListDomainsInactive][:i],
-							l.domains[libvirt.ConnectListDomainsInactive][i+1:]...)
-						break
-					}
-				}
-			case int32(libvirt.DomainEventStarted):
-				// add domain to the list of active domains
-				l.domains[libvirt.ConnectListDomainsActive] = append(l.domains[libvirt.ConnectListDomainsActive], domain)
-				switch e.Msg.Detail {
-				case int32(libvirt.DomainEventStartedBooted):
-					serverLog.Info("domain booted")
-				case int32(libvirt.DomainEventStartedMigrated):
-					serverLog.Info("incoming migration started")
-				case int32(libvirt.DomainEventStartedRestored):
-					serverLog.Info("domain restored")
-				case int32(libvirt.DomainEventStartedFromSnapshot):
-					serverLog.Info("domain started from snapshot")
-				case int32(libvirt.DomainEventStartedWakeup):
-					serverLog.Info("domain woken up")
-				}
-			case int32(libvirt.DomainEventSuspended):
-				serverLog.Info("domain suspended")
-			case int32(libvirt.DomainEventResumed):
-				serverLog.Info("domain resumed")
-				// incoming migration completed, finalize migration status
-				if err = l.patchMigration(ctx, domain, true); client.IgnoreNotFound(err) != nil {
-					serverLog.Error(err, "failed to update migration status")
-				}
-			case int32(libvirt.DomainEventStopped):
-				serverLog.Info("domain stopped")
-
-				// remove domain from the list of active domains
-				for i, d := range l.domains[libvirt.ConnectListDomainsActive] {
-					if d.Name == domain.Name {
-						l.domains[libvirt.ConnectListDomainsActive] = append(
-							l.domains[libvirt.ConnectListDomainsActive][:i],
-							l.domains[libvirt.ConnectListDomainsActive][i+1:]...)
-						break
-					}
-				}
-				l.stopMigrationWatch(ctx, domain)
-			case int32(libvirt.DomainEventShutdown):
-				serverLog.Info("domain shutdown")
-				l.stopMigrationWatch(ctx, domain)
-			case int32(libvirt.DomainEventPmsuspended):
-				serverLog.Info("domain PM suspended")
-			case int32(libvirt.DomainEventCrashed):
-				serverLog.Info("domain crashed")
-			}
-
-		case <-ctx.Done():
-			log.Info("shutting down migration listener")
-			if err = l.virt.ConnectRegisterCloseCallback(); err != nil {
-				log.Error(err, "failed to unregister close callback")
-			}
-
-			// read from events to drain the channel
-			if _, ok := <-lifecycleEvents; !ok {
-				log.Info("lifecycle events drained")
-			}
-			if _, ok := <-migrationIterationEvents; !ok {
-				log.Info("migration events drained")
-			}
-			if _, ok := <-jobCompletedEvents; !ok {
-				log.Info("job completed events drained")
-			}
-
-		case <-l.virt.Disconnected():
-			log.Info("libvirt disconnected, shutting down migration listener")
-
-			// stopping all migration watches
-			for domain, cancel := range l.migrationJobs {
-				cancel()
-				delete(l.migrationJobs, domain)
-			}
-
-			// stop migration listener
-			return
+	switch e.Msg.Event {
+	case int32(libvirt.DomainEventDefined):
+		switch e.Msg.Detail {
+		case int32(libvirt.DomainEventDefinedAdded):
+			serverLog.Info("domain added")
+		case int32(libvirt.DomainEventDefinedUpdated):
+			serverLog.Info("domain updated")
+		case int32(libvirt.DomainEventDefinedRenamed):
+			serverLog.Info("domain renamed")
+		case int32(libvirt.DomainEventDefinedFromSnapshot):
+			serverLog.Info("domain defined from snapshot")
 		}
+	case int32(libvirt.DomainEventUndefined):
+		serverLog.Info("domain undefined")
+	case int32(libvirt.DomainEventStarted):
+		switch e.Msg.Detail {
+		case int32(libvirt.DomainEventStartedBooted):
+			serverLog.Info("domain booted")
+		case int32(libvirt.DomainEventStartedMigrated):
+			serverLog.Info("incoming migration started")
+		case int32(libvirt.DomainEventStartedRestored):
+			serverLog.Info("domain restored")
+		case int32(libvirt.DomainEventStartedFromSnapshot):
+			serverLog.Info("domain started from snapshot")
+		case int32(libvirt.DomainEventStartedWakeup):
+			serverLog.Info("domain woken up")
+		}
+	case int32(libvirt.DomainEventSuspended):
+		serverLog.Info("domain suspended")
+	case int32(libvirt.DomainEventResumed):
+		serverLog.Info("domain resumed")
+		// incoming migration completed, finalize migration status
+		if err := l.patchMigration(ctx, domain, true); client.IgnoreNotFound(err) != nil {
+			serverLog.Error(err, "failed to update migration status")
+		}
+	case int32(libvirt.DomainEventStopped):
+		serverLog.Info("domain stopped")
+		l.stopMigrationWatch(ctx, domain)
+	case int32(libvirt.DomainEventShutdown):
+		serverLog.Info("domain shutdown")
+		l.stopMigrationWatch(ctx, domain)
+	case int32(libvirt.DomainEventPmsuspended):
+		serverLog.Info("domain PM suspended")
+	case int32(libvirt.DomainEventCrashed):
+		serverLog.Info("domain crashed")
 	}
 }
 

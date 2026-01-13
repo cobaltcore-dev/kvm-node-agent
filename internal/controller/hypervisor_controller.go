@@ -25,12 +25,16 @@ import (
 	"time"
 
 	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
+	golibvirt "github.com/digitalocean/go-libvirt"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/evacuation"
@@ -48,6 +52,9 @@ type HypervisorReconciler struct {
 
 	osDescriptor     *systemd.Descriptor
 	evacuateOnReboot bool
+
+	// Channel that can be used to trigger reconcile events.
+	reconcileCh chan event.GenericEvent
 }
 
 const (
@@ -287,6 +294,63 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 }
 
+// Trigger a reconcile event for the managed hypervisor through the
+// event channel which is watched by the controller manager.
+func (r *HypervisorReconciler) triggerReconcile() {
+	r.reconcileCh <- event.GenericEvent{
+		Object: &kvmv1.Hypervisor{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Hypervisor",
+				APIVersion: "kvm.cloud.sap/v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      sys.Hostname,
+				Namespace: sys.Namespace,
+			},
+		},
+	}
+}
+
+// Start is called when the manager starts. It starts the libvirt
+// event subscription to receive events when the hypervisor needs to be
+// reconciled.
+func (r *HypervisorReconciler) Start(ctx context.Context) error {
+	log := logger.FromContext(ctx, "controller", "hypervisor")
+	log.Info("starting libvirt event subscription")
+
+	// Ensure we're connected to libvirt.
+	if err := r.Libvirt.Connect(); err != nil {
+		log.Error(err, "unable to connect to libvirt")
+		return err
+	}
+
+	// Run a ticker which reconciles the hypervisor resource every minute.
+	// This ensures that we periodically reconcile the hypervisor even
+	// if no events are received from libvirt.
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				r.triggerReconcile()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	// Domain lifecycle events impact the list of active/inactive domains,
+	// as well as the allocation of resources on the hypervisor.
+	r.Libvirt.WatchDomainChanges(
+		golibvirt.DomainEventIDLifecycle,
+		"reconcile-on-domain-lifecycle",
+		func(_ context.Context, _ any) { r.triggerReconcile() },
+	)
+
+	return nil
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
@@ -296,7 +360,16 @@ func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return fmt.Errorf("unable to get Systemd hostname describe(): %w", err)
 	}
 
+	// Prepare an event channel that will trigger a reconcile event.
+	r.reconcileCh = make(chan event.GenericEvent)
+	src := source.Channel(r.reconcileCh, &handler.EnqueueRequestForObject{})
+	// Run the Start(ctx context.Context) method when the manager starts.
+	if err := mgr.Add(r); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&kvmv1.Hypervisor{}).
+		WatchesRawSource(src).
 		Complete(r)
 }

@@ -4,9 +4,11 @@
 package libvirt
 
 import (
+	"context"
 	"sync"
 
 	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
+	"github.com/digitalocean/go-libvirt"
 )
 
 // Ensure, that InterfaceMock does implement Interface.
@@ -25,6 +27,9 @@ var _ Interface = &InterfaceMock{}
 //			ConnectFunc: func() error {
 //				panic("mock out the Connect method")
 //			},
+//			WatchDomainChangesFunc: func(eventId libvirt.DomainEventID, handlerId string, handler func(context.Context, any)) {
+//				panic("mock out the WatchDomainChanges method")
+//			},
 //			ProcessFunc: func(hv v1.Hypervisor) (v1.Hypervisor, error) {
 //				panic("mock out the Process method")
 //			},
@@ -41,6 +46,9 @@ type InterfaceMock struct {
 	// ConnectFunc mocks the Connect method.
 	ConnectFunc func() error
 
+	// WatchDomainChangesFunc mocks the WatchDomainChanges method.
+	WatchDomainChangesFunc func(eventId libvirt.DomainEventID, handlerId string, handler func(context.Context, any))
+
 	// ProcessFunc mocks the Process method.
 	ProcessFunc func(hv v1.Hypervisor) (v1.Hypervisor, error)
 
@@ -52,14 +60,21 @@ type InterfaceMock struct {
 		// Connect holds details about calls to the Connect method.
 		Connect []struct {
 		}
+		// WatchDomainChanges holds details about calls to the WatchDomainChanges method.
+		WatchDomainChanges []struct {
+			EventId   libvirt.DomainEventID
+			HandlerId string
+			Handler   func(context.Context, any)
+		}
 		// Process holds details about calls to the Process method.
 		Process []struct {
 			Hv v1.Hypervisor
 		}
 	}
-	lockClose   sync.RWMutex
-	lockConnect sync.RWMutex
-	lockProcess sync.RWMutex
+	lockClose              sync.RWMutex
+	lockWatchDomainChanges sync.RWMutex
+	lockConnect            sync.RWMutex
+	lockProcess            sync.RWMutex
 }
 
 // Close calls CloseFunc.
@@ -113,6 +128,46 @@ func (mock *InterfaceMock) ConnectCalls() []struct {
 	mock.lockConnect.RLock()
 	calls = mock.calls.Connect
 	mock.lockConnect.RUnlock()
+	return calls
+}
+
+// WatchDomainChanges calls WatchDomainChangesFunc.
+func (mock *InterfaceMock) WatchDomainChanges(eventId libvirt.DomainEventID, handlerId string, handler func(context.Context, any)) {
+	if mock.WatchDomainChangesFunc == nil {
+		panic("InterfaceMock.WatchDomainChangesFunc: method is nil but Interface.WatchDomainChanges was just called")
+	}
+	callInfo := struct {
+		EventId   libvirt.DomainEventID
+		HandlerId string
+		Handler   func(context.Context, any)
+	}{
+		EventId:   eventId,
+		HandlerId: handlerId,
+		Handler:   handler,
+	}
+	mock.lockWatchDomainChanges.Lock()
+	mock.calls.WatchDomainChanges = append(mock.calls.WatchDomainChanges, callInfo)
+	mock.lockWatchDomainChanges.Unlock()
+	mock.WatchDomainChangesFunc(eventId, handlerId, handler)
+}
+
+// WatchDomainChangesCalls gets all the calls that were made to WatchDomainChanges.
+// Check the length with:
+//
+//	len(mockedInterface.WatchDomainChangesCalls())
+func (mock *InterfaceMock) WatchDomainChangesCalls() []struct {
+	EventId   libvirt.DomainEventID
+	HandlerId string
+	Handler   func(context.Context, any)
+} {
+	var calls []struct {
+		EventId   libvirt.DomainEventID
+		HandlerId string
+		Handler   func(context.Context, any)
+	}
+	mock.lockWatchDomainChanges.RLock()
+	calls = mock.calls.WatchDomainChanges
+	mock.lockWatchDomainChanges.RUnlock()
 	return calls
 }
 

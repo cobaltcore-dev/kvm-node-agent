@@ -20,15 +20,35 @@ limitations under the License.
 package libvirt
 
 import (
+	"context"
+
 	v1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
+	"github.com/digitalocean/go-libvirt"
 )
 
 type Interface interface {
 	// Connect connects to the libvirt daemon.
+	//
+	// This function also run a loop which listens for new events on the
+	// subscribed libvirt event channels and distributes them to the subscribed
+	// listeners (see the `Watch` method).
 	Connect() error
 
 	// Close closes the connection to the libvirt daemon.
 	Close() error
+
+	// Watch libvirt domain changes and notify the provided handler.
+	//
+	// The provided handlerId should be unique per handler, and is used to
+	// disambiguate multiple handlers for the same eventId.
+	//
+	// Note that the handler is called in a blocking manner, so long-running handlers
+	// should spawn goroutines if needed.
+	WatchDomainChanges(
+		eventId libvirt.DomainEventID,
+		handlerId string,
+		handler func(context.Context, any),
+	)
 
 	// Add information extracted from the libvirt socket to the hypervisor instance.
 	// If an error occurs, the instance is returned unmodified. The libvirt
