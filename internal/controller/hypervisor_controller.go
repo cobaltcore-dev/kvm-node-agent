@@ -324,6 +324,22 @@ func (r *HypervisorReconciler) Start(ctx context.Context) error {
 		return err
 	}
 
+	// Run a ticker which reconciles the hypervisor resource every minute.
+	// This ensures that we periodically reconcile the hypervisor even
+	// if no events are received from libvirt.
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				r.triggerReconcile()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	// Domain lifecycle events impact the list of active/inactive domains,
 	// as well as the allocation of resources on the hypervisor.
 	r.Libvirt.WatchDomainChanges(
