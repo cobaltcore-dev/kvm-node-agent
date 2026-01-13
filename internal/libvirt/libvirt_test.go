@@ -1025,10 +1025,13 @@ func TestWatchDomainChanges_OverwriteHandler(t *testing.T) {
 }
 
 func TestRunEventLoop_ProcessesEvents(t *testing.T) {
-	// Create a channel for events
-	eventCh := make(chan any, 1)
+	// Create a buffered channel for events that won't be closed during the test
+	eventChInternal := make(chan any, 10)
 
-	mockConn := &mockLibvirtConnection{}
+	// Wrap it in a read-only channel to prevent accidental closure
+	var eventCh <-chan any = eventChInternal
+
+	mockConn := newMockLibvirtConnection()
 
 	l := &LibVirt{
 		virt: &mockConn.Libvirt,
@@ -1048,16 +1051,12 @@ func TestRunEventLoop_ProcessesEvents(t *testing.T) {
 
 	l.WatchDomainChanges(libvirt.DomainEventIDLifecycle, "test-handler", handler)
 
-	// Create a context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-
 	// Start the event loop in a goroutine
-	go l.runEventLoop(ctx)
+	go l.runEventLoop(t.Context())
 
 	// Send an event
 	testPayload := "test-event-payload"
-	eventCh <- testPayload
+	eventChInternal <- testPayload
 
 	// Give some time for the event to be processed
 	time.Sleep(50 * time.Millisecond)
@@ -1076,6 +1075,12 @@ func TestRunEventLoop_ProcessesEvents(t *testing.T) {
 type mockLibvirtConnection struct {
 	libvirt.Libvirt
 	disconnectedCh chan struct{}
+}
+
+func newMockLibvirtConnection() *mockLibvirtConnection {
+	return &mockLibvirtConnection{
+		disconnectedCh: make(chan struct{}),
+	}
 }
 
 func (m *mockLibvirtConnection) Disconnected() <-chan struct{} {

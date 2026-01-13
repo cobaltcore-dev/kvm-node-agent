@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"sync"
 	"time"
 
@@ -143,30 +144,49 @@ func (l *LibVirt) Close() error {
 func (l *LibVirt) runEventLoop(ctx context.Context) {
 	log := logger.FromContext(ctx, "libvirt", "event-loop")
 	for {
+		// The reflect.Select function works the same way as a
+		// regular select statement, but allows selecting over
+		// a dynamic set of channels.
+		var cases []reflect.SelectCase
+		var eventIds []libvirt.DomainEventID
 		for eventId, ch := range l.domEventChs {
-			select {
-			case <-ctx.Done():
-				return
-			case <-l.virt.Disconnected():
-				log.Error(errors.New("libvirt disconnected"), "waiting for reconnection")
-				time.Sleep(5 * time.Second)
-			case eventPayload, ok := <-ch:
-				if !ok {
-					err := errors.New("libvirt event channel closed")
-					log.Error(err, "eventId", eventId)
-					continue
-				}
-				handlers, exists := l.domEventChangeHandlers[eventId]
-				if !exists {
-					continue
-				}
-				for _, handler := range handlers {
-					// Process each handler sequentially.
-					handler(ctx, eventPayload)
-				}
-			default:
-				// No event available, continue
-			}
+			cases = append(cases, reflect.SelectCase{
+				Dir:  reflect.SelectRecv,
+				Chan: reflect.ValueOf(ch),
+			})
+			eventIds = append(eventIds, eventId)
+		}
+
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(ctx.Done()),
+		})
+		caseCtxDone := len(cases) - 1
+
+		chosen, value, ok := reflect.Select(cases)
+		if !ok {
+			// This should never happen. If it does, give the
+			// service a chance to restart and reconnect.
+			panic("libvirt connection closed")
+		}
+		if chosen == caseCtxDone {
+			log.Info("shutting down libvirt event loop")
+			return
+		}
+		if chosen >= len(eventIds) {
+			msg := "no handler for selected channel"
+			log.Error(errors.New("invalid event channel selected"), msg)
+			continue
+		}
+
+		// Distribute the event to all registered handlers.
+		eventId := eventIds[chosen] // safe as chosen < len(eventIds)
+		handlers, exists := l.domEventChangeHandlers[eventId]
+		if !exists {
+			continue
+		}
+		for _, handler := range handlers {
+			handler(ctx, value.Interface())
 		}
 	}
 }
