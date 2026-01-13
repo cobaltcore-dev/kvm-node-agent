@@ -46,9 +46,11 @@ type LibVirt struct {
 	version       string
 
 	// Event channels for domains by their libvirt event id.
-	domEventChs map[libvirt.DomainEventID]<-chan any
+	domEventChs     map[libvirt.DomainEventID]<-chan any
+	domEventChsLock sync.Mutex
 	// Event listeners for domain events by their own identifier.
-	domEventChangeHandlers map[libvirt.DomainEventID]map[string]func(context.Context, any)
+	domEventChangeHandlers     map[libvirt.DomainEventID]map[string]func(context.Context, any)
+	domEventChangeHandlersLock sync.Mutex
 
 	// Client that connects to libvirt and fetches capabilities of the
 	// hypervisor. The capabilities client abstracts the xml parsing away.
@@ -79,8 +81,8 @@ func NewLibVirt(k client.Client) *LibVirt {
 		make(map[string]context.CancelFunc),
 		sync.Mutex{},
 		"N/A",
-		make(map[libvirt.DomainEventID]<-chan any),
-		make(map[libvirt.DomainEventID]map[string]func(context.Context, any)),
+		make(map[libvirt.DomainEventID]<-chan any), sync.Mutex{},
+		make(map[libvirt.DomainEventID]map[string]func(context.Context, any)), sync.Mutex{},
 		capabilities.NewClient(),
 		domcapabilities.NewClient(),
 		dominfo.NewClient(),
@@ -149,6 +151,7 @@ func (l *LibVirt) runEventLoop(ctx context.Context) {
 		// a dynamic set of channels.
 		var cases []reflect.SelectCase
 		var eventIds []libvirt.DomainEventID
+		l.domEventChsLock.Lock()
 		for eventId, ch := range l.domEventChs {
 			cases = append(cases, reflect.SelectCase{
 				Dir:  reflect.SelectRecv,
@@ -156,6 +159,7 @@ func (l *LibVirt) runEventLoop(ctx context.Context) {
 			})
 			eventIds = append(eventIds, eventId)
 		}
+		l.domEventChsLock.Unlock()
 
 		cases = append(cases, reflect.SelectCase{
 			Dir:  reflect.SelectRecv,
@@ -181,7 +185,9 @@ func (l *LibVirt) runEventLoop(ctx context.Context) {
 
 		// Distribute the event to all registered handlers.
 		eventId := eventIds[chosen] // safe as chosen < len(eventIds)
+		l.domEventChangeHandlersLock.Lock()
 		handlers, exists := l.domEventChangeHandlers[eventId]
+		l.domEventChangeHandlersLock.Unlock()
 		if !exists {
 			continue
 		}
@@ -206,6 +212,8 @@ func (l *LibVirt) WatchDomainChanges(
 
 	// Register the handler so that it is called when an event with the provided
 	// eventId is received.
+	l.domEventChangeHandlersLock.Lock()
+	defer l.domEventChangeHandlersLock.Unlock()
 	if _, exists := l.domEventChangeHandlers[eventId]; !exists {
 		l.domEventChangeHandlers[eventId] = make(map[string]func(context.Context, any))
 	}
@@ -213,6 +221,8 @@ func (l *LibVirt) WatchDomainChanges(
 
 	// If we are already subscribed to this eventId, nothing more to do.
 	// Note: subscribing more than once will be blocked by the libvirt client.
+	l.domEventChsLock.Lock()
+	defer l.domEventChsLock.Unlock()
 	if _, exists := l.domEventChs[eventId]; exists {
 		return
 	}
