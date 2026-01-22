@@ -43,6 +43,7 @@ githubWorkflow:
       - latest
       - semver
       - edge
+      - sha
   license:
     enabled: true
 
