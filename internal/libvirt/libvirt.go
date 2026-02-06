@@ -488,7 +488,12 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 				)
 			}
 			memAllocCell := cell.Allocation["memory"]
-			memAllocCell.Add(memAlloc)
+			// If a domain is using multiple memory cells, assume the
+			// distribution across cells is even.
+			nCells := int64(len(domInfo.NumaTune.MemNodes)) // is non-zero
+			memAllocPerCell := *resource.
+				NewQuantity(memAlloc.Value()/nCells, resource.BinarySI)
+			memAllocCell.Add(memAllocPerCell)
 			cell.Allocation["memory"] = memAllocCell
 			cellsById[memoryNode.CellID] = cell
 		}
@@ -506,7 +511,12 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 				)
 			}
 			cpuAllocCell := cell.Allocation["cpu"]
-			cpuAllocCell.Add(cpuAlloc)
+			// If a domain is using multiple cpu cells, assume the distribution
+			// across cells is even.
+			nCells := int64(len(domInfo.CPU.Numa.Cells)) // is non-zero
+			cpuAllocPerCell := *resource.
+				NewQuantity(cpuAlloc.Value()/nCells, resource.DecimalSI)
+			cpuAllocCell.Add(cpuAllocPerCell)
 			cell.Allocation["cpu"] = cpuAllocCell
 			cellsById[cpuCell.ID] = cell
 		}
