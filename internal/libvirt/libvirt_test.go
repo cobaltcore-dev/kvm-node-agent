@@ -395,6 +395,225 @@ func TestAddDomainCapabilities_UnsupportedFiltered(t *testing.T) {
 	}
 }
 
+func TestAddAllocationCapacity_InstanceSpreadAcrossMultipleNumaCells(t *testing.T) {
+	// Test scenario: An instance with 128 GiB memory and 16 CPUs is spread
+	// across NUMA cells 1 and 2. Each cell should report 64 GiB memory
+	// allocation and 8 CPU allocation.
+	caps := capabilities.Capabilities{
+		Host: capabilities.CapabilitiesHost{
+			Topology: capabilities.CapabilitiesHostTopology{
+				CellSpec: capabilities.CapabilitiesHostTopologyCells{
+					Num: 4,
+					Cells: []capabilities.CapabilitiesHostTopologyCell{
+						{
+							ID: 0,
+							Memory: capabilities.CapabilitiesHostTopologyCellMemory{
+								Unit:  "GiB",
+								Value: 256,
+							},
+							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
+								Num: 64,
+							},
+						},
+						{
+							ID: 1,
+							Memory: capabilities.CapabilitiesHostTopologyCellMemory{
+								Unit:  "GiB",
+								Value: 256,
+							},
+							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
+								Num: 64,
+							},
+						},
+						{
+							ID: 2,
+							Memory: capabilities.CapabilitiesHostTopologyCellMemory{
+								Unit:  "GiB",
+								Value: 256,
+							},
+							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
+								Num: 64,
+							},
+						},
+						{
+							ID: 3,
+							Memory: capabilities.CapabilitiesHostTopologyCellMemory{
+								Unit:  "GiB",
+								Value: 256,
+							},
+							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
+								Num: 64,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	domInfos := []dominfo.DomainInfo{
+		{
+			Name: "multi-numa-instance",
+			Memory: &dominfo.DomainMemory{
+				Unit:  "GiB",
+				Value: 128,
+			},
+			CPUTune: &dominfo.DomainCPUTune{
+				VCPUPins: []dominfo.DomainVCPUPin{
+					{VCPU: 0, CPUSet: "64"},
+					{VCPU: 1, CPUSet: "65"},
+					{VCPU: 2, CPUSet: "66"},
+					{VCPU: 3, CPUSet: "67"},
+					{VCPU: 4, CPUSet: "68"},
+					{VCPU: 5, CPUSet: "69"},
+					{VCPU: 6, CPUSet: "70"},
+					{VCPU: 7, CPUSet: "71"},
+					{VCPU: 8, CPUSet: "128"},
+					{VCPU: 9, CPUSet: "129"},
+					{VCPU: 10, CPUSet: "130"},
+					{VCPU: 11, CPUSet: "131"},
+					{VCPU: 12, CPUSet: "132"},
+					{VCPU: 13, CPUSet: "133"},
+					{VCPU: 14, CPUSet: "134"},
+					{VCPU: 15, CPUSet: "135"},
+				},
+			},
+			// Instance uses NUMA cells 1 and 2 for memory
+			NumaTune: &dominfo.DomainNumaTune{
+				MemNodes: []dominfo.DomainNumaMemNode{
+					{CellID: 1, Mode: "strict", Nodeset: "1"},
+					{CellID: 2, Mode: "strict", Nodeset: "2"},
+				},
+			},
+			// Instance uses NUMA cells 1 and 2 for CPUs
+			CPU: &dominfo.DomainCPU{
+				Numa: &dominfo.DomainCPUNuma{
+					Cells: []dominfo.DomainCPUNumaCell{
+						{ID: 1, CPUs: "0-7", Memory: 64, Unit: "GiB"},
+						{ID: 2, CPUs: "8-15", Memory: 64, Unit: "GiB"},
+					},
+				},
+			},
+		},
+	}
+
+	l := &LibVirt{
+		capabilitiesClient: &mockCapabilitiesClient{caps: caps},
+		domainInfoClient:   &mockDomInfoClient{infos: domInfos},
+	}
+
+	hv := v1.Hypervisor{}
+	result, err := l.addAllocationCapacity(hv)
+
+	if err != nil {
+		t.Fatalf("addAllocationCapacity() returned unexpected error: %v", err)
+	}
+
+	// Check total capacity (4 cells * 256 GiB = 1024 GiB)
+	expectedTotalMemCapacity := resource.NewQuantity(1024*1024*1024*1024, resource.BinarySI)
+	memCap := result.Status.Capacity["memory"]
+	if !memCap.Equal(*expectedTotalMemCapacity) {
+		t.Errorf("Expected total memory capacity %s, got %s",
+			expectedTotalMemCapacity.String(), memCap.String())
+	}
+
+	// Check total CPU capacity (4 cells * 64 = 256)
+	expectedTotalCpuCapacity := resource.NewQuantity(256, resource.DecimalSI)
+	cpuCap := result.Status.Capacity["cpu"]
+	if !cpuCap.Equal(*expectedTotalCpuCapacity) {
+		t.Errorf("Expected total CPU capacity %s, got %s",
+			expectedTotalCpuCapacity.String(), cpuCap.String())
+	}
+
+	// Check total allocation (128 GiB memory, 16 CPUs)
+	expectedTotalMemAlloc := resource.NewQuantity(128*1024*1024*1024, resource.BinarySI)
+	memAlloc := result.Status.Allocation["memory"]
+	if !memAlloc.Equal(*expectedTotalMemAlloc) {
+		t.Errorf("Expected total memory allocation %s, got %s",
+			expectedTotalMemAlloc.String(), memAlloc.String())
+	}
+
+	expectedTotalCpuAlloc := resource.NewQuantity(16, resource.DecimalSI)
+	cpuAlloc := result.Status.Allocation["cpu"]
+	if !cpuAlloc.Equal(*expectedTotalCpuAlloc) {
+		t.Errorf("Expected total CPU allocation %s, got %s",
+			expectedTotalCpuAlloc.String(), cpuAlloc.String())
+	}
+
+	// Check that we have 4 cells
+	if len(result.Status.Cells) != 4 {
+		t.Fatalf("Expected 4 cells, got %d", len(result.Status.Cells))
+	}
+
+	// Create a map for easier cell lookup
+	cellsByID := make(map[uint64]v1.Cell)
+	for _, cell := range result.Status.Cells {
+		cellsByID[cell.CellID] = cell
+	}
+
+	// Cell 0 should have zero allocation (not used by the instance)
+	cell0 := cellsByID[0]
+	expectedCell0MemAlloc := resource.NewQuantity(0, resource.BinarySI)
+	cell0MemAlloc := cell0.Allocation["memory"]
+	if !cell0MemAlloc.Equal(*expectedCell0MemAlloc) {
+		t.Errorf("Cell 0: Expected memory allocation %s, got %s",
+			expectedCell0MemAlloc.String(), cell0MemAlloc.String())
+	}
+	expectedCell0CpuAlloc := resource.NewQuantity(0, resource.DecimalSI)
+	cell0CpuAlloc := cell0.Allocation["cpu"]
+	if !cell0CpuAlloc.Equal(*expectedCell0CpuAlloc) {
+		t.Errorf("Cell 0: Expected CPU allocation %s, got %s",
+			expectedCell0CpuAlloc.String(), cell0CpuAlloc.String())
+	}
+
+	// Cell 1 should have 64 GiB memory and 8 CPUs allocated
+	// (128 GiB / 2 cells = 64 GiB per cell, 16 CPUs / 2 cells = 8 CPUs per cell)
+	cell1 := cellsByID[1]
+	expectedCell1MemAlloc := resource.NewQuantity(64*1024*1024*1024, resource.BinarySI)
+	cell1MemAlloc := cell1.Allocation["memory"]
+	if !cell1MemAlloc.Equal(*expectedCell1MemAlloc) {
+		t.Errorf("Cell 1: Expected memory allocation %s, got %s",
+			expectedCell1MemAlloc.String(), cell1MemAlloc.String())
+	}
+	expectedCell1CpuAlloc := resource.NewQuantity(8, resource.DecimalSI)
+	cell1CpuAlloc := cell1.Allocation["cpu"]
+	if !cell1CpuAlloc.Equal(*expectedCell1CpuAlloc) {
+		t.Errorf("Cell 1: Expected CPU allocation %s, got %s",
+			expectedCell1CpuAlloc.String(), cell1CpuAlloc.String())
+	}
+
+	// Cell 2 should have 64 GiB memory and 8 CPUs allocated
+	// (128 GiB / 2 cells = 64 GiB per cell, 16 CPUs / 2 cells = 8 CPUs per cell)
+	cell2 := cellsByID[2]
+	expectedCell2MemAlloc := resource.NewQuantity(64*1024*1024*1024, resource.BinarySI)
+	cell2MemAlloc := cell2.Allocation["memory"]
+	if !cell2MemAlloc.Equal(*expectedCell2MemAlloc) {
+		t.Errorf("Cell 2: Expected memory allocation %s, got %s",
+			expectedCell2MemAlloc.String(), cell2MemAlloc.String())
+	}
+	expectedCell2CpuAlloc := resource.NewQuantity(8, resource.DecimalSI)
+	cell2CpuAlloc := cell2.Allocation["cpu"]
+	if !cell2CpuAlloc.Equal(*expectedCell2CpuAlloc) {
+		t.Errorf("Cell 2: Expected CPU allocation %s, got %s",
+			expectedCell2CpuAlloc.String(), cell2CpuAlloc.String())
+	}
+
+	// Cell 3 should have zero allocation (not used by the instance)
+	cell3 := cellsByID[3]
+	expectedCell3MemAlloc := resource.NewQuantity(0, resource.BinarySI)
+	cell3MemAlloc := cell3.Allocation["memory"]
+	if !cell3MemAlloc.Equal(*expectedCell3MemAlloc) {
+		t.Errorf("Cell 3: Expected memory allocation %s, got %s",
+			expectedCell3MemAlloc.String(), cell3MemAlloc.String())
+	}
+	expectedCell3CpuAlloc := resource.NewQuantity(0, resource.DecimalSI)
+	cell3CpuAlloc := cell3.Allocation["cpu"]
+	if !cell3CpuAlloc.Equal(*expectedCell3CpuAlloc) {
+		t.Errorf("Cell 3: Expected CPU allocation %s, got %s",
+			expectedCell3CpuAlloc.String(), cell3CpuAlloc.String())
+	}
+}
+
 func TestAddAllocationCapacity_Success(t *testing.T) {
 	caps := capabilities.Capabilities{
 		Host: capabilities.CapabilitiesHost{
