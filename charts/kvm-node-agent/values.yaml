@@ -49,3 +49,30 @@ serviceAccount:
   automount: true
   create: true
   name: ""
+
+# To ensure that the KVM Node Agent connects using the correct driver, we can
+# use node affinity to set the LIBVIRT_DEFAULT_URI environment variable based on
+# the node's virt-driver label.
+drivers:
+- name: qemu
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: nova.openstack.cloud.sap/virt-driver
+          operator: In
+          values: [qemu]
+  env:
+  - name: LIBVIRT_DEFAULT_URI
+    value: "qemu:///system"
+- name: ch
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: nova.openstack.cloud.sap/virt-driver
+          operator: In
+          values: [ch]
+  env:
+  - name: LIBVIRT_DEFAULT_URI
+    value: "ch:///system"

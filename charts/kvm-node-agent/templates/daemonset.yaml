@@ -1,56 +1,60 @@
+{{- range $index, $driver := .Values.drivers }}
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ include "kvm-node-agent.fullname" . }}-controller-manager
+  name: {{ include "kvm-node-agent.fullname" $ }}-controller-manager-{{ $driver.name }}
   labels:
     control-plane: controller-manager
-  {{- include "kvm-node-agent.labels" . | nindent 4 }}
+  {{- include "kvm-node-agent.labels" $ | nindent 4 }}
 spec:
   selector:
     matchLabels:
       control-plane: controller-manager
-    {{- include "kvm-node-agent.selectorLabels" . | nindent 6 }}
+      driver-index: "{{ $index }}"
+    {{- include "kvm-node-agent.selectorLabels" $ | nindent 6 }}
   template:
     metadata:
       labels:
         control-plane: controller-manager
-      {{- include "kvm-node-agent.selectorLabels" . | nindent 8 }}
+        driver-index: "{{ $index }}"
+      {{- include "kvm-node-agent.selectorLabels" $ | nindent 8 }}
       annotations:
         kubectl.kubernetes.io/default-container: manager
     spec:
       affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: nova.openstack.cloud.sap/virt-driver
-                operator: Exists
+        {{- with $driver.nodeAffinity }}
+        nodeAffinity: {{- toYaml . | nindent 10 }}
+        {{- end }}
       containers:
-      - args: {{- toYaml .Values.controllerManager.manager.args | nindent 8 }}
+      - args: {{- toYaml $.Values.controllerManager.manager.args | nindent 8 }}
         env:
         - name: HOSTNAME
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
         - name: PKI_PATH
-          value: {{ quote .Values.controllerManager.manager.env.pkiPath }}
+          value: {{ quote $.Values.controllerManager.manager.env.pkiPath }}
         - name: HOST_IP_ADDRESS
           valueFrom:
             fieldRef:
               fieldPath: status.hostIP
         - name: ISSUER_NAME
-          value: {{ quote .Values.controllerManager.manager.env.issuerName }}
+          value: {{ quote $.Values.controllerManager.manager.env.issuerName }}
         - name: DISABLE_CREATE_CERT_MANAGER_CERTIFICATE
-          value: {{ quote .Values.controllerManager.manager.env.disableCreateCertManagerCertificate
+          value: {{ quote $.Values.controllerManager.manager.env.disableCreateCertManagerCertificate
             }}
         - name: NODE_LABEL
           valueFrom:
             fieldRef:
-              fieldPath: {{ .Values.controllerManager.manager.env.nodeLabelFieldPath }}
+              fieldPath: {{ $.Values.controllerManager.manager.env.nodeLabelFieldPath }}
         - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
-          | default .Chart.AppVersion }}
+          value: {{ quote $.Values.kubernetesClusterDomain }}
+        {{- with $driver.env }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        image: {{ $.Values.controllerManager.manager.image.repository }}:{{ $.Values.controllerManager.manager.image.tag
+          | default $.Chart.AppVersion }}
         livenessProbe:
           httpGet:
             path: /healthz
@@ -64,9 +68,9 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           periodSeconds: 10
-        resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10
+        resources: {{- toYaml $.Values.controllerManager.manager.resources | nindent 10
           }}
-        securityContext: {{- toYaml .Values.controllerManager.manager.containerSecurityContext
+        securityContext: {{- toYaml $.Values.controllerManager.manager.containerSecurityContext
           | nindent 10 }}
         volumeMounts:
         - mountPath: /run/libvirt
@@ -94,23 +98,23 @@ spec:
           var/lib/libvirt/ch/pki
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.controllerManager.createPkiDirs.image.repository }}:{{ .Values.controllerManager.createPkiDirs.image.tag
-          | default .Chart.AppVersion }}
+          value: {{ quote $.Values.kubernetesClusterDomain }}
+        image: {{ $.Values.controllerManager.createPkiDirs.image.repository }}:{{ $.Values.controllerManager.createPkiDirs.image.tag
+          | default $.Chart.AppVersion }}
         name: create-pki-dirs
         resources: {}
-        securityContext: {{- toYaml .Values.controllerManager.createPkiDirs.containerSecurityContext
+        securityContext: {{- toYaml $.Values.controllerManager.createPkiDirs.containerSecurityContext
           | nindent 10 }}
         volumeMounts:
         - mountPath: /host
           name: host
-      nodeSelector: {{- toYaml .Values.controllerManager.nodeSelector | nindent 8 }}
-      securityContext: {{- toYaml .Values.controllerManager.podSecurityContext | nindent
+      nodeSelector: {{- toYaml $.Values.controllerManager.nodeSelector | nindent 8 }}
+      securityContext: {{- toYaml $.Values.controllerManager.podSecurityContext | nindent
         8 }}
-      serviceAccountName: {{ include "kvm-node-agent.serviceAccountName" . }}
+      serviceAccountName: {{ include "kvm-node-agent.serviceAccountName" $ }}
       terminationGracePeriodSeconds: 10
-      tolerations: {{- toYaml .Values.controllerManager.tolerations | nindent 8 }}
-      topologySpreadConstraints: {{- toYaml .Values.controllerManager.topologySpreadConstraints
+      tolerations: {{- toYaml $.Values.controllerManager.tolerations | nindent 8 }}
+      topologySpreadConstraints: {{- toYaml $.Values.controllerManager.topologySpreadConstraints
         | nindent 8 }}
       volumes:
       - hostPath:
@@ -140,3 +144,4 @@ spec:
       - hostPath:
           path: /
         name: host
+{{- end }}
