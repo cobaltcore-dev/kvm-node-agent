@@ -83,6 +83,8 @@ spec:
           value: kvm-node-agent-ca-issuer
         - name: DISABLE_CREATE_CERT_MANAGER_CERTIFICATE
           value: "true"
+        - name: LIBVIRT_DEFAULT_URI
+          value: "ch:///system"
         image: controller:latest
         name: manager
         securityContext:

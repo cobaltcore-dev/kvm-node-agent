@@ -43,6 +43,8 @@ spec:
         - name: DISABLE_CREATE_CERT_MANAGER_CERTIFICATE
           value: {{ quote .Values.controllerManager.manager.env.disableCreateCertManagerCertificate
             }}
+        - name: LIBVIRT_DEFAULT_URI
+          value: {{ quote .Values.controllerManager.manager.env.libvirtDefaultUri }}
         - name: NODE_LABEL
           valueFrom:
             fieldRef:
