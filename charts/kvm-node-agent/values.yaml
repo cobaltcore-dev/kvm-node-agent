@@ -16,6 +16,7 @@ controllerManager:
     env:
       disableCreateCertManagerCertificate: "true"
       issuerName: kvm-node-agent-ca-issuer
+      libvirtDefaultUri: ch:///system
       pkiPath: /pki
     image:
       repository: ghcr.io/cobaltcore-dev/kvm-node-agent
