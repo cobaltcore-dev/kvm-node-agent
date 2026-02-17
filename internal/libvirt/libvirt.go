@@ -2,7 +2,7 @@
 SPDX-FileCopyrightText: Copyright 2024 SAP SE or an SAP affiliate company and cobaltcore-dev contributors
 SPDX-License-Identifier: Apache-2.0
 
-Licensed under the Apache License, LibVirtVersion 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -105,7 +105,7 @@ func (l *LibVirt) Connect() error {
 	}
 
 	// Update the version
-	if version, err := l.virt.ConnectGetVersion(); err != nil {
+	if version, err := l.virt.ConnectGetLibVersion(); err != nil {
 		logger.Log.Error(err, "unable to fetch libvirt version")
 	} else {
 		major, minor, release := version/1000000, (version/1000)%1000, version%1000
