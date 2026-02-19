@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/kernel"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
@@ -127,12 +128,21 @@ var _ = Describe("Hypervisor Controller", func() {
 	})
 
 	Context("When testing SetupWithManager method", func() {
-		It("should successfully setup controller with manager", func() {
+		It("should successfully setup controller with manager and read kernel parameters", func() {
 			// Create a test manager
 			mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 				Scheme: k8sClient.Scheme(),
 			})
 			Expect(err).NotTo(HaveOccurred())
+
+			// Use mock kernel reader
+			mockKernelReader := &kernel.InterfaceMock{
+				ReadParametersFunc: func() (*kernel.Parameters, error) {
+					return &kernel.Parameters{
+						CommandLine: "quiet splash console=ttyS0 intel_iommu=on",
+					}, nil
+				},
+			}
 
 			controllerReconciler := &HypervisorReconciler{
 				Client: k8sClient,
@@ -156,6 +166,7 @@ var _ = Describe("Hypervisor Controller", func() {
 						}, nil
 					},
 				},
+				KernelReader: mockKernelReader,
 			}
 
 			err = controllerReconciler.SetupWithManager(mgr)
@@ -163,6 +174,13 @@ var _ = Describe("Hypervisor Controller", func() {
 			Expect(controllerReconciler.reconcileCh).NotTo(BeNil())
 			Expect(controllerReconciler.osDescriptor).NotTo(BeNil())
 			Expect(controllerReconciler.osDescriptor.OperatingSystemReleaseData).To(HaveLen(2))
+
+			// Verify that kernel reader was called and parameters were stored
+			Expect(mockKernelReader.ReadParametersCalls()).To(HaveLen(1))
+			Expect(controllerReconciler.kernelParameters).NotTo(BeNil())
+			Expect(
+				controllerReconciler.kernelParameters.CommandLine,
+			).To(Equal("quiet splash console=ttyS0 intel_iommu=on"))
 		})
 
 		It("should fail when systemd Describe returns error", func() {
@@ -172,9 +190,16 @@ var _ = Describe("Hypervisor Controller", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
+			mockKernelReader := &kernel.InterfaceMock{
+				ReadParametersFunc: func() (*kernel.Parameters, error) {
+					return &kernel.Parameters{CommandLine: "quiet splash"}, nil
+				},
+			}
+
 			controllerReconciler := &HypervisorReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
+				Client:       k8sClient,
+				Scheme:       k8sClient.Scheme(),
+				KernelReader: mockKernelReader,
 				Systemd: &systemd.InterfaceMock{
 					DescribeFunc: func(ctx context.Context) (*systemd.Descriptor, error) {
 						return nil, errors.New("systemd describe failed")
@@ -186,6 +211,39 @@ var _ = Describe("Hypervisor Controller", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unable to get Systemd hostname describe()"))
 			Expect(err.Error()).To(ContainSubstring("systemd describe failed"))
+		})
+
+		It("should fail when kernel parameters cannot be read", func() {
+			// Create a test manager
+			mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+				Scheme: k8sClient.Scheme(),
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			mockKernelReader := &kernel.InterfaceMock{
+				ReadParametersFunc: func() (*kernel.Parameters, error) {
+					return nil, errors.New("failed to read /proc/cmdline")
+				},
+			}
+
+			controllerReconciler := &HypervisorReconciler{
+				Client:       k8sClient,
+				Scheme:       k8sClient.Scheme(),
+				KernelReader: mockKernelReader,
+				Systemd: &systemd.InterfaceMock{
+					DescribeFunc: func(ctx context.Context) (*systemd.Descriptor, error) {
+						return &systemd.Descriptor{
+							KernelVersion: "6.1.0",
+						}, nil
+					},
+				},
+			}
+
+			err = controllerReconciler.SetupWithManager(mgr)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("unable to read kernel parameters"))
+			Expect(err.Error()).To(ContainSubstring("failed to read /proc/cmdline"))
+			Expect(mockKernelReader.ReadParametersCalls()).To(HaveLen(1))
 		})
 	})
 
@@ -227,8 +285,9 @@ var _ = Describe("Hypervisor Controller", func() {
 			By("Cleanup the specific resource instance Hypervisor")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
-		It("should successfully reconcile the resource", func() {
+		It("should successfully reconcile the resource with kernel parameters", func() {
 			By("Reconciling the created resource")
+
 			controllerReconciler := &HypervisorReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
@@ -289,6 +348,9 @@ var _ = Describe("Hypervisor Controller", func() {
 						"VARIANT_ID=metal-sci_usi-amd64",
 					},
 				},
+				kernelParameters: &kernel.Parameters{
+					CommandLine: "quiet splash console=ttyS0 intel_iommu=on",
+				},
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
@@ -321,6 +383,9 @@ var _ = Describe("Hypervisor Controller", func() {
 			Expect(hypervisor.Status.OperatingSystem.GardenLinuxCommitID).To(Equal("abcdef1234567890"))
 			Expect(hypervisor.Status.OperatingSystem.GardenLinuxFeatures).To(Equal([]string{"_rescue", "log", "sap"}))
 			Expect(hypervisor.Status.OperatingSystem.VariantID).To(Equal("metal-sci_usi-amd64"))
+			Expect(
+				hypervisor.Status.OperatingSystem.KernelCommandLine,
+			).To(Equal("quiet splash console=ttyS0 intel_iommu=on"))
 		})
 	})
 })
