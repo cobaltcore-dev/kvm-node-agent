@@ -8,7 +8,7 @@ go 1.25.0
 require (
 	github.com/cert-manager/cert-manager v1.19.3
 	github.com/cobaltcore-dev/openstack-hypervisor-operator v0.0.0-20260220141709-c971fc1eb1fe
-	github.com/coreos/go-systemd/v22 v22.6.0
+	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/digitalocean/go-libvirt v0.0.0-20260105165635-a0e369cfdc9f
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/onsi/ginkgo/v2 v2.28.1
