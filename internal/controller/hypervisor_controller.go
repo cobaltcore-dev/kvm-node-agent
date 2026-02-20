@@ -38,6 +38,7 @@ import (
 
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/certificates"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/evacuation"
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/kernel"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/sys"
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/systemd"
@@ -46,11 +47,13 @@ import (
 // HypervisorReconciler reconciles a Hypervisor object
 type HypervisorReconciler struct {
 	client.Client
-	Scheme  *runtime.Scheme
-	Systemd systemd.Interface
-	Libvirt libvirt.Interface
+	Scheme       *runtime.Scheme
+	Systemd      systemd.Interface
+	Libvirt      libvirt.Interface
+	KernelReader kernel.Interface
 
 	osDescriptor     *systemd.Descriptor
+	kernelParameters *kernel.Parameters
 	evacuateOnReboot bool
 
 	// Channel that can be used to trigger reconcile events.
@@ -147,6 +150,11 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			hypervisor.Status.OperatingSystem.FirmwareVersion = r.osDescriptor.FirmwareVersion
 			hypervisor.Status.OperatingSystem.FirmwareVendor = r.osDescriptor.FirmwareVendor
 			hypervisor.Status.OperatingSystem.FirmwareDate = metav1.NewTime(time.UnixMicro(r.osDescriptor.FirmwareDate))
+		}
+
+		if r.kernelParameters != nil &&
+			hypervisor.Status.OperatingSystem.KernelCommandLine == "" {
+			hypervisor.Status.OperatingSystem.KernelCommandLine = r.kernelParameters.CommandLine
 		}
 
 		if hypervisor.Spec.EvacuateOnReboot != r.evacuateOnReboot {
@@ -358,6 +366,13 @@ func (r *HypervisorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	var err error
 	if r.osDescriptor, err = r.Systemd.Describe(ctx); err != nil {
 		return fmt.Errorf("unable to get Systemd hostname describe(): %w", err)
+	}
+
+	if r.KernelReader == nil {
+		r.KernelReader = kernel.NewSystemReader()
+	}
+	if r.kernelParameters, err = r.KernelReader.ReadParameters(); err != nil {
+		return fmt.Errorf("unable to read kernel parameters: %w", err)
 	}
 
 	// Prepare an event channel that will trigger a reconcile event.
