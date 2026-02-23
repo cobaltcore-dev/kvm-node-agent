@@ -39,11 +39,12 @@ import (
 )
 
 type LibVirt struct {
-	virt          *libvirt.Libvirt
-	client        client.Client
-	migrationJobs map[string]context.CancelFunc
-	migrationLock sync.Mutex
-	version       string
+	virt              *libvirt.Libvirt
+	client            client.Client
+	migrationJobs     map[string]context.CancelFunc
+	migrationLock     sync.Mutex
+	version           string
+	hypervisorVersion string
 
 	// Event channels for domains by their libvirt event id.
 	domEventChs     map[libvirt.DomainEventID]<-chan any
@@ -81,12 +82,23 @@ func NewLibVirt(k client.Client) *LibVirt {
 		make(map[string]context.CancelFunc),
 		sync.Mutex{},
 		"N/A",
-		make(map[libvirt.DomainEventID]<-chan any), sync.Mutex{},
-		make(map[libvirt.DomainEventID]map[string]func(context.Context, any)), sync.Mutex{},
+		"N/A",
+		make(map[libvirt.DomainEventID]<-chan any),
+		sync.Mutex{},
+		make(map[libvirt.DomainEventID]map[string]func(context.Context, any)),
+		sync.Mutex{},
 		capabilities.NewClient(),
 		domcapabilities.NewClient(),
 		dominfo.NewClient(),
 	}
+}
+
+// formatLibvirtVersion converts a libvirt version integer to a semver string.
+// Libvirt versions are encoded as major*1000000 + minor*1000 + release.
+// For example, version 8001002 becomes "8.1.2".
+func formatLibvirtVersion(version uint64) string {
+	major, minor, release := version/1000000, (version/1000)%1000, version%1000
+	return fmt.Sprintf("%d.%d.%d", major, minor, release)
 }
 
 func (l *LibVirt) Connect() error {
@@ -104,12 +116,18 @@ func (l *LibVirt) Connect() error {
 		return err
 	}
 
-	// Update the version
+	// Update the libvirt library version
 	if version, err := l.virt.ConnectGetLibVersion(); err != nil {
 		logger.Log.Error(err, "unable to fetch libvirt version")
 	} else {
-		major, minor, release := version/1000000, (version/1000)%1000, version%1000
-		l.version = fmt.Sprintf("%d.%d.%d", major, minor, release)
+		l.version = formatLibvirtVersion(version)
+	}
+
+	// Update the hypervisor version
+	if hvVersion, err := l.virt.ConnectGetVersion(); err != nil {
+		logger.Log.Error(err, "unable to fetch hypervisor version")
+	} else {
+		l.hypervisorVersion = formatLibvirtVersion(hvVersion)
 	}
 
 	l.WatchDomainChanges(
@@ -222,7 +240,6 @@ func (l *LibVirt) WatchDomainChanges(
 	handlerId string,
 	handler func(context.Context, any),
 ) {
-
 	// Register the handler so that it is called when an event with the provided
 	// eventId is received.
 	l.domEventChangeHandlersLock.Lock()
@@ -268,10 +285,11 @@ func (l *LibVirt) Process(hv v1.Hypervisor) (v1.Hypervisor, error) {
 	return hv, nil
 }
 
-// Add the libvirt version to the hypervisor instance.
+// Add the libvirt and hypervisor versions to the hypervisor instance.
 func (l *LibVirt) addVersion(old v1.Hypervisor) (v1.Hypervisor, error) {
 	newHv := *old.DeepCopy()
 	newHv.Status.LibVirtVersion = l.version
+	newHv.Status.HypervisorVersion = l.hypervisorVersion
 	return newHv, nil
 }
 

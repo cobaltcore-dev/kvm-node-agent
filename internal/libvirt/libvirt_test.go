@@ -108,9 +108,83 @@ func (m *mockEventloopRunnable) close() {
 	}
 }
 
+func TestFormatLibvirtVersion(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    uint64
+		expected string
+	}{
+		{
+			name:     "libvirt 8.0.0",
+			input:    8000000,
+			expected: "8.0.0",
+		},
+		{
+			name:     "libvirt 8.1.2",
+			input:    8001002,
+			expected: "8.1.2",
+		},
+		{
+			name:     "hypervisor 50.0.0",
+			input:    50000000,
+			expected: "50.0.0",
+		},
+		{
+			name:     "version with all components",
+			input:    10009003,
+			expected: "10.9.3",
+		},
+		{
+			name:     "zero version",
+			input:    0,
+			expected: "0.0.0",
+		},
+		{
+			name:     "large major version",
+			input:    999000000,
+			expected: "999.0.0",
+		},
+		{
+			name:     "large minor version",
+			input:    1999000,
+			expected: "1.999.0",
+		},
+		{
+			name:     "large release version",
+			input:    1000999,
+			expected: "1.0.999",
+		},
+		{
+			name:     "all max components",
+			input:    999999999,
+			expected: "999.999.999",
+		},
+		{
+			name:     "real world: libvirt 10.0.0",
+			input:    10000000,
+			expected: "10.0.0",
+		},
+		{
+			name:     "real world: QEMU 8.2.1",
+			input:    8002001,
+			expected: "8.2.1",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := formatLibvirtVersion(tc.input)
+			if result != tc.expected {
+				t.Errorf("formatLibvirtVersion(%d) = %s, want %s", tc.input, result, tc.expected)
+			}
+		})
+	}
+}
+
 func TestAddVersion(t *testing.T) {
 	l := &LibVirt{
-		version: "8.0.0",
+		version:           "8.0.0",
+		hypervisorVersion: "50.0.0",
 	}
 
 	hv := v1.Hypervisor{}
@@ -123,11 +197,16 @@ func TestAddVersion(t *testing.T) {
 	if result.Status.LibVirtVersion != "8.0.0" {
 		t.Errorf("Expected LibVirtVersion '8.0.0', got '%s'", result.Status.LibVirtVersion)
 	}
+
+	if result.Status.HypervisorVersion != "50.0.0" {
+		t.Errorf("Expected HypervisorVersion '50.0.0', got '%s'", result.Status.HypervisorVersion)
+	}
 }
 
 func TestAddVersion_PreservesOtherFields(t *testing.T) {
 	l := &LibVirt{
-		version: "8.0.0",
+		version:           "8.0.0",
+		hypervisorVersion: "50.0.0",
 	}
 
 	hv := v1.Hypervisor{
@@ -775,6 +854,7 @@ func TestProcess_Success(t *testing.T) {
 func TestProcess_PreservesOriginalOnError(t *testing.T) {
 	l := &LibVirt{
 		version:                  "8.0.0",
+		hypervisorVersion:        "50.0.0",
 		capabilitiesClient:       &mockCapabilitiesClient{err: &testError{"capability error"}},
 		domainCapabilitiesClient: &mockDomCapabilitiesClient{},
 		domainInfoClient:         &mockDomInfoClient{},
