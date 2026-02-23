@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 module github.com/cobaltcore-dev/kvm-node-agent
 
-go 1.25.0
+go 1.26
 
 require (
 	github.com/cert-manager/cert-manager v1.19.3
