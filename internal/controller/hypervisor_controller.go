@@ -58,6 +58,11 @@ type HypervisorReconciler struct {
 
 	// Channel that can be used to trigger reconcile events.
 	reconcileCh chan event.GenericEvent
+
+	// An interval that determines how long to wait between connection attempts
+	// to libvirt. This is used in the Start method when trying to connect to
+	// libvirt, and can be set to a lower value for testing purposes.
+	libvirtConnectInterval time.Duration
 }
 
 const (
@@ -195,6 +200,9 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			Message: fmt.Sprintf("unable to connect to libvirtd: %v", err),
 			Reason:  "ConnectFailed",
 		})
+		// TODO: When libvirt is down, we should also set the overall Ready
+		// condition to false, because without libvirt connection, we won't be
+		// able to detect capacity and other scheduling-relevant details.
 	} else {
 		// We're connected.
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
@@ -326,10 +334,44 @@ func (r *HypervisorReconciler) Start(ctx context.Context) error {
 	log := logger.FromContext(ctx, "controller", "hypervisor")
 	log.Info("starting libvirt event subscription")
 
-	// Ensure we're connected to libvirt.
-	if err := r.Libvirt.Connect(); err != nil {
+	// Get the hypervisor we will reconcile.
+	var hypervisor kvmv1.Hypervisor
+	key := client.ObjectKey{Name: sys.Hostname} // Cluster-scoped
+	if err := r.Get(ctx, key, &hypervisor); err != nil {
+		return fmt.Errorf("unable to get hypervisor: %w", err)
+	}
+
+	// Block until we're connected to libvirt.
+	for {
+		// Exit if the context is done, e.g. when the manager is shutting down.
+		if ctx.Err() != nil {
+			return fmt.Errorf("context done while trying to connect to libvirt: %w", ctx.Err())
+		}
+		err := r.Libvirt.Connect()
+		if err == nil {
+			log.Info("connected to libvirt")
+			break // Connected successfully
+		}
 		log.Error(err, "unable to connect to libvirt")
-		return err
+		// Set the hypervisor's LibVirtType condition to false with the
+		// error message, so that it's visible in the status.
+		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
+			Type:    LibVirtType, // TODO: This should be a kvmv1 condition.
+			Status:  metav1.ConditionFalse,
+			Message: fmt.Sprintf("unable to connect to libvirt: %v", err),
+			Reason:  "ConnectFailed",
+		})
+		patch := client.MergeFromWithOptions(hypervisor.DeepCopy(), client.MergeFromWithOptimisticLock{})
+		if err := r.Status().Patch(ctx, &hypervisor, patch); err != nil {
+			log.Error(err, "unable to update hypervisor status after failed libvirt connection")
+		}
+		log.Info("updated hypervisor status after failed libvirt connection")
+		timeToSleep := r.libvirtConnectInterval
+		if timeToSleep == 0 {
+			timeToSleep = 5 * time.Second // default value
+		}
+		log.Info("retrying libvirt connection after sleeping", "duration", timeToSleep)
+		time.Sleep(timeToSleep)
 	}
 
 	// Run a ticker which reconciles the hypervisor resource every minute.
