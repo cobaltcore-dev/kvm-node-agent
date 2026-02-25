@@ -20,6 +20,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
@@ -88,7 +89,7 @@ var _ = Describe("Hypervisor Controller", func() {
 		})
 
 		It("should fail when libvirt connection fails", func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			// Create a hypervisor resource for this test
@@ -128,16 +129,35 @@ var _ = Describe("Hypervisor Controller", func() {
 				done <- controllerReconciler.Start(ctx)
 			}()
 
-			// Wait for either completion or context cancellation
+			// Wait for the hypervisor status to reflect the failed libvirt connection
+			// This must happen BEFORE we cancel the context to ensure the Start method
+			// had time to attempt connection and update the status
+			var updatedHypervisor kvmv1.Hypervisor
+			Eventually(func() bool {
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: hypervisorName}, &updatedHypervisor)
+				if err != nil {
+					return false
+				}
+				for _, condition := range updatedHypervisor.Status.Conditions {
+					if condition.Type == "LibVirtConnection" {
+						return condition.Status == metav1.ConditionFalse &&
+							condition.Reason == "ConnectFailed" &&
+							strings.Contains(condition.Message, "connection failed")
+					}
+				}
+				return false
+			}, 5*time.Second, 100*time.Millisecond).Should(BeTrue(), "hypervisor status should reflect failed libvirt connection")
+
+			// Cancel the context to stop the Start method
+			cancel()
+
+			// Wait for Start to return with context cancellation error
 			select {
-			case <-ctx.Done():
-				// Context was cancelled, which is expected since the Start method
-				// retries indefinitely until connected. The test passes because
-				// we verified the connection fails and retries.
 			case err := <-done:
-				// If Start returns, it should be due to context cancellation
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("context done while trying to connect to libvirt"))
+			case <-time.After(2 * time.Second):
+				Fail("timeout waiting for Start to return after context cancellation")
 			}
 		})
 

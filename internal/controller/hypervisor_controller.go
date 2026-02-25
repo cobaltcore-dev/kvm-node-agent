@@ -355,13 +355,14 @@ func (r *HypervisorReconciler) Start(ctx context.Context) error {
 		log.Error(err, "unable to connect to libvirt")
 		// Set the hypervisor's LibVirtType condition to false with the
 		// error message, so that it's visible in the status.
+		base := hypervisor.DeepCopy()
 		meta.SetStatusCondition(&hypervisor.Status.Conditions, metav1.Condition{
 			Type:    LibVirtType, // TODO: This should be a kvmv1 condition.
 			Status:  metav1.ConditionFalse,
 			Message: fmt.Sprintf("unable to connect to libvirt: %v", err),
 			Reason:  "ConnectFailed",
 		})
-		patch := client.MergeFromWithOptions(hypervisor.DeepCopy(), client.MergeFromWithOptimisticLock{})
+		patch := client.MergeFromWithOptions(base, client.MergeFromWithOptimisticLock{})
 		if err := r.Status().Patch(ctx, &hypervisor, patch); err != nil {
 			log.Error(err, "unable to update hypervisor status after failed libvirt connection")
 		}
