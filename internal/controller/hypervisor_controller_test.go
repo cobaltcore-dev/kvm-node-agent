@@ -20,6 +20,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	kvmv1 "github.com/cobaltcore-dev/openstack-hypervisor-operator/api/v1"
@@ -45,6 +46,26 @@ var _ = Describe("Hypervisor Controller", func() {
 	Context("When testing Start method", func() {
 		It("should successfully start and subscribe to libvirt events", func() {
 			ctx := context.Background()
+
+			// Create a hypervisor resource for this test
+			hypervisorName := "start-success-test-hypervisor"
+			originalHostname := sys.Hostname
+			sys.Hostname = hypervisorName
+			defer func() {
+				sys.Hostname = originalHostname
+			}()
+
+			hypervisor := &kvmv1.Hypervisor{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: hypervisorName,
+				},
+			}
+			Expect(k8sClient.Create(ctx, hypervisor)).To(Succeed())
+			defer func() {
+				err := k8sClient.Delete(ctx, hypervisor)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+
 			eventCallbackCalled := false
 
 			controllerReconciler := &HypervisorReconciler{
@@ -68,7 +89,27 @@ var _ = Describe("Hypervisor Controller", func() {
 		})
 
 		It("should fail when libvirt connection fails", func() {
-			ctx := context.Background()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			// Create a hypervisor resource for this test
+			hypervisorName := "start-fail-test-hypervisor"
+			originalHostname := sys.Hostname
+			sys.Hostname = hypervisorName
+			defer func() {
+				sys.Hostname = originalHostname
+			}()
+
+			hypervisor := &kvmv1.Hypervisor{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: hypervisorName,
+				},
+			}
+			Expect(k8sClient.Create(context.Background(), hypervisor)).To(Succeed())
+			defer func() {
+				err := k8sClient.Delete(context.Background(), hypervisor)
+				Expect(err).NotTo(HaveOccurred())
+			}()
 
 			controllerReconciler := &HypervisorReconciler{
 				Client: k8sClient,
@@ -78,12 +119,124 @@ var _ = Describe("Hypervisor Controller", func() {
 						return errors.New("connection failed")
 					},
 				},
+				reconcileCh:            make(chan event.GenericEvent, 1),
+				libvirtConnectInterval: 10 * time.Millisecond,
+			}
+
+			// Start runs in a goroutine so we can cancel the context
+			done := make(chan error, 1)
+			go func() {
+				done <- controllerReconciler.Start(ctx)
+			}()
+
+			// Wait for the hypervisor status to reflect the failed libvirt connection
+			// This must happen BEFORE we cancel the context to ensure the Start method
+			// had time to attempt connection and update the status
+			var updatedHypervisor kvmv1.Hypervisor
+			Eventually(func() bool {
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: hypervisorName}, &updatedHypervisor)
+				if err != nil {
+					return false
+				}
+				for _, condition := range updatedHypervisor.Status.Conditions {
+					if condition.Type == "LibVirtConnection" {
+						return condition.Status == metav1.ConditionFalse &&
+							condition.Reason == "ConnectFailed" &&
+							strings.Contains(condition.Message, "connection failed")
+					}
+				}
+				return false
+			}, 5*time.Second, 100*time.Millisecond).Should(BeTrue(), "hypervisor status should reflect failed libvirt connection")
+
+			// Cancel the context to stop the Start method
+			cancel()
+
+			// Wait for Start to return with context cancellation error
+			select {
+			case err := <-done:
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("context done while trying to connect to libvirt"))
+			case <-time.After(2 * time.Second):
+				Fail("timeout waiting for Start to return after context cancellation")
+			}
+		})
+
+		It("should fail when hypervisor resource does not exist", func() {
+			ctx := context.Background()
+
+			// Set hostname to a non-existent hypervisor
+			originalHostname := sys.Hostname
+			sys.Hostname = "non-existent-hypervisor"
+			defer func() {
+				sys.Hostname = originalHostname
+			}()
+
+			controllerReconciler := &HypervisorReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+				Libvirt: &libvirt.InterfaceMock{
+					ConnectFunc: func() error {
+						return nil
+					},
+				},
 				reconcileCh: make(chan event.GenericEvent, 1),
 			}
 
 			err := controllerReconciler.Start(ctx)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("connection failed"))
+			Expect(err.Error()).To(ContainSubstring("unable to get hypervisor"))
+		})
+
+		It("should retry libvirt connection and succeed after initial failures", func() {
+			ctx := context.Background()
+
+			// Create a hypervisor resource for this test
+			hypervisorName := "start-retry-test-hypervisor"
+			originalHostname := sys.Hostname
+			sys.Hostname = hypervisorName
+			defer func() {
+				sys.Hostname = originalHostname
+			}()
+
+			hypervisor := &kvmv1.Hypervisor{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: hypervisorName,
+				},
+			}
+			Expect(k8sClient.Create(ctx, hypervisor)).To(Succeed())
+			defer func() {
+				err := k8sClient.Delete(ctx, hypervisor)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+
+			// Track connection attempts
+			connectAttempts := 0
+			eventCallbackCalled := false
+
+			controllerReconciler := &HypervisorReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+				Libvirt: &libvirt.InterfaceMock{
+					ConnectFunc: func() error {
+						connectAttempts++
+						// Fail first 2 attempts, succeed on 3rd
+						if connectAttempts < 3 {
+							return errors.New("connection failed")
+						}
+						return nil
+					},
+					WatchDomainChangesFunc: func(eventId golibvirt.DomainEventID, handlerId string, handler func(context.Context, any)) {
+						eventCallbackCalled = true
+					},
+				},
+				reconcileCh:            make(chan event.GenericEvent, 1),
+				libvirtConnectInterval: 10 * time.Millisecond, // Use short interval for fast test
+			}
+
+			err := controllerReconciler.Start(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(connectAttempts).To(Equal(3))
+			Expect(eventCallbackCalled).To(BeTrue())
 		})
 	})
 
