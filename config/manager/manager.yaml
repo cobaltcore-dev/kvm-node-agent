@@ -60,7 +60,7 @@ spec:
       - name: create-pki-dirs
         securityContext:
           runAsUser: 0
-        image: busybox:1.28
+        image: busybox:1.37
         command: ['sh', '-c', 'cd /host && for i in etc/pki/CA etc/pki/libvirt etc/pki/qemu var/lib/libvirt/ch/pki; do if [ -L ${i} ]; then rm ${i}; fi; done && mkdir -p etc/pki/CA etc/pki/libvirt etc/pki/qemu var/lib/libvirt/ch/pki && chown 42438:42438 etc/pki/CA etc/pki/libvirt etc/pki/qemu var/lib/libvirt/ch/pki && chmod 0755 etc/pki/CA etc/pki/libvirt etc/pki/qemu var/lib/libvirt/ch/pki']
         volumeMounts:
         - mountPath: /host
