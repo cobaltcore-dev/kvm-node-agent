@@ -162,7 +162,7 @@ func (s *SystemdConn) EnableShutdownInhibit(ctx context.Context, cb func(context
 				log.Info("received shutdown signal", "signal", signal)
 
 				// execute the shutdown callback
-				if err := cb(context.Background()); err != nil {
+				if err := cb(ctx); err != nil {
 					log.Error(err, "failed to execute shutdown callback")
 				}
 
