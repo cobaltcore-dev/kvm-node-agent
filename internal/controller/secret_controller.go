@@ -78,7 +78,8 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	if secret.ResourceVersion == r.lastResourceVersion {
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, r.setTLSStatusCondition(ctx, metav1.ConditionTrue, "Ready",
+			"TLS certificate is ready and up to date")
 	}
 
 	if err = r.setTLSStatusCondition(ctx, metav1.ConditionFalse,
