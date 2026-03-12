@@ -18,7 +18,7 @@ permissions:
 jobs:
   build-and-push-image:
     name: Push container to ghcr.io
-    runs-on: ubuntu-latest
+    runs-on: large_runner_16core_64gb
     steps:
       - name: Check out code
         uses: actions/checkout@v6
