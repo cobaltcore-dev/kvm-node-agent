@@ -1553,7 +1553,7 @@ func TestRunEventLoop_ClosedEventChannel(t *testing.T) {
 	}
 }
 
-func TestAddEffectiveAllocationCapacity_NoOvercommit(t *testing.T) {
+func TestAddEffectiveCapacity_NoOvercommit(t *testing.T) {
 	// Test that when no overcommit is specified, effective capacity equals capacity
 	l := &LibVirt{}
 
@@ -1577,10 +1577,10 @@ func TestAddEffectiveAllocationCapacity_NoOvercommit(t *testing.T) {
 		},
 	}
 
-	result, err := l.addEffectiveAllocationCapacity(hv)
+	result, err := l.addEffectiveCapacity(hv)
 
 	if err != nil {
-		t.Fatalf("addEffectiveAllocationCapacity() returned unexpected error: %v", err)
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
 	}
 
 	// With no overcommit, effective capacity should equal physical capacity
@@ -1614,7 +1614,7 @@ func TestAddEffectiveAllocationCapacity_NoOvercommit(t *testing.T) {
 	}
 }
 
-func TestAddEffectiveAllocationCapacity_WithMemoryOvercommit(t *testing.T) {
+func TestAddEffectiveCapacity_WithMemoryOvercommit(t *testing.T) {
 	// Test memory overcommit ratio of 1.5
 	l := &LibVirt{}
 
@@ -1634,10 +1634,10 @@ func TestAddEffectiveAllocationCapacity_WithMemoryOvercommit(t *testing.T) {
 		},
 	}
 
-	result, err := l.addEffectiveAllocationCapacity(hv)
+	result, err := l.addEffectiveCapacity(hv)
 
 	if err != nil {
-		t.Fatalf("addEffectiveAllocationCapacity() returned unexpected error: %v", err)
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
 	}
 
 	// Memory should be 64 GiB * 1.5 = 96 GiB
@@ -1657,7 +1657,7 @@ func TestAddEffectiveAllocationCapacity_WithMemoryOvercommit(t *testing.T) {
 	}
 }
 
-func TestAddEffectiveAllocationCapacity_WithCPUOvercommit(t *testing.T) {
+func TestAddEffectiveCapacity_WithCPUOvercommit(t *testing.T) {
 	// Test CPU overcommit ratio of 4.0
 	l := &LibVirt{}
 
@@ -1677,10 +1677,10 @@ func TestAddEffectiveAllocationCapacity_WithCPUOvercommit(t *testing.T) {
 		},
 	}
 
-	result, err := l.addEffectiveAllocationCapacity(hv)
+	result, err := l.addEffectiveCapacity(hv)
 
 	if err != nil {
-		t.Fatalf("addEffectiveAllocationCapacity() returned unexpected error: %v", err)
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
 	}
 
 	// Memory should remain unchanged (no overcommit specified, defaults to 1.0)
@@ -1700,7 +1700,7 @@ func TestAddEffectiveAllocationCapacity_WithCPUOvercommit(t *testing.T) {
 	}
 }
 
-func TestAddEffectiveAllocationCapacity_WithBothOvercommit(t *testing.T) {
+func TestAddEffectiveCapacity_WithBothOvercommit(t *testing.T) {
 	// Test both memory and CPU overcommit
 	l := &LibVirt{}
 
@@ -1721,10 +1721,10 @@ func TestAddEffectiveAllocationCapacity_WithBothOvercommit(t *testing.T) {
 		},
 	}
 
-	result, err := l.addEffectiveAllocationCapacity(hv)
+	result, err := l.addEffectiveCapacity(hv)
 
 	if err != nil {
-		t.Fatalf("addEffectiveAllocationCapacity() returned unexpected error: %v", err)
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
 	}
 
 	// Memory should be 32 GiB * 2.0 = 64 GiB
@@ -1744,7 +1744,7 @@ func TestAddEffectiveAllocationCapacity_WithBothOvercommit(t *testing.T) {
 	}
 }
 
-func TestAddEffectiveAllocationCapacity_FractionalValuesFloored(t *testing.T) {
+func TestAddEffectiveCapacity_FractionalValuesFloored(t *testing.T) {
 	// Test that fractional values are floored (not rounded)
 	// 11 * 1.5 = 16.5, which should be floored to 16
 	l := &LibVirt{}
@@ -1764,10 +1764,10 @@ func TestAddEffectiveAllocationCapacity_FractionalValuesFloored(t *testing.T) {
 		},
 	}
 
-	result, err := l.addEffectiveAllocationCapacity(hv)
+	result, err := l.addEffectiveCapacity(hv)
 
 	if err != nil {
-		t.Fatalf("addEffectiveAllocationCapacity() returned unexpected error: %v", err)
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
 	}
 
 	// CPU should be floor(11 * 1.5) = floor(16.5) = 16
@@ -1779,7 +1779,7 @@ func TestAddEffectiveAllocationCapacity_FractionalValuesFloored(t *testing.T) {
 	}
 }
 
-func TestAddEffectiveAllocationCapacity_FractionalValuesFlooredDown(t *testing.T) {
+func TestAddEffectiveCapacity_FractionalValuesFlooredDown(t *testing.T) {
 	// Test that fractional values are floored down, not rounded up
 	// 3 * 1.9 = 5.7, which should be floored to 5 (not rounded to 6)
 	l := &LibVirt{}
@@ -1799,10 +1799,10 @@ func TestAddEffectiveAllocationCapacity_FractionalValuesFlooredDown(t *testing.T
 		},
 	}
 
-	result, err := l.addEffectiveAllocationCapacity(hv)
+	result, err := l.addEffectiveCapacity(hv)
 
 	if err != nil {
-		t.Fatalf("addEffectiveAllocationCapacity() returned unexpected error: %v", err)
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
 	}
 
 	// CPU should be floor(3 * 1.9) = floor(5.7) = 5
@@ -1814,7 +1814,7 @@ func TestAddEffectiveAllocationCapacity_FractionalValuesFlooredDown(t *testing.T
 	}
 }
 
-func TestAddEffectiveAllocationCapacity_MultipleCells(t *testing.T) {
+func TestAddEffectiveCapacity_MultipleCells(t *testing.T) {
 	// Test that overcommit is applied to each cell individually
 	l := &LibVirt{}
 
@@ -1852,10 +1852,10 @@ func TestAddEffectiveAllocationCapacity_MultipleCells(t *testing.T) {
 		},
 	}
 
-	result, err := l.addEffectiveAllocationCapacity(hv)
+	result, err := l.addEffectiveCapacity(hv)
 
 	if err != nil {
-		t.Fatalf("addEffectiveAllocationCapacity() returned unexpected error: %v", err)
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
 	}
 
 	// Check total effective capacity

@@ -274,7 +274,7 @@ func (l *LibVirt) Process(hv v1.Hypervisor) (v1.Hypervisor, error) {
 		l.addCapabilities,
 		l.addDomainCapabilities,
 		l.addAllocationCapacity,
-		l.addEffectiveAllocationCapacity,
+		l.addEffectiveCapacity,
 	}
 	var err error
 	for _, processor := range processors {
@@ -555,12 +555,12 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 	return newHv, nil
 }
 
-// Add the effective allocation capacity to the hypervisor instance.
+// Add the effective capacity to the hypervisor instance.
 //
-// The effective allocation capacity is calculated as the physical capacity and
-// allocation times the applied overcommit ratio, or 1.0 by default. In case
-// the resulting values are fractional, they are floored.
-func (l *LibVirt) addEffectiveAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error) {
+// The effective capacity is calculated as the physical capacity times the
+// applied overcommit ratio, or 1.0 by default. In case the resulting values
+// are fractional, they are floored.
+func (l *LibVirt) addEffectiveCapacity(old v1.Hypervisor) (v1.Hypervisor, error) {
 	newHv := *old.DeepCopy()
 	// Always recreate the EffectiveCapacity map to remove stale entries
 	newHv.Status.EffectiveCapacity = make(map[v1.ResourceName]resource.Quantity)
