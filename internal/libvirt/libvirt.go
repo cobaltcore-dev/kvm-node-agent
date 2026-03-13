@@ -274,6 +274,7 @@ func (l *LibVirt) Process(hv v1.Hypervisor) (v1.Hypervisor, error) {
 		l.addCapabilities,
 		l.addDomainCapabilities,
 		l.addAllocationCapacity,
+		l.addEffectiveAllocationCapacity,
 	}
 	var err error
 	for _, processor := range processors {
@@ -551,5 +552,45 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 	newHv.Status.Allocation[v1.ResourceMemory] = *totalMemoryAlloc
 	newHv.Status.Allocation[v1.ResourceCPU] = *totalCpuAlloc
 	newHv.Status.Cells = cellsAsSlice
+	return newHv, nil
+}
+
+// Add the effective allocation capacity to the hypervisor instance.
+//
+// The effective allocation capacity is calculated as the physical capacity and
+// allocation times the applied overcommit ratio, or 1.0 by default. In case
+// the resulting values are fractional, they are floored.
+func (l *LibVirt) addEffectiveAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error) {
+	newHv := *old.DeepCopy()
+	// Initialize the EffectiveCapacity map if it's nil
+	if newHv.Status.EffectiveCapacity == nil {
+		newHv.Status.EffectiveCapacity = make(map[v1.ResourceName]resource.Quantity)
+	}
+	for resourceName, capacity := range newHv.Status.Capacity {
+		overcommit, ok := newHv.Spec.Overcommit[resourceName]
+		if !ok {
+			overcommit = 1.0
+		}
+		flooredValue := int64(float64(capacity.Value()) * overcommit)
+		effectiveCapacity := resource.NewQuantity(flooredValue, capacity.Format)
+		newHv.Status.EffectiveCapacity[resourceName] = *effectiveCapacity
+	}
+	// Also apply this to each cell.
+	for i, cell := range newHv.Status.Cells {
+		// Initialize the cell's EffectiveCapacity map if it's nil
+		if cell.EffectiveCapacity == nil {
+			cell.EffectiveCapacity = make(map[v1.ResourceName]resource.Quantity)
+		}
+		for resourceName, capacity := range cell.Capacity {
+			overcommit, ok := newHv.Spec.Overcommit[resourceName]
+			if !ok {
+				overcommit = 1.0
+			}
+			flooredValue := int64(float64(capacity.Value()) * overcommit)
+			effectiveCapacity := resource.NewQuantity(flooredValue, capacity.Format)
+			cell.EffectiveCapacity[resourceName] = *effectiveCapacity
+		}
+		newHv.Status.Cells[i] = cell
+	}
 	return newHv, nil
 }
