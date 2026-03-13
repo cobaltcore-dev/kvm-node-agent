@@ -1745,18 +1745,19 @@ func TestAddEffectiveAllocationCapacity_WithBothOvercommit(t *testing.T) {
 }
 
 func TestAddEffectiveAllocationCapacity_FractionalValuesFloored(t *testing.T) {
-	// Test that fractional values are floored
+	// Test that fractional values are floored (not rounded)
+	// 11 * 1.5 = 16.5, which should be floored to 16
 	l := &LibVirt{}
 
 	hv := v1.Hypervisor{
 		Spec: v1.HypervisorSpec{
 			Overcommit: map[v1.ResourceName]float64{
-				v1.ResourceCPU: 1.5, // 10 * 1.5 = 15
+				v1.ResourceCPU: 1.5, // 11 * 1.5 = 16.5
 			},
 		},
 		Status: v1.HypervisorStatus{
 			Capacity: map[v1.ResourceName]resource.Quantity{
-				v1.ResourceCPU: *resource.NewQuantity(10, resource.DecimalSI),
+				v1.ResourceCPU: *resource.NewQuantity(11, resource.DecimalSI),
 			},
 			EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
 			Cells:             []v1.Cell{},
@@ -1769,8 +1770,8 @@ func TestAddEffectiveAllocationCapacity_FractionalValuesFloored(t *testing.T) {
 		t.Fatalf("addEffectiveAllocationCapacity() returned unexpected error: %v", err)
 	}
 
-	// CPU should be floor(10 * 1.5) = floor(15) = 15
-	expectedCPU := resource.NewQuantity(15, resource.DecimalSI)
+	// CPU should be floor(11 * 1.5) = floor(16.5) = 16
+	expectedCPU := resource.NewQuantity(16, resource.DecimalSI)
 	cpuEffective := result.Status.EffectiveCapacity[v1.ResourceCPU]
 	if !cpuEffective.Equal(*expectedCPU) {
 		t.Errorf("Expected effective CPU capacity %s, got %s",
@@ -1779,18 +1780,19 @@ func TestAddEffectiveAllocationCapacity_FractionalValuesFloored(t *testing.T) {
 }
 
 func TestAddEffectiveAllocationCapacity_FractionalValuesFlooredDown(t *testing.T) {
-	// Test that fractional values are floored down, not rounded
+	// Test that fractional values are floored down, not rounded up
+	// 3 * 1.9 = 5.7, which should be floored to 5 (not rounded to 6)
 	l := &LibVirt{}
 
 	hv := v1.Hypervisor{
 		Spec: v1.HypervisorSpec{
 			Overcommit: map[v1.ResourceName]float64{
-				v1.ResourceCPU: 1.9, // 10 * 1.9 = 19
+				v1.ResourceCPU: 1.9, // 3 * 1.9 = 5.7
 			},
 		},
 		Status: v1.HypervisorStatus{
 			Capacity: map[v1.ResourceName]resource.Quantity{
-				v1.ResourceCPU: *resource.NewQuantity(10, resource.DecimalSI),
+				v1.ResourceCPU: *resource.NewQuantity(3, resource.DecimalSI),
 			},
 			EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
 			Cells:             []v1.Cell{},
@@ -1803,8 +1805,8 @@ func TestAddEffectiveAllocationCapacity_FractionalValuesFlooredDown(t *testing.T
 		t.Fatalf("addEffectiveAllocationCapacity() returned unexpected error: %v", err)
 	}
 
-	// CPU should be floor(10 * 1.9) = floor(19) = 19
-	expectedCPU := resource.NewQuantity(19, resource.DecimalSI)
+	// CPU should be floor(3 * 1.9) = floor(5.7) = 5
+	expectedCPU := resource.NewQuantity(5, resource.DecimalSI)
 	cpuEffective := result.Status.EffectiveCapacity[v1.ResourceCPU]
 	if !cpuEffective.Equal(*expectedCPU) {
 		t.Errorf("Expected effective CPU capacity %s, got %s",
