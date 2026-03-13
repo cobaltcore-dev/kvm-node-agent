@@ -562,10 +562,8 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 // the resulting values are fractional, they are floored.
 func (l *LibVirt) addEffectiveAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error) {
 	newHv := *old.DeepCopy()
-	// Initialize the EffectiveCapacity map if it's nil
-	if newHv.Status.EffectiveCapacity == nil {
-		newHv.Status.EffectiveCapacity = make(map[v1.ResourceName]resource.Quantity)
-	}
+	// Always recreate the EffectiveCapacity map to remove stale entries
+	newHv.Status.EffectiveCapacity = make(map[v1.ResourceName]resource.Quantity)
 	for resourceName, capacity := range newHv.Status.Capacity {
 		overcommit, ok := newHv.Spec.Overcommit[resourceName]
 		if !ok {
@@ -577,10 +575,8 @@ func (l *LibVirt) addEffectiveAllocationCapacity(old v1.Hypervisor) (v1.Hypervis
 	}
 	// Also apply this to each cell.
 	for i, cell := range newHv.Status.Cells {
-		// Initialize the cell's EffectiveCapacity map if it's nil
-		if cell.EffectiveCapacity == nil {
-			cell.EffectiveCapacity = make(map[v1.ResourceName]resource.Quantity)
-		}
+		// Always recreate the cell's EffectiveCapacity map to remove stale entries
+		cell.EffectiveCapacity = make(map[v1.ResourceName]resource.Quantity)
 		for resourceName, capacity := range cell.Capacity {
 			overcommit, ok := newHv.Spec.Overcommit[resourceName]
 			if !ok {
