@@ -274,6 +274,7 @@ func (l *LibVirt) Process(hv v1.Hypervisor) (v1.Hypervisor, error) {
 		l.addCapabilities,
 		l.addDomainCapabilities,
 		l.addAllocationCapacity,
+		l.addEffectiveCapacity,
 	}
 	var err error
 	for _, processor := range processors {
@@ -458,14 +459,14 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 
 		cellsById[cell.ID] = v1.Cell{
 			CellID: cell.ID,
-			Allocation: map[string]resource.Quantity{
+			Allocation: map[v1.ResourceName]resource.Quantity{
 				// Will be updated below when we look at the domain infos.
-				"memory": *resource.NewQuantity(0, resource.BinarySI),
-				"cpu":    *resource.NewQuantity(0, resource.DecimalSI),
+				v1.ResourceMemory: *resource.NewQuantity(0, resource.BinarySI),
+				v1.ResourceCPU:    *resource.NewQuantity(0, resource.DecimalSI),
 			},
-			Capacity: map[string]resource.Quantity{
-				"memory": memoryCapacity,
-				"cpu":    cpuCapacity,
+			Capacity: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceMemory: memoryCapacity,
+				v1.ResourceCPU:    cpuCapacity,
 			},
 		}
 	}
@@ -505,14 +506,14 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 					domInfo.Name, memoryNode.CellID,
 				)
 			}
-			memAllocCell := cell.Allocation["memory"]
+			memAllocCell := cell.Allocation[v1.ResourceMemory]
 			// If a domain is using multiple memory cells, assume the
 			// distribution across cells is even.
 			nCells := int64(len(domInfo.NumaTune.MemNodes)) // is non-zero
 			memAllocPerCell := *resource.
 				NewQuantity(memAlloc.Value()/nCells, resource.BinarySI)
 			memAllocCell.Add(memAllocPerCell)
-			cell.Allocation["memory"] = memAllocCell
+			cell.Allocation[v1.ResourceMemory] = memAllocCell
 			cellsById[memoryNode.CellID] = cell
 		}
 
@@ -528,14 +529,14 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 					domInfo.Name, cpuCell.ID,
 				)
 			}
-			cpuAllocCell := cell.Allocation["cpu"]
+			cpuAllocCell := cell.Allocation[v1.ResourceCPU]
 			// If a domain is using multiple cpu cells, assume the distribution
 			// across cells is even.
 			nCells := int64(len(domInfo.CPU.Numa.Cells)) // is non-zero
 			cpuAllocPerCell := *resource.
 				NewQuantity(cpuAlloc.Value()/nCells, resource.DecimalSI)
 			cpuAllocCell.Add(cpuAllocPerCell)
-			cell.Allocation["cpu"] = cpuAllocCell
+			cell.Allocation[v1.ResourceCPU] = cpuAllocCell
 			cellsById[cpuCell.ID] = cell
 		}
 	}
@@ -544,12 +545,48 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 		cellsAsSlice = append(cellsAsSlice, cell)
 	}
 
-	newHv.Status.Capacity = make(map[string]resource.Quantity)
-	newHv.Status.Capacity["memory"] = *totalMemoryCapacity
-	newHv.Status.Capacity["cpu"] = *totalCpuCapacity
-	newHv.Status.Allocation = make(map[string]resource.Quantity)
-	newHv.Status.Allocation["memory"] = *totalMemoryAlloc
-	newHv.Status.Allocation["cpu"] = *totalCpuAlloc
+	newHv.Status.Capacity = make(map[v1.ResourceName]resource.Quantity)
+	newHv.Status.Capacity[v1.ResourceMemory] = *totalMemoryCapacity
+	newHv.Status.Capacity[v1.ResourceCPU] = *totalCpuCapacity
+	newHv.Status.Allocation = make(map[v1.ResourceName]resource.Quantity)
+	newHv.Status.Allocation[v1.ResourceMemory] = *totalMemoryAlloc
+	newHv.Status.Allocation[v1.ResourceCPU] = *totalCpuAlloc
 	newHv.Status.Cells = cellsAsSlice
+	return newHv, nil
+}
+
+// Add the effective capacity to the hypervisor instance.
+//
+// The effective capacity is calculated as the physical capacity times the
+// applied overcommit ratio, or 1.0 by default. In case the resulting values
+// are fractional, they are floored.
+func (l *LibVirt) addEffectiveCapacity(old v1.Hypervisor) (v1.Hypervisor, error) {
+	newHv := *old.DeepCopy()
+	// Always recreate the EffectiveCapacity map to remove stale entries
+	newHv.Status.EffectiveCapacity = make(map[v1.ResourceName]resource.Quantity)
+	for resourceName, capacity := range newHv.Status.Capacity {
+		overcommit, ok := newHv.Spec.Overcommit[resourceName]
+		if !ok {
+			overcommit = 1.0
+		}
+		flooredValue := int64(float64(capacity.Value()) * overcommit)
+		effectiveCapacity := resource.NewQuantity(flooredValue, capacity.Format)
+		newHv.Status.EffectiveCapacity[resourceName] = *effectiveCapacity
+	}
+	// Also apply this to each cell.
+	for i, cell := range newHv.Status.Cells {
+		// Always recreate the cell's EffectiveCapacity map to remove stale entries
+		cell.EffectiveCapacity = make(map[v1.ResourceName]resource.Quantity)
+		for resourceName, capacity := range cell.Capacity {
+			overcommit, ok := newHv.Spec.Overcommit[resourceName]
+			if !ok {
+				overcommit = 1.0
+			}
+			flooredValue := int64(float64(capacity.Value()) * overcommit)
+			effectiveCapacity := resource.NewQuantity(flooredValue, capacity.Format)
+			cell.EffectiveCapacity[resourceName] = *effectiveCapacity
+		}
+		newHv.Status.Cells[i] = cell
+	}
 	return newHv, nil
 }

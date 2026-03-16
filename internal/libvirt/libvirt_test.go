@@ -1552,3 +1552,349 @@ func TestRunEventLoop_ClosedEventChannel(t *testing.T) {
 		t.Fatal("Event loop did not handle closed channel within timeout")
 	}
 }
+
+func TestAddEffectiveCapacity_NoOvercommit(t *testing.T) {
+	// Test that when no overcommit is specified, effective capacity equals capacity
+	l := &LibVirt{}
+
+	hv := v1.Hypervisor{
+		Status: v1.HypervisorStatus{
+			Capacity: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceMemory: *resource.NewQuantity(64*1024*1024*1024, resource.BinarySI),
+				v1.ResourceCPU:    *resource.NewQuantity(16, resource.DecimalSI),
+			},
+			EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+			Cells: []v1.Cell{
+				{
+					CellID: 0,
+					Capacity: map[v1.ResourceName]resource.Quantity{
+						v1.ResourceMemory: *resource.NewQuantity(64*1024*1024*1024, resource.BinarySI),
+						v1.ResourceCPU:    *resource.NewQuantity(16, resource.DecimalSI),
+					},
+					EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+				},
+			},
+		},
+	}
+
+	result, err := l.addEffectiveCapacity(hv)
+
+	if err != nil {
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
+	}
+
+	// With no overcommit, effective capacity should equal physical capacity
+	expectedMemory := resource.NewQuantity(64*1024*1024*1024, resource.BinarySI)
+	memEffective := result.Status.EffectiveCapacity[v1.ResourceMemory]
+	if !memEffective.Equal(*expectedMemory) {
+		t.Errorf("Expected effective memory capacity %s, got %s",
+			expectedMemory.String(), memEffective.String())
+	}
+
+	expectedCPU := resource.NewQuantity(16, resource.DecimalSI)
+	cpuEffective := result.Status.EffectiveCapacity[v1.ResourceCPU]
+	if !cpuEffective.Equal(*expectedCPU) {
+		t.Errorf("Expected effective CPU capacity %s, got %s",
+			expectedCPU.String(), cpuEffective.String())
+	}
+
+	// Check cell effective capacity
+	if len(result.Status.Cells) != 1 {
+		t.Fatalf("Expected 1 cell, got %d", len(result.Status.Cells))
+	}
+	cellMemEffective := result.Status.Cells[0].EffectiveCapacity[v1.ResourceMemory]
+	if !cellMemEffective.Equal(*expectedMemory) {
+		t.Errorf("Cell 0: Expected effective memory capacity %s, got %s",
+			expectedMemory.String(), cellMemEffective.String())
+	}
+	cellCpuEffective := result.Status.Cells[0].EffectiveCapacity[v1.ResourceCPU]
+	if !cellCpuEffective.Equal(*expectedCPU) {
+		t.Errorf("Cell 0: Expected effective CPU capacity %s, got %s",
+			expectedCPU.String(), cellCpuEffective.String())
+	}
+}
+
+func TestAddEffectiveCapacity_WithMemoryOvercommit(t *testing.T) {
+	// Test memory overcommit ratio of 1.5
+	l := &LibVirt{}
+
+	hv := v1.Hypervisor{
+		Spec: v1.HypervisorSpec{
+			Overcommit: map[v1.ResourceName]float64{
+				v1.ResourceMemory: 1.5,
+			},
+		},
+		Status: v1.HypervisorStatus{
+			Capacity: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceMemory: *resource.NewQuantity(64*1024*1024*1024, resource.BinarySI),
+				v1.ResourceCPU:    *resource.NewQuantity(16, resource.DecimalSI),
+			},
+			EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+			Cells:             []v1.Cell{},
+		},
+	}
+
+	result, err := l.addEffectiveCapacity(hv)
+
+	if err != nil {
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
+	}
+
+	// Memory should be 64 GiB * 1.5 = 96 GiB
+	expectedMemory := resource.NewQuantity(96*1024*1024*1024, resource.BinarySI)
+	memEffective := result.Status.EffectiveCapacity[v1.ResourceMemory]
+	if !memEffective.Equal(*expectedMemory) {
+		t.Errorf("Expected effective memory capacity %s, got %s",
+			expectedMemory.String(), memEffective.String())
+	}
+
+	// CPU should remain unchanged (no overcommit specified, defaults to 1.0)
+	expectedCPU := resource.NewQuantity(16, resource.DecimalSI)
+	cpuEffective := result.Status.EffectiveCapacity[v1.ResourceCPU]
+	if !cpuEffective.Equal(*expectedCPU) {
+		t.Errorf("Expected effective CPU capacity %s, got %s",
+			expectedCPU.String(), cpuEffective.String())
+	}
+}
+
+func TestAddEffectiveCapacity_WithCPUOvercommit(t *testing.T) {
+	// Test CPU overcommit ratio of 4.0
+	l := &LibVirt{}
+
+	hv := v1.Hypervisor{
+		Spec: v1.HypervisorSpec{
+			Overcommit: map[v1.ResourceName]float64{
+				v1.ResourceCPU: 4.0,
+			},
+		},
+		Status: v1.HypervisorStatus{
+			Capacity: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceMemory: *resource.NewQuantity(64*1024*1024*1024, resource.BinarySI),
+				v1.ResourceCPU:    *resource.NewQuantity(16, resource.DecimalSI),
+			},
+			EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+			Cells:             []v1.Cell{},
+		},
+	}
+
+	result, err := l.addEffectiveCapacity(hv)
+
+	if err != nil {
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
+	}
+
+	// Memory should remain unchanged (no overcommit specified, defaults to 1.0)
+	expectedMemory := resource.NewQuantity(64*1024*1024*1024, resource.BinarySI)
+	memEffective := result.Status.EffectiveCapacity[v1.ResourceMemory]
+	if !memEffective.Equal(*expectedMemory) {
+		t.Errorf("Expected effective memory capacity %s, got %s",
+			expectedMemory.String(), memEffective.String())
+	}
+
+	// CPU should be 16 * 4.0 = 64
+	expectedCPU := resource.NewQuantity(64, resource.DecimalSI)
+	cpuEffective := result.Status.EffectiveCapacity[v1.ResourceCPU]
+	if !cpuEffective.Equal(*expectedCPU) {
+		t.Errorf("Expected effective CPU capacity %s, got %s",
+			expectedCPU.String(), cpuEffective.String())
+	}
+}
+
+func TestAddEffectiveCapacity_WithBothOvercommit(t *testing.T) {
+	// Test both memory and CPU overcommit
+	l := &LibVirt{}
+
+	hv := v1.Hypervisor{
+		Spec: v1.HypervisorSpec{
+			Overcommit: map[v1.ResourceName]float64{
+				v1.ResourceMemory: 2.0,
+				v1.ResourceCPU:    8.0,
+			},
+		},
+		Status: v1.HypervisorStatus{
+			Capacity: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceMemory: *resource.NewQuantity(32*1024*1024*1024, resource.BinarySI),
+				v1.ResourceCPU:    *resource.NewQuantity(8, resource.DecimalSI),
+			},
+			EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+			Cells:             []v1.Cell{},
+		},
+	}
+
+	result, err := l.addEffectiveCapacity(hv)
+
+	if err != nil {
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
+	}
+
+	// Memory should be 32 GiB * 2.0 = 64 GiB
+	expectedMemory := resource.NewQuantity(64*1024*1024*1024, resource.BinarySI)
+	memEffective := result.Status.EffectiveCapacity[v1.ResourceMemory]
+	if !memEffective.Equal(*expectedMemory) {
+		t.Errorf("Expected effective memory capacity %s, got %s",
+			expectedMemory.String(), memEffective.String())
+	}
+
+	// CPU should be 8 * 8.0 = 64
+	expectedCPU := resource.NewQuantity(64, resource.DecimalSI)
+	cpuEffective := result.Status.EffectiveCapacity[v1.ResourceCPU]
+	if !cpuEffective.Equal(*expectedCPU) {
+		t.Errorf("Expected effective CPU capacity %s, got %s",
+			expectedCPU.String(), cpuEffective.String())
+	}
+}
+
+func TestAddEffectiveCapacity_FractionalValuesFloored(t *testing.T) {
+	// Test that fractional values are floored (not rounded)
+	// 11 * 1.5 = 16.5, which should be floored to 16
+	l := &LibVirt{}
+
+	hv := v1.Hypervisor{
+		Spec: v1.HypervisorSpec{
+			Overcommit: map[v1.ResourceName]float64{
+				v1.ResourceCPU: 1.5, // 11 * 1.5 = 16.5
+			},
+		},
+		Status: v1.HypervisorStatus{
+			Capacity: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceCPU: *resource.NewQuantity(11, resource.DecimalSI),
+			},
+			EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+			Cells:             []v1.Cell{},
+		},
+	}
+
+	result, err := l.addEffectiveCapacity(hv)
+
+	if err != nil {
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
+	}
+
+	// CPU should be floor(11 * 1.5) = floor(16.5) = 16
+	expectedCPU := resource.NewQuantity(16, resource.DecimalSI)
+	cpuEffective := result.Status.EffectiveCapacity[v1.ResourceCPU]
+	if !cpuEffective.Equal(*expectedCPU) {
+		t.Errorf("Expected effective CPU capacity %s, got %s",
+			expectedCPU.String(), cpuEffective.String())
+	}
+}
+
+func TestAddEffectiveCapacity_FractionalValuesFlooredDown(t *testing.T) {
+	// Test that fractional values are floored down, not rounded up
+	// 3 * 1.9 = 5.7, which should be floored to 5 (not rounded to 6)
+	l := &LibVirt{}
+
+	hv := v1.Hypervisor{
+		Spec: v1.HypervisorSpec{
+			Overcommit: map[v1.ResourceName]float64{
+				v1.ResourceCPU: 1.9, // 3 * 1.9 = 5.7
+			},
+		},
+		Status: v1.HypervisorStatus{
+			Capacity: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceCPU: *resource.NewQuantity(3, resource.DecimalSI),
+			},
+			EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+			Cells:             []v1.Cell{},
+		},
+	}
+
+	result, err := l.addEffectiveCapacity(hv)
+
+	if err != nil {
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
+	}
+
+	// CPU should be floor(3 * 1.9) = floor(5.7) = 5
+	expectedCPU := resource.NewQuantity(5, resource.DecimalSI)
+	cpuEffective := result.Status.EffectiveCapacity[v1.ResourceCPU]
+	if !cpuEffective.Equal(*expectedCPU) {
+		t.Errorf("Expected effective CPU capacity %s, got %s",
+			expectedCPU.String(), cpuEffective.String())
+	}
+}
+
+func TestAddEffectiveCapacity_MultipleCells(t *testing.T) {
+	// Test that overcommit is applied to each cell individually
+	l := &LibVirt{}
+
+	hv := v1.Hypervisor{
+		Spec: v1.HypervisorSpec{
+			Overcommit: map[v1.ResourceName]float64{
+				v1.ResourceMemory: 1.5,
+				v1.ResourceCPU:    2.0,
+			},
+		},
+		Status: v1.HypervisorStatus{
+			Capacity: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceMemory: *resource.NewQuantity(128*1024*1024*1024, resource.BinarySI),
+				v1.ResourceCPU:    *resource.NewQuantity(32, resource.DecimalSI),
+			},
+			EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+			Cells: []v1.Cell{
+				{
+					CellID: 0,
+					Capacity: map[v1.ResourceName]resource.Quantity{
+						v1.ResourceMemory: *resource.NewQuantity(64*1024*1024*1024, resource.BinarySI),
+						v1.ResourceCPU:    *resource.NewQuantity(16, resource.DecimalSI),
+					},
+					EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+				},
+				{
+					CellID: 1,
+					Capacity: map[v1.ResourceName]resource.Quantity{
+						v1.ResourceMemory: *resource.NewQuantity(64*1024*1024*1024, resource.BinarySI),
+						v1.ResourceCPU:    *resource.NewQuantity(16, resource.DecimalSI),
+					},
+					EffectiveCapacity: make(map[v1.ResourceName]resource.Quantity),
+				},
+			},
+		},
+	}
+
+	result, err := l.addEffectiveCapacity(hv)
+
+	if err != nil {
+		t.Fatalf("addEffectiveCapacity() returned unexpected error: %v", err)
+	}
+
+	// Check total effective capacity
+	// Memory: 128 GiB * 1.5 = 192 GiB
+	expectedTotalMemory := resource.NewQuantity(192*1024*1024*1024, resource.BinarySI)
+	totalMemEffective := result.Status.EffectiveCapacity[v1.ResourceMemory]
+	if !totalMemEffective.Equal(*expectedTotalMemory) {
+		t.Errorf("Expected total effective memory capacity %s, got %s",
+			expectedTotalMemory.String(), totalMemEffective.String())
+	}
+
+	// CPU: 32 * 2.0 = 64
+	expectedTotalCPU := resource.NewQuantity(64, resource.DecimalSI)
+	totalCpuEffective := result.Status.EffectiveCapacity[v1.ResourceCPU]
+	if !totalCpuEffective.Equal(*expectedTotalCPU) {
+		t.Errorf("Expected total effective CPU capacity %s, got %s",
+			expectedTotalCPU.String(), totalCpuEffective.String())
+	}
+
+	// Check each cell's effective capacity
+	if len(result.Status.Cells) != 2 {
+		t.Fatalf("Expected 2 cells, got %d", len(result.Status.Cells))
+	}
+
+	for i, cell := range result.Status.Cells {
+		// Cell memory: 64 GiB * 1.5 = 96 GiB
+		expectedCellMemory := resource.NewQuantity(96*1024*1024*1024, resource.BinarySI)
+		cellMemEffective := cell.EffectiveCapacity[v1.ResourceMemory]
+		if !cellMemEffective.Equal(*expectedCellMemory) {
+			t.Errorf("Cell %d: Expected effective memory capacity %s, got %s",
+				i, expectedCellMemory.String(), cellMemEffective.String())
+		}
+
+		// Cell CPU: 16 * 2.0 = 32
+		expectedCellCPU := resource.NewQuantity(32, resource.DecimalSI)
+		cellCpuEffective := cell.EffectiveCapacity[v1.ResourceCPU]
+		if !cellCpuEffective.Equal(*expectedCellCPU) {
+			t.Errorf("Cell %d: Expected effective CPU capacity %s, got %s",
+				i, expectedCellCPU.String(), cellCpuEffective.String())
+		}
+	}
+}
