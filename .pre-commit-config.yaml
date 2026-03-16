@@ -31,13 +31,3 @@ repos:
         entry: sh -c "gmake check || make check"
         language: system
         pass_filenames: false
-      - id: helmify
-        name: helmify
-        entry: sh -c "gmake helmify || make helmify"
-        language: system
-        pass_filenames: false
-      - id: go-build
-        name: go build
-        entry: sh -c "gmake build-all || make build-all"
-        language: system
-        pass_filenames: false

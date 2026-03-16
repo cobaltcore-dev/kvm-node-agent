@@ -125,7 +125,7 @@ check: FORCE static-check build/cover.html build-all
 
 generate: install-controller-gen
 	@printf "\e[1;36m>> controller-gen\e[0m\n"
-	@controller-gen crd rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	@controller-gen crd rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=charts/kvm-node-agent/crds
 	@controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
 	@controller-gen applyconfiguration paths="./..."
 
