@@ -1,5 +1,0 @@
-## Append samples of your project ##
-resources:
-- kvm_v1_hypervisor.yaml
-- kvm_v1_migration.yaml
-# +kubebuilder:scaffold:manifestskustomizesamples

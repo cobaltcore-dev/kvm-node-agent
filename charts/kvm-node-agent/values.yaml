@@ -20,7 +20,6 @@ controllerManager:
       pkiPath: /pki
     image:
       repository: ghcr.io/cobaltcore-dev/kvm-node-agent
-      tag: latest
     resources:
       limits:
         cpu: 500m

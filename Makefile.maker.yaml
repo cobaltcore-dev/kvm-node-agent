@@ -7,7 +7,7 @@ binaries:
 
 controllerGen:
   enabled: true
-  crdOutputPath: config/crd/bases
+  crdOutputPath: charts/kvm-node-agent/crds
   objectHeaderFile: hack/boilerplate.go.txt
   rbacRoleName: manager-role
 
@@ -45,6 +45,8 @@ githubWorkflow:
       - semver
       - edge
       - sha
+  pushHelmChartToGhcr:
+    path: charts/kvm-node-agent
   license:
     enabled: true
 
@@ -81,8 +83,4 @@ verbatim: |
 
   .PHONY: install-crds
   install-crds: generate ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-      kubectl kustomize config/crd | kubectl apply -f -
-
-  .PHONY: helmify
-  helmify:
-      kubectl kustomize config/default | helmify -crd-dir charts/kvm-node-agent
+      kubectl apply -f charts/kvm-node-agent/crds/kvm.cloud.sap_*.yaml
