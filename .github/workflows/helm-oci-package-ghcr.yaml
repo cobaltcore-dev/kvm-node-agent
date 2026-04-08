@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
       - name: Install Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
       - name: Lint Helm Chart
         run: helm lint charts/kvm-node-agent
       - name: Package Helm Chart
