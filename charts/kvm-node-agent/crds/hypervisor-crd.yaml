@@ -1,3 +1,4 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -160,6 +161,31 @@ spec:
                 - ha
                 - termination
                 type: string
+              maintenanceReason:
+                description: MaintenanceReason provides the reason for manual maintenance
+                  mode.
+                type: string
+              overcommit:
+                additionalProperties:
+                  type: number
+                description: |-
+                  Overcommit specifies the desired overcommit ratio by resource type.
+
+                  If no overcommit is specified for a resource type, the default overcommit
+                  ratio of 1.0 should be applied, i.e. the effective capacity is the same
+                  as the actual capacity.
+
+                  If the overcommit ratio results in a fractional effective capacity,
+                  the effective capacity is expected to be rounded down. This allows
+                  gradually adjusting the hypervisor capacity.
+
+                  It is validated that all overcommit ratios are greater than or equal to
+                  1.0, if specified. For this we don't need extra validating webhooks.
+                  See: https://kubernetes.io/blog/2022/09/23/crd-validation-rules-beta/#crd-transition-rules
+                type: object
+                x-kubernetes-validations:
+                - message: overcommit ratios must be >= 1.0
+                  rule: self.all(k, self[k] >= 1.0)
               reboot:
                 default: false
                 description: Reboot request an reboot after successful installation
@@ -185,13 +211,40 @@ spec:
             - reboot
             - skipTests
             type: object
+            x-kubernetes-validations:
+            - message: spec is immutable when maintenance is 'termination'; can only
+                change maintenance to 'ha'
+              rule: '!has(oldSelf.maintenance) || oldSelf.maintenance != ''termination''
+                || self.maintenance == ''ha'' || self == oldSelf'
+            - message: maintenanceReason must be non-empty when maintenance is 'manual'
+              rule: '!has(self.maintenance) || self.maintenance != ''manual'' || (has(self.maintenanceReason)
+                && self.maintenanceReason.size() > 0)'
           status:
             description: HypervisorStatus defines the observed state of Hypervisor
             properties:
               aggregates:
-                description: Aggregates are the applied aggregates of the hypervisor.
+                description: Aggregates are the applied aggregates of the hypervisor
+                  with their names and UUIDs.
                 items:
-                  type: string
+                  description: Aggregate represents an OpenStack aggregate with its
+                    name and UUID.
+                  properties:
+                    metadata:
+                      additionalProperties:
+                        type: string
+                      description: Metadata is the metadata of the aggregate as key-value
+                        pairs.
+                      type: object
+                    name:
+                      description: Name is the name of the aggregate.
+                      type: string
+                    uuid:
+                      description: UUID is the unique identifier of the aggregate.
+                      type: string
+                  required:
+                  - name
+                  - uuid
+                  type: object
                 type: array
               allocation:
                 additionalProperties:
@@ -233,7 +286,13 @@ spec:
                   - type: string
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                   x-kubernetes-int-or-string: true
-                description: Auto-discovered capacity of the hypervisor.
+                description: |-
+                  Auto-discovered capacity of the hypervisor.
+
+                  Note that this capacity does not include the applied overcommit ratios,
+                  and represents the actual capacity of the hypervisor. Use the
+                  effective capacity field to get the capacity considering the applied
+                  overcommit ratios.
                 type: object
               cells:
                 description: Auto-discovered cells on this hypervisor.
@@ -257,12 +316,35 @@ spec:
                         - type: string
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
-                      description: Auto-discovered capacity of this cell.
+                      description: |-
+                        Auto-discovered capacity of this cell.
+
+                        Note that this capacity does not include the applied overcommit ratios,
+                        and represents the actual capacity of the cell. Use the effective capacity
+                        field to get the capacity considering the applied overcommit ratios.
                       type: object
                     cellID:
                       description: Cell ID.
                       format: int64
                       type: integer
+                    effectiveCapacity:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: |-
+                        Auto-discovered capacity of this cell, considering the
+                        applied overcommit ratios.
+
+                        In case no overcommit ratio is specified for a resource type, the default
+                        overcommit ratio of 1 should be applied, meaning the effective capacity
+                        is the same as the actual capacity.
+
+                        If the overcommit ratio results in a fractional effective capacity, the
+                        effective capacity is expected to be rounded down.
+                      type: object
                   required:
                   - cellID
                   type: object
@@ -390,6 +472,24 @@ spec:
                       type: string
                     type: array
                 type: object
+              effectiveCapacity:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: |-
+                  Auto-discovered capacity of the hypervisor, considering the
+                  applied overcommit ratios.
+
+                  In case no overcommit ratio is specified for a resource type, the default
+                  overcommit ratio of 1 should be applied, meaning the effective capacity
+                  is the same as the actual capacity.
+
+                  If the overcommit ratio results in a fractional effective capacity, the
+                  effective capacity is expected to be rounded down.
+                type: object
               evicted:
                 description: Evicted indicates whether the hypervisor is evicted.
                   (no instances left with active maintenance mode)
@@ -397,6 +497,10 @@ spec:
               hypervisorId:
                 description: HypervisorID is the unique identifier of the hypervisor
                   in OpenStack.
+                type: string
+              hypervisorVersion:
+                default: unknown
+                description: Represents the Hypervisor version
                 type: string
               instances:
                 description: Represents the Hypervisor hosted Virtual Machines
@@ -521,4 +625,3 @@ spec:
     storage: true
     subresources:
       status: {}
-
