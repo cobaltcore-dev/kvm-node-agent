@@ -30,6 +30,7 @@ path = [
   "PROJECT",
   "config/**",
   "charts/**",
+  "hack/crds/**",
   "internal/**/*_mock.go",
   "build/**",
 ]
