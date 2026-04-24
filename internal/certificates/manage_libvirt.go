@@ -104,7 +104,7 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 			CommonName:  host,
 			DNSNames:    []string{host},
 			IPAddresses: ipAddresses,
-			IssuerRef: v1.ObjectReference{
+			IssuerRef: v1.IssuerReference{
 				Name:  os.Getenv("ISSUER_NAME"),
 				Kind:  cmapi.IssuerKind,
 				Group: "cert-manager.io",
