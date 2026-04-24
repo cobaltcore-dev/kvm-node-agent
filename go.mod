@@ -7,7 +7,7 @@ go 1.26
 
 require (
 	github.com/cert-manager/cert-manager v1.20.2
-	github.com/cobaltcore-dev/openstack-hypervisor-operator v0.0.0-20260313120621-e3699e2ccab9
+	github.com/cobaltcore-dev/openstack-hypervisor-operator v1.0.1
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/digitalocean/go-libvirt v0.0.0-20260217163227-273eaa321819
 	github.com/godbus/dbus/v5 v5.2.2
