@@ -51,8 +51,7 @@ spec:
               fieldPath: {{ .Values.controllerManager.manager.env.nodeLabelFieldPath }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
-          | default .Chart.AppVersion }}
+        image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Chart.AppVersion }}
         livenessProbe:
           httpGet:
             path: /healthz

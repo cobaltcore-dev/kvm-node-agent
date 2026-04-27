@@ -45,7 +45,6 @@ githubWorkflow:
     tagStrategy:
       - latest
       - semver
-      - edge
       - sha
   pushHelmChartToGhcr:
     path: charts/kvm-node-agent

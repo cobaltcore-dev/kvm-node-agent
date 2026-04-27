@@ -9,8 +9,8 @@
 name: Container Registry GHCR
 "on":
   push:
-    branches:
-      - main
+    tags:
+      - '*'
   workflow_dispatch: {}
 permissions:
   contents: read
@@ -34,8 +34,6 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            # https://github.com/docker/metadata-action#typeedge
-            type=edge
             # https://github.com/docker/metadata-action#latest-tag
             type=raw,value=latest,enable={{is_default_branch}}
             # https://github.com/docker/metadata-action#typesemver
