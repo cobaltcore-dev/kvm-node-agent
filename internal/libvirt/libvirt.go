@@ -38,6 +38,8 @@ import (
 	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/dominfo"
 )
 
+const supportedYes = "yes"
+
 type LibVirt struct {
 	virt              *libvirt.Libvirt
 	client            client.Client
@@ -372,7 +374,7 @@ func (l *LibVirt) addDomainCapabilities(old v1.Hypervisor) (v1.Hypervisor, error
 	// - <mode name="example3" supported="yes"></mode> becomes "mode/example3"
 	newHv.Status.DomainCapabilities.SupportedCpuModes = []string{}
 	for _, cpuMode := range domCapabilities.CPU.Modes {
-		if cpuMode.Supported != "yes" {
+		if cpuMode.Supported != supportedYes {
 			continue
 		}
 		newHv.Status.DomainCapabilities.SupportedCpuModes = append(
@@ -396,7 +398,7 @@ func (l *LibVirt) addDomainCapabilities(old v1.Hypervisor) (v1.Hypervisor, error
 	// - <video supported="yes"></video> becomes "video".
 	newHv.Status.DomainCapabilities.SupportedDevices = []string{}
 	for _, device := range domCapabilities.Devices.Devices {
-		if device.Supported != "yes" {
+		if device.Supported != supportedYes {
 			continue
 		}
 		newHv.Status.DomainCapabilities.SupportedDevices = append(
@@ -416,7 +418,7 @@ func (l *LibVirt) addDomainCapabilities(old v1.Hypervisor) (v1.Hypervisor, error
 	// Convert the supported features into a flat list.
 	newHv.Status.DomainCapabilities.SupportedFeatures = []string{}
 	for _, feature := range domCapabilities.Features.Features {
-		if feature.Supported == "yes" {
+		if feature.Supported == supportedYes {
 			newHv.Status.DomainCapabilities.SupportedFeatures = append(
 				newHv.Status.DomainCapabilities.SupportedFeatures,
 				feature.XMLName.Local,
