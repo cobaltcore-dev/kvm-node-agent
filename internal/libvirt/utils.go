@@ -24,6 +24,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+const (
+	UnitKiB = "KiB"
+	UnitMiB = "MiB"
+	UnitGiB = "GiB"
+	UnitTiB = "TiB"
+)
+
 type UUID [16]byte
 
 func (uuid UUID) String() string {
@@ -59,13 +66,13 @@ func MemoryToResource(value int64, unit string) (resource.Quantity, error) {
 	var quantity *resource.Quantity
 	// Check the unit
 	switch unit {
-	case "KiB":
+	case UnitKiB:
 		quantity = resource.NewQuantity(value*1024, resource.BinarySI)
-	case "MiB":
+	case UnitMiB:
 		quantity = resource.NewQuantity(value*1024*1024, resource.BinarySI)
-	case "GiB":
+	case UnitGiB:
 		quantity = resource.NewQuantity(value*1024*1024*1024, resource.BinarySI)
-	case "TiB":
+	case UnitTiB:
 		quantity = resource.NewQuantity(value*1024*1024*1024*1024, resource.BinarySI)
 	}
 	if quantity == nil {
