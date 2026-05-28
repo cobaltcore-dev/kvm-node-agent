@@ -23,12 +23,12 @@ jobs:
     runs-on: large_runner_16core_64gb
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
           fetch-tags: true
       - name: Install Helm
-        uses: azure/setup-helm@v5
+        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5
       - name: Lint Helm Chart
         run: helm lint charts/kvm-node-agent
       - name: Package Helm Chart
@@ -65,7 +65,7 @@ jobs:
           echo "Running helm package with $HELM_ARGS"
           helm package charts/kvm-node-agent --destination ./chart $HELM_ARGS
       - name: Log in to the Container registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
