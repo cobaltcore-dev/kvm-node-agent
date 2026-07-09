@@ -93,7 +93,3 @@ type MigrationList struct {
 	metav1.ListMeta `json:"metadata"`
 	Items           []Migration `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Migration{}, &MigrationList{})
-}
