@@ -9,7 +9,7 @@ require (
 	github.com/cert-manager/cert-manager v1.20.2
 	github.com/cobaltcore-dev/openstack-hypervisor-operator v1.1.0
 	github.com/coreos/go-systemd/v22 v22.7.0
-	github.com/digitalocean/go-libvirt v0.0.0-20260217163227-273eaa321819
+	github.com/digitalocean/go-libvirt v0.0.0-20260609165003-6254771e63a8
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/onsi/ginkgo/v2 v2.28.2
 	github.com/onsi/gomega v1.39.1
