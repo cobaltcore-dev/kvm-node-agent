@@ -13,7 +13,7 @@ require (
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
-	github.com/sapcc/go-api-declarations v1.24.0
+	github.com/sapcc/go-api-declarations v1.25.0
 	github.com/stretchr/testify v1.12.1
 	k8s.io/api v0.36.3
 	k8s.io/apimachinery v0.36.3
@@ -88,7 +88,7 @@ require (
 	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93 // indirect
 	golang.org/x/mod v0.38.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
