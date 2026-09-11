@@ -69,14 +69,10 @@ func EnsureCertificate(ctx context.Context, c client.Client, host string) error 
 	secretName, certName := GetSecretAndCertName(host)
 
 	certificate := cmapi.Certificate{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       cmapi.CertificateKind,
-			APIVersion: apiVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      certName,
-			Namespace: sys.Namespace,
-		},
+		Kind:       cmapi.CertificateKind,
+		APIVersion: apiVersion,
+		Name:       certName,
+		Namespace:  sys.Namespace,
 	}
 
 	update, err := controllerutil.CreateOrUpdate(ctx, c, &certificate, func() error {

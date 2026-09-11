@@ -141,7 +141,7 @@ func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		secret := a.(*v1.Secret)
 		if secret.Name == secretName {
 			return []reconcile.Request{
-				{NamespacedName: types.NamespacedName{Name: secretName, Namespace: secret.Namespace}},
+				{Name: secretName, Namespace: secret.Namespace},
 			}
 		}
 		return nil

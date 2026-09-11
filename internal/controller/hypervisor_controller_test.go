@@ -56,9 +56,7 @@ var _ = Describe("Hypervisor Controller", func() {
 			}()
 
 			hypervisor := &kvmv1.Hypervisor{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: hypervisorName,
-				},
+				Name: hypervisorName,
 			}
 			Expect(k8sClient.Create(ctx, hypervisor)).To(Succeed())
 			defer func() {
@@ -101,9 +99,7 @@ var _ = Describe("Hypervisor Controller", func() {
 			}()
 
 			hypervisor := &kvmv1.Hypervisor{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: hypervisorName,
-				},
+				Name: hypervisorName,
 			}
 			Expect(k8sClient.Create(context.Background(), hypervisor)).To(Succeed())
 			defer func() {
@@ -199,9 +195,7 @@ var _ = Describe("Hypervisor Controller", func() {
 			}()
 
 			hypervisor := &kvmv1.Hypervisor{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: hypervisorName,
-				},
+				Name: hypervisorName,
 			}
 			Expect(k8sClient.Create(ctx, hypervisor)).To(Succeed())
 			defer func() {
@@ -416,10 +410,8 @@ var _ = Describe("Hypervisor Controller", func() {
 			err := k8sClient.Get(ctx, typeNamespacedName, hypervisor)
 			if err != nil && apierrors.IsNotFound(err) {
 				resource := &kvmv1.Hypervisor{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: "default",
-					},
+					Name:      resourceName,
+					Namespace: "default",
 					// TODO(user): Specify other spec details if needed.
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())

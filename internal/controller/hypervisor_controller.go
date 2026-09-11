@@ -315,14 +315,10 @@ func (r *HypervisorReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *HypervisorReconciler) triggerReconcile() {
 	r.reconcileCh <- event.GenericEvent{
 		Object: &kvmv1.Hypervisor{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Hypervisor",
-				APIVersion: "kvm.cloud.sap/v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      sys.Hostname,
-				Namespace: sys.Namespace,
-			},
+			Kind:       "Hypervisor",
+			APIVersion: "kvm.cloud.sap/v1",
+			Name:       sys.Hostname,
+			Namespace:  sys.Namespace,
 		},
 	}
 }

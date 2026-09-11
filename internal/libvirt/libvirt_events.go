@@ -142,10 +142,8 @@ func (l *LibVirt) startMigrationWatch(ctx context.Context, domain libvirt.Domain
 
 	// ensure migration object exists
 	migr := v1alpha1.Migration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      GetOpenstackUUID(domain),
-			Namespace: sys.Namespace,
-		},
+		Name:      GetOpenstackUUID(domain),
+		Namespace: sys.Namespace,
 	}
 	if err := l.client.Create(ctx, &migr); client.IgnoreAlreadyExists(err) != nil {
 		return fmt.Errorf("failed to create migration object: %w", err)

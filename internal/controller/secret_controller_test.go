@@ -69,9 +69,7 @@ var _ = Describe("Secret Controller", func() {
 
 		// Create test Hypervisor
 		testHV = &kvmv1.Hypervisor{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: sys.Hostname,
-			},
+			Name: sys.Hostname,
 			Spec: kvmv1.HypervisorSpec{
 				InstallCertificate: true,
 			},
@@ -82,11 +80,9 @@ var _ = Describe("Secret Controller", func() {
 
 		// Create test Secret
 		testSecret = &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            testSecretName,
-				Namespace:       testNamespace,
-				ResourceVersion: "1000",
-			},
+			Name:            testSecretName,
+			Namespace:       testNamespace,
+			ResourceVersion: "1000",
 			Data: map[string][]byte{
 				"tls.crt": []byte("test-cert"),
 				"tls.key": []byte("test-key"),
@@ -120,10 +116,8 @@ var _ = Describe("Secret Controller", func() {
 
 			// Reconcile the secret
 			req := ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      testSecretName,
-					Namespace: testNamespace,
-				},
+				Name:      testSecretName,
+				Namespace: testNamespace,
 			}
 
 			result, err := reconciler.Reconcile(ctx, req)
@@ -148,10 +142,8 @@ var _ = Describe("Secret Controller", func() {
 			Expect(fakeClient.Update(ctx, testHV)).To(Succeed())
 
 			req := ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      testSecretName,
-					Namespace: testNamespace,
-				},
+				Name:      testSecretName,
+				Namespace: testNamespace,
 			}
 
 			result, err := reconciler.Reconcile(ctx, req)
@@ -169,10 +161,8 @@ var _ = Describe("Secret Controller", func() {
 
 		It("should return error when secret is not found", func() {
 			req := ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "non-existent-secret",
-					Namespace: testNamespace,
-				},
+				Name:      "non-existent-secret",
+				Namespace: testNamespace,
 			}
 
 			result, err := reconciler.Reconcile(ctx, req)
@@ -185,10 +175,8 @@ var _ = Describe("Secret Controller", func() {
 			Expect(fakeClient.Delete(ctx, testHV)).To(Succeed())
 
 			req := ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      testSecretName,
-					Namespace: testNamespace,
-				},
+				Name:      testSecretName,
+				Namespace: testNamespace,
 			}
 
 			result, err := reconciler.Reconcile(ctx, req)

@@ -53,11 +53,9 @@ var _ = Describe("Evacuation Callback", func() {
 			err := k8sClient.Get(ctx, typeNamespacedName, hypervisor)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &kvmv1.Hypervisor{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: resourceNamespace,
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      resourceName,
+					Namespace: resourceNamespace,
 					Status: kvmv1.HypervisorStatus{
 						NumInstances: 1,
 					},
