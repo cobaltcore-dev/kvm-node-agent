@@ -71,4 +71,4 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
       - name: Push Helm Chart to ghcr.io
-        run: helm push ./chart/*.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+        run: helm push ./chart/*.tgz oci://ghcr.io/cobaltcore-dev/charts
