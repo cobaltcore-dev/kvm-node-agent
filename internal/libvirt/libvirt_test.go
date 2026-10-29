@@ -490,6 +490,11 @@ func TestAddAllocationCapacity_InstanceSpreadAcrossMultipleNumaCells(t *testing.
 								Unit:  "GiB",
 								Value: 256,
 							},
+							// 131072 * 2 MiB hugepages = 256 GiB allocatable.
+							Pages: []capabilities.CapabilitiesHostTopologyCellPages{
+								{Unit: "KiB", Size: 4, Value: 1000000},
+								{Unit: "KiB", Size: 2048, Value: 131072},
+							},
 							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
 								Num: 64,
 							},
@@ -499,6 +504,10 @@ func TestAddAllocationCapacity_InstanceSpreadAcrossMultipleNumaCells(t *testing.
 							Memory: capabilities.CapabilitiesHostTopologyCellMemory{
 								Unit:  "GiB",
 								Value: 256,
+							},
+							Pages: []capabilities.CapabilitiesHostTopologyCellPages{
+								{Unit: "KiB", Size: 4, Value: 1000000},
+								{Unit: "KiB", Size: 2048, Value: 131072},
 							},
 							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
 								Num: 64,
@@ -510,6 +519,10 @@ func TestAddAllocationCapacity_InstanceSpreadAcrossMultipleNumaCells(t *testing.
 								Unit:  "GiB",
 								Value: 256,
 							},
+							Pages: []capabilities.CapabilitiesHostTopologyCellPages{
+								{Unit: "KiB", Size: 4, Value: 1000000},
+								{Unit: "KiB", Size: 2048, Value: 131072},
+							},
 							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
 								Num: 64,
 							},
@@ -519,6 +532,10 @@ func TestAddAllocationCapacity_InstanceSpreadAcrossMultipleNumaCells(t *testing.
 							Memory: capabilities.CapabilitiesHostTopologyCellMemory{
 								Unit:  "GiB",
 								Value: 256,
+							},
+							Pages: []capabilities.CapabilitiesHostTopologyCellPages{
+								{Unit: "KiB", Size: 4, Value: 1000000},
+								{Unit: "KiB", Size: 2048, Value: 131072},
 							},
 							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
 								Num: 64,
@@ -706,6 +723,12 @@ func TestAddAllocationCapacity_Success(t *testing.T) {
 								Unit:  "GiB",
 								Value: 64,
 							},
+							// 32768 * 2 MiB hugepages = 64 GiB allocatable.
+							Pages: []capabilities.CapabilitiesHostTopologyCellPages{
+								{Unit: "KiB", Size: 4, Value: 1000000},
+								{Unit: "KiB", Size: 2048, Value: 32768},
+								{Unit: "KiB", Size: 1048576, Value: 0},
+							},
 							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
 								Num: 16,
 							},
@@ -789,6 +812,63 @@ func TestAddAllocationCapacity_Success(t *testing.T) {
 	// Check cells
 	if len(result.Status.Cells) != 1 {
 		t.Fatalf("Expected 1 cell, got %d", len(result.Status.Cells))
+	}
+}
+
+func TestAddAllocationCapacity_FallsBackToPhysicalMemoryWithoutHugepages(t *testing.T) {
+	// When libvirt reports no hugepages for a cell, the memory capacity should
+	// fall back to the cell's total physical memory instead of reporting zero.
+	caps := capabilities.Capabilities{
+		Host: capabilities.CapabilitiesHost{
+			Topology: capabilities.CapabilitiesHostTopology{
+				CellSpec: capabilities.CapabilitiesHostTopologyCells{
+					Num: 1,
+					Cells: []capabilities.CapabilitiesHostTopologyCell{
+						{
+							ID: 0,
+							Memory: capabilities.CapabilitiesHostTopologyCellMemory{
+								Unit:  "GiB",
+								Value: 64,
+							},
+							// Only the base page, no hugepages configured.
+							Pages: []capabilities.CapabilitiesHostTopologyCellPages{
+								{Unit: "KiB", Size: 4, Value: 16777216},
+							},
+							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{
+								Num: 16,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	l := &LibVirt{
+		capabilitiesClient: &mockCapabilitiesClient{caps: caps},
+		domainInfoClient:   &mockDomInfoClient{infos: []dominfo.DomainInfo{}},
+	}
+
+	result, err := l.addAllocationCapacity(v1.Hypervisor{})
+	if err != nil {
+		t.Fatalf("addAllocationCapacity() returned unexpected error: %v", err)
+	}
+
+	// Capacity should fall back to the 64 GiB physical memory, not 0.
+	expectedMemCapacity := resource.NewQuantity(64*1024*1024*1024, resource.BinarySI)
+	memCap := result.Status.Capacity["memory"]
+	if !memCap.Equal(*expectedMemCapacity) {
+		t.Errorf("Expected fallback memory capacity %s, got %s",
+			expectedMemCapacity.String(), memCap.String())
+	}
+
+	if len(result.Status.Cells) != 1 {
+		t.Fatalf("Expected 1 cell, got %d", len(result.Status.Cells))
+	}
+	cellMemCap := result.Status.Cells[0].Capacity["memory"]
+	if !cellMemCap.Equal(*expectedMemCapacity) {
+		t.Errorf("Cell 0: Expected fallback memory capacity %s, got %s",
+			expectedMemCapacity.String(), cellMemCap.String())
 	}
 }
 

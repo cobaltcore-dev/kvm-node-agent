@@ -20,8 +20,11 @@ package libvirt
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
 )
 
 const (
@@ -80,4 +83,55 @@ func MemoryToResource(value int64, unit string) (resource.Quantity, error) {
 	}
 	// Set the value
 	return *quantity, nil
+}
+
+// HugepageMemoryToResource returns the allocatable hugepage-backed memory of a
+// NUMA cell as a resource.Quantity.
+//
+// Unlike the cell's total physical memory, which fluctuates between otherwise
+// identical hosts because linux reserves/frees varying amounts during boot, the
+// number of hugepages is explicitly configured and therefore stable. All KVM
+// nova flavors use hw:mem_page_size=large, so only non-base (hugepage) page
+// sizes are allocatable to VMs. The base page size is the smallest page size
+// reported for the cell and is excluded. A cell with no pages, or only base
+// pages, yields 0.
+func HugepageMemoryToResource(pages []capabilities.CapabilitiesHostTopologyCellPages) (resource.Quantity, error) {
+	total := resource.NewQuantity(0, resource.BinarySI)
+	if len(pages) == 0 {
+		return *total, nil
+	}
+
+	// The base page size is the smallest reported page size. Do not assume it
+	// is the first entry.
+	baseSize := pages[0].Size
+	for _, page := range pages[1:] {
+		if page.Size < baseSize {
+			baseSize = page.Size
+		}
+	}
+
+	for _, page := range pages {
+		// Skip the base page size, only hugepages are allocatable to VMs.
+		if page.Size == baseSize {
+			continue
+		}
+		// Libvirt always reports page sizes in KiB. Be defensive in case this
+		// ever changes, so we don't silently report a wrong capacity.
+		if page.Unit != UnitKiB {
+			return resource.Quantity{}, fmt.Errorf(
+				"unexpected hugepage unit %s", page.Unit,
+			)
+		}
+		// Guard the uint64 -> int64 conversion. Real hugepage counts are far
+		// below this bound, but guard anyway so an implausible value cannot
+		// wrap into a negative capacity.
+		if page.Value > math.MaxInt64 {
+			return resource.Quantity{}, fmt.Errorf(
+				"hugepage count %d exceeds int64", page.Value,
+			)
+		}
+		bytes := int64(page.Value) * int64(page.Size) * 1024
+		total.Add(*resource.NewQuantity(bytes, resource.BinarySI))
+	}
+	return *total, nil
 }
