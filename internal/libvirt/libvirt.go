@@ -444,12 +444,31 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 	totalCpuCapacity := resource.NewQuantity(0, resource.DecimalSI)
 	cellsById := make(map[uint64]v1.Cell)
 	for _, cell := range caps.Host.Topology.CellSpec.Cells {
-		memoryCapacity, err := MemoryToResource(
-			cell.Memory.Value,
-			cell.Memory.Unit,
-		)
+		// Report the stable, hugepage-backed allocatable memory as the cell's
+		// memory capacity. All KVM nova flavors use hw:mem_page_size=large, so
+		// this reflects what can actually be allocated to VMs and, unlike the
+		// cell's total physical memory, does not fluctuate between hosts.
+		memoryCapacity, err := HugepageMemoryToResource(cell.Pages)
 		if err != nil {
 			return old, err
+		}
+		// Fall back to the cell's total physical memory if libvirt reports no
+		// hugepages for the cell. This should not happen on a correctly
+		// configured KVM host, but guards against reporting a spurious zero
+		// capacity (e.g. before hugepages are allocated at boot).
+		if memoryCapacity.IsZero() {
+			logger.Log.Info(
+				"no hugepages reported for numa cell, "+
+					"falling back to total physical memory",
+				"cell", cell.ID,
+			)
+			memoryCapacity, err = MemoryToResource(
+				cell.Memory.Value,
+				cell.Memory.Unit,
+			)
+			if err != nil {
+				return old, err
+			}
 		}
 		totalMemoryCapacity.Add(memoryCapacity)
 

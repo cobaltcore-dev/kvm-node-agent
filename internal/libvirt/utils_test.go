@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+
+	"github.com/cobaltcore-dev/kvm-node-agent/internal/libvirt/capabilities"
 )
 
 func TestMemoryToResourceKiB(t *testing.T) {
@@ -385,8 +387,92 @@ func TestMemoryToResourceRealWorldScenarios(t *testing.T) {
 	}
 }
 
+func TestHugepageMemoryToResource(t *testing.T) {
+	tests := []struct {
+		name          string
+		pages         []capabilities.CapabilitiesHostTopologyCellPages
+		expectedBytes int64
+		expectError   bool
+	}{
+		{
+			name: "base page plus 2 MiB hugepages",
+			pages: []capabilities.CapabilitiesHostTopologyCellPages{
+				{Unit: "KiB", Size: 4, Value: 1000000},
+				{Unit: "KiB", Size: 2048, Value: 10},
+				{Unit: "KiB", Size: 1048576, Value: 0},
+			},
+			// 10 * 2 MiB
+			expectedBytes: 10 * 2048 * 1024,
+		},
+		{
+			name: "1 GiB hugepages",
+			pages: []capabilities.CapabilitiesHostTopologyCellPages{
+				{Unit: "KiB", Size: 4, Value: 1000000},
+				{Unit: "KiB", Size: 1048576, Value: 10},
+			},
+			expectedBytes: 10 * 1024 * 1024 * 1024,
+		},
+		{
+			name: "mixed 2 MiB and 1 GiB hugepages",
+			pages: []capabilities.CapabilitiesHostTopologyCellPages{
+				{Unit: "KiB", Size: 4, Value: 1000000},
+				{Unit: "KiB", Size: 2048, Value: 100},
+				{Unit: "KiB", Size: 1048576, Value: 2},
+			},
+			expectedBytes: 100*2048*1024 + 2*1024*1024*1024,
+		},
+		{
+			name:          "no pages",
+			pages:         nil,
+			expectedBytes: 0,
+		},
+		{
+			name: "only base page",
+			pages: []capabilities.CapabilitiesHostTopologyCellPages{
+				{Unit: "KiB", Size: 4, Value: 1000000},
+			},
+			expectedBytes: 0,
+		},
+		{
+			name: "base page not first element",
+			pages: []capabilities.CapabilitiesHostTopologyCellPages{
+				{Unit: "KiB", Size: 2048, Value: 10},
+				{Unit: "KiB", Size: 4, Value: 1000000},
+			},
+			expectedBytes: 10 * 2048 * 1024,
+		},
+		{
+			name: "unexpected hugepage unit",
+			pages: []capabilities.CapabilitiesHostTopologyCellPages{
+				{Unit: "KiB", Size: 4, Value: 1000000},
+				{Unit: "MiB", Size: 2048, Value: 10},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := HugepageMemoryToResource(tt.pages)
+			if tt.expectError {
+				if err == nil {
+					t.Fatalf("Expected error, got result: %s", result.String())
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("HugepageMemoryToResource() returned unexpected error: %v", err)
+			}
+
+			expectedQuantity := resource.NewQuantity(tt.expectedBytes, resource.BinarySI)
+			if !result.Equal(*expectedQuantity) {
+				t.Errorf("Expected quantity %s, got %s", expectedQuantity.String(), result.String())
+			}
+		})
+	}
+}
+
 func TestMemoryToResourceNegativeValues(t *testing.T) {
-	// Test behavior with negative values (edge case)
 	tests := []struct {
 		name  string
 		value int64
