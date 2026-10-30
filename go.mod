@@ -6,7 +6,7 @@ module github.com/cobaltcore-dev/kvm-node-agent
 go 1.27
 
 require (
-	github.com/cert-manager/cert-manager v1.21.2
+	github.com/cert-manager/cert-manager v1.21.3
 	github.com/cobaltcore-dev/openstack-hypervisor-operator v1.3.0
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/digitalocean/go-libvirt v0.0.0-20260814190004-1a83157e1858
