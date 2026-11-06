@@ -19,8 +19,11 @@ package libvirt
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -134,4 +137,27 @@ func HugepageMemoryToResource(pages []capabilities.CapabilitiesHostTopologyCellP
 		total.Add(*resource.NewQuantity(bytes, resource.BinarySI))
 	}
 	return *total, nil
+}
+
+// parseSingleNodeset parses a libvirt NUMA nodeset attribute that is expected
+// to reference exactly one host physical NUMA node, returning its id.
+//
+// For the per-vNUMA memory binding Nova emits
+// (<memnode cellid='N' nodeset='H'/>), each guest cell is pinned to a single
+// host node, so the nodeset is a plain node id such as "1". A nodeset that is
+// empty, a range, or a comma-separated list cannot be attributed to a single
+// host cell and is rejected so the allocation is never silently misreported.
+func parseSingleNodeset(nodeset string) (uint64, error) {
+	trimmed := strings.TrimSpace(nodeset)
+	if trimmed == "" {
+		return 0, errors.New("empty nodeset")
+	}
+	if strings.ContainsAny(trimmed, ",-") {
+		return 0, fmt.Errorf("nodeset %q references more than one host node", nodeset)
+	}
+	node, err := strconv.ParseUint(trimmed, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid nodeset %q: %w", nodeset, err)
+	}
+	return node, nil
 }

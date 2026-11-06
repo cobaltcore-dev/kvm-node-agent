@@ -518,13 +518,35 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 		)
 		totalCpuAlloc.Add(cpuAlloc)
 
-		// Add memory allocation to the cells this domain is using.
+		// Map each of the domain's guest NUMA cell ids to the host physical
+		// NUMA node it is pinned to. The <memnode cellid='N' nodeset='H'/>
+		// entries carry this binding: `cellid` is the guest's virtual NUMA
+		// cell index (0 for a single-vNUMA VM), while `nodeset` is the host
+		// physical NUMA node the cell is placed on. We must account per host
+		// node (the key used by cellsById, which comes from the host
+		// capabilities), not per guest cell id, otherwise every single-vNUMA
+		// VM would be attributed to cell 0 regardless of where it actually
+		// runs.
+		hostNodeByCellID := make(map[uint64]uint64, len(domInfo.NumaTune.MemNodes))
 		for _, memoryNode := range domInfo.NumaTune.MemNodes {
-			cell, ok := cellsById[memoryNode.CellID]
+			hostNode, err := parseSingleNodeset(memoryNode.Nodeset)
+			if err != nil {
+				return old, fmt.Errorf(
+					"domain %s memnode cellid %d has unexpected nodeset %q: %w",
+					domInfo.Name, memoryNode.CellID, memoryNode.Nodeset, err,
+				)
+			}
+			hostNodeByCellID[memoryNode.CellID] = hostNode
+		}
+
+		// Add memory allocation to the host cells this domain is using.
+		for _, memoryNode := range domInfo.NumaTune.MemNodes {
+			hostNode := hostNodeByCellID[memoryNode.CellID]
+			cell, ok := cellsById[hostNode]
 			if !ok {
 				return old, fmt.Errorf(
-					"domain %s uses unknown memory cell %d",
-					domInfo.Name, memoryNode.CellID,
+					"domain %s uses unknown host memory cell %d",
+					domInfo.Name, hostNode,
 				)
 			}
 			memAllocCell := cell.Allocation[v1.ResourceMemory]
@@ -535,19 +557,29 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 				NewQuantity(memAlloc.Value()/nCells, resource.BinarySI)
 			memAllocCell.Add(memAllocPerCell)
 			cell.Allocation[v1.ResourceMemory] = memAllocCell
-			cellsById[memoryNode.CellID] = cell
+			cellsById[hostNode] = cell
 		}
 
-		// Add cpu allocation to the cells this domain is using.
+		// Add cpu allocation to the host cells this domain is using. The guest
+		// CPU NUMA cells (<cpu><numa><cell id='N'/>) share the same cell ids as
+		// the memnode entries above, so we resolve each to its host node via
+		// the same mapping.
 		if domInfo.CPU.Numa == nil {
 			return old, fmt.Errorf("missing cpu numa for dom %s", domInfo.Name)
 		}
 		for _, cpuCell := range domInfo.CPU.Numa.Cells {
-			cell, ok := cellsById[cpuCell.ID]
+			hostNode, ok := hostNodeByCellID[cpuCell.ID]
 			if !ok {
 				return old, fmt.Errorf(
-					"domain %s uses unknown cpu cell %d",
+					"domain %s cpu cell %d has no memnode mapping to a host node",
 					domInfo.Name, cpuCell.ID,
+				)
+			}
+			cell, ok := cellsById[hostNode]
+			if !ok {
+				return old, fmt.Errorf(
+					"domain %s uses unknown host cpu cell %d",
+					domInfo.Name, hostNode,
 				)
 			}
 			cpuAllocCell := cell.Allocation[v1.ResourceCPU]
@@ -558,7 +590,7 @@ func (l *LibVirt) addAllocationCapacity(old v1.Hypervisor) (v1.Hypervisor, error
 				NewQuantity(cpuAlloc.Value()/nCells, resource.DecimalSI)
 			cpuAllocCell.Add(cpuAllocPerCell)
 			cell.Allocation[v1.ResourceCPU] = cpuAllocCell
-			cellsById[cpuCell.ID] = cell
+			cellsById[hostNode] = cell
 		}
 	}
 	cellsAsSlice := []v1.Cell{}
