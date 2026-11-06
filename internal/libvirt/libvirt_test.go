@@ -476,8 +476,13 @@ func TestAddDomainCapabilities_UnsupportedFiltered(t *testing.T) {
 
 func TestAddAllocationCapacity_InstanceSpreadAcrossMultipleNumaCells(t *testing.T) {
 	// Test scenario: An instance with 128 GiB memory and 16 CPUs is spread
-	// across NUMA cells 1 and 2. Each cell should report 64 GiB memory
+	// across host NUMA cells 1 and 2. Each cell should report 64 GiB memory
 	// allocation and 8 CPU allocation.
+	//
+	// The instance's guest NUMA cell ids (0 and 1) deliberately differ from
+	// the host physical NUMA nodes it is pinned to (1 and 2). Allocation must
+	// be attributed to the host nodes from the memnode nodeset, not to the
+	// guest cell ids, which are a per-VM virtual index.
 	caps := capabilities.Capabilities{
 		Host: capabilities.CapabilitiesHost{
 			Topology: capabilities.CapabilitiesHostTopology{
@@ -574,19 +579,19 @@ func TestAddAllocationCapacity_InstanceSpreadAcrossMultipleNumaCells(t *testing.
 					{VCPU: 15, CPUSet: "135"},
 				},
 			},
-			// Instance uses NUMA cells 1 and 2 for memory
+			// Guest NUMA cells 0 and 1 are pinned to host nodes 1 and 2.
 			NumaTune: &dominfo.DomainNumaTune{
 				MemNodes: []dominfo.DomainNumaMemNode{
-					{CellID: 1, Mode: "strict", Nodeset: "1"},
-					{CellID: 2, Mode: "strict", Nodeset: "2"},
+					{CellID: 0, Mode: "strict", Nodeset: "1"},
+					{CellID: 1, Mode: "strict", Nodeset: "2"},
 				},
 			},
-			// Instance uses NUMA cells 1 and 2 for CPUs
+			// Guest CPU NUMA cells share the same ids as the memnodes above.
 			CPU: &dominfo.DomainCPU{
 				Numa: &dominfo.DomainCPUNuma{
 					Cells: []dominfo.DomainCPUNumaCell{
-						{ID: 1, CPUs: "0-7", Memory: 64, Unit: "GiB"},
-						{ID: 2, CPUs: "8-15", Memory: 64, Unit: "GiB"},
+						{ID: 0, CPUs: "0-7", Memory: 64, Unit: "GiB"},
+						{ID: 1, CPUs: "8-15", Memory: 64, Unit: "GiB"},
 					},
 				},
 			},
@@ -812,6 +817,111 @@ func TestAddAllocationCapacity_Success(t *testing.T) {
 	// Check cells
 	if len(result.Status.Cells) != 1 {
 		t.Fatalf("Expected 1 cell, got %d", len(result.Status.Cells))
+	}
+}
+
+func TestAddAllocationCapacity_SingleVNumaInstancePinnedToNonZeroHostCell(t *testing.T) {
+	// Regression test: a single-vNUMA instance (guest cell id 0) pinned to
+	// host NUMA node 1 must have its allocation attributed to host cell 1, not
+	// host cell 0. Keying by the guest cell id instead of the memnode nodeset
+	// would pile every such instance onto cell 0 regardless of placement.
+	caps := capabilities.Capabilities{
+		Host: capabilities.CapabilitiesHost{
+			Topology: capabilities.CapabilitiesHostTopology{
+				CellSpec: capabilities.CapabilitiesHostTopologyCells{
+					Num: 2,
+					Cells: []capabilities.CapabilitiesHostTopologyCell{
+						{
+							ID: 0,
+							Memory: capabilities.CapabilitiesHostTopologyCellMemory{
+								Unit: "GiB", Value: 64,
+							},
+							Pages: []capabilities.CapabilitiesHostTopologyCellPages{
+								{Unit: "KiB", Size: 4, Value: 1000000},
+								{Unit: "KiB", Size: 2048, Value: 32768},
+							},
+							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{Num: 16},
+						},
+						{
+							ID: 1,
+							Memory: capabilities.CapabilitiesHostTopologyCellMemory{
+								Unit: "GiB", Value: 64,
+							},
+							Pages: []capabilities.CapabilitiesHostTopologyCellPages{
+								{Unit: "KiB", Size: 4, Value: 1000000},
+								{Unit: "KiB", Size: 2048, Value: 32768},
+							},
+							CPUs: capabilities.CapabilitiesHostTopologyCellCPUs{Num: 16},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	domInfos := []dominfo.DomainInfo{
+		{
+			Name:   "single-vnuma-on-cell-1",
+			Memory: &dominfo.DomainMemory{Unit: "GiB", Value: 8},
+			CPUTune: &dominfo.DomainCPUTune{
+				VCPUPins: []dominfo.DomainVCPUPin{
+					{VCPU: 0, CPUSet: "8"},
+					{VCPU: 1, CPUSet: "9"},
+				},
+			},
+			// Guest cell 0 is pinned to host node 1.
+			NumaTune: &dominfo.DomainNumaTune{
+				MemNodes: []dominfo.DomainNumaMemNode{
+					{CellID: 0, Mode: "strict", Nodeset: "1"},
+				},
+			},
+			CPU: &dominfo.DomainCPU{
+				Numa: &dominfo.DomainCPUNuma{
+					Cells: []dominfo.DomainCPUNumaCell{
+						{ID: 0, CPUs: "0-1", Memory: 8, Unit: "GiB"},
+					},
+				},
+			},
+		},
+	}
+
+	l := &LibVirt{
+		capabilitiesClient: &mockCapabilitiesClient{caps: caps},
+		domainInfoClient:   &mockDomInfoClient{infos: domInfos},
+	}
+
+	result, err := l.addAllocationCapacity(v1.Hypervisor{})
+	if err != nil {
+		t.Fatalf("addAllocationCapacity() returned unexpected error: %v", err)
+	}
+
+	cellsByID := make(map[uint64]v1.Cell)
+	for _, cell := range result.Status.Cells {
+		cellsByID[cell.CellID] = cell
+	}
+
+	// Host cell 0 must be untouched.
+	cell0Mem := cellsByID[0].Allocation["memory"]
+	if !cell0Mem.IsZero() {
+		t.Errorf("Cell 0: expected zero memory allocation, got %s", cell0Mem.String())
+	}
+	cell0Cpu := cellsByID[0].Allocation["cpu"]
+	if !cell0Cpu.IsZero() {
+		t.Errorf("Cell 0: expected zero CPU allocation, got %s", cell0Cpu.String())
+	}
+
+	// Host cell 1 must carry the whole allocation.
+	expectedMem := resource.NewQuantity(8*1024*1024*1024, resource.BinarySI)
+	cell1Mem := cellsByID[1].Allocation["memory"]
+	if !cell1Mem.Equal(*expectedMem) {
+		t.Errorf("Cell 1: expected memory allocation %s, got %s",
+			expectedMem.String(), cell1Mem.String())
+	}
+	expectedCpu := resource.NewQuantity(2, resource.DecimalSI)
+	cell1Cpu := cellsByID[1].Allocation["cpu"]
+	if !cell1Cpu.Equal(*expectedCpu) {
+		t.Errorf("Cell 1: expected CPU allocation %s, got %s",
+			expectedCpu.String(), cell1Cpu.String())
 	}
 }
 

@@ -506,3 +506,37 @@ func TestMemoryToResourceNegativeValues(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSingleNodeset(t *testing.T) {
+	tests := []struct {
+		name     string
+		nodeset  string
+		expected uint64
+		wantErr  bool
+	}{
+		{name: "single node", nodeset: "1", expected: 1},
+		{name: "node zero", nodeset: "0", expected: 0},
+		{name: "whitespace trimmed", nodeset: " 2 ", expected: 2},
+		{name: "empty", nodeset: "", wantErr: true},
+		{name: "range rejected", nodeset: "0-1", wantErr: true},
+		{name: "list rejected", nodeset: "0,1", wantErr: true},
+		{name: "non-numeric rejected", nodeset: "x", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseSingleNodeset(tt.nodeset)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error for nodeset %q, got none", tt.nodeset)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.expected {
+				t.Errorf("expected %d, got %d", tt.expected, got)
+			}
+		})
+	}
+}
