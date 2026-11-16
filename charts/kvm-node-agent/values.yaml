@@ -20,6 +20,8 @@ controllerManager:
       pkiPath: /pki
     image:
       repository: ghcr.io/cobaltcore-dev/kvm-node-agent
+      # Defaults to Chart.AppVersion.
+      tag: null
     resources:
       limits:
         cpu: 500m
