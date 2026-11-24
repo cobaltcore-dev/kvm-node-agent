@@ -61,6 +61,10 @@ renovate:
     - fwiesel
     - mchristianl
     - toanju
+  packageRules:
+    # Keep action and reusable-workflow SHA pins current in hand-maintained workflows.
+    - matchDepTypes: [action, workflow]
+      pinDigests: true
 
 reuse:
   annotations:
