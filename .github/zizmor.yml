@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 SAP SE or an SAP affiliate company and cobaltcore-dev contributors
+# SPDX-License-Identifier: Apache-2.0
+
+rules:
+  adhoc-packages:
+    ignore:
+      # go-makefile-maker hardcodes this global install and has no lockfile-aware option.
+      - run-go-makefile-maker.yaml:48

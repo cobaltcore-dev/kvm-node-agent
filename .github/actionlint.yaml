@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 SAP SE or an SAP affiliate company and cobaltcore-dev contributors
+# SPDX-License-Identifier: Apache-2.0
+
+self-hosted-runner:
+  labels:
+    - large_runner_16core_64gb
+
+paths:
+  .github/workflows/helm-oci-package-ghcr.yaml:
+    ignore:
+      # go-makefile-maker currently emits these two ShellCheck findings in its
+      # generated Helm versioning script. Keep this exception scoped to that file.
+      - 'shellcheck reported issue in this script: SC1102:.*'
+      - 'shellcheck reported issue in this script: SC2086:.*'
