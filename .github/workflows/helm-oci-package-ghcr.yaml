@@ -16,7 +16,6 @@ name: Helm OCI Package GHCR
   workflow_dispatch: {}
 permissions:
   contents: read
-  packages: write
 jobs:
   build-and-push-helm-package:
     name: Build and publish Helm Chart OCI
@@ -38,7 +37,7 @@ jobs:
           # use version from the helm chart itself as a base
           VERSION="$(helm show chart charts/kvm-node-agent | grep -E "^version:" | awk '{print $2}')"
           # try to detect a version from the git tags, set APP_VERSION only if this commit has been tagged
-          CURRENT_TAG=$(git describe --tags --exact-match ${{ github.sha }} 2>/dev/null || echo "")
+          CURRENT_TAG=$(git describe --tags --exact-match "$GITHUB_SHA" 2>/dev/null || echo "")
           LAST_TAG=$((git describe --tags --abbrev=0 2>/dev/null | sed -E 's/^v//') || echo "")
           if [ -n "$CURRENT_TAG" ]; then
             APP_VERSION="$CURRENT_TAG"
@@ -49,7 +48,7 @@ jobs:
 
           # use the git sha as app-version if no version could be detected from the tags
           if [ -z "$APP_VERSION" ]; then
-            APP_VERSION="sha-${{ github.sha }}"
+            APP_VERSION="sha-$GITHUB_SHA"
           fi
           # append truncated sha to version for uniqueness on untagged commits
           if [[ "$APP_VERSION" == sha-* ]]; then
@@ -73,3 +72,6 @@ jobs:
           username: ${{ github.actor }}
       - name: Push Helm Chart to ghcr.io
         run: helm push ./chart/*.tgz oci://ghcr.io/cobaltcore-dev/charts
+    permissions:
+      contents: read
+      packages: write
